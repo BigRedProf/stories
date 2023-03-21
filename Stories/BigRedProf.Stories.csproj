@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="BigRedProf.Data" Version="0.5.17" />
+  </ItemGroup>
+
 </Project>
