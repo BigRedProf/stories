@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace BigRedProf.Stories
 {
-	internal interface IStoryteller
+	public interface IStoryteller
 	{
 		#region events
 		public event EventHandler GotSomethingForYou;
@@ -20,6 +20,7 @@ namespace BigRedProf.Stories
 
 		#region methods
 		public Code TellMeSomething();
+		public void SetBookmark(long bookmark);
 		#endregion
 	}
 }

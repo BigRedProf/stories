@@ -2,7 +2,7 @@
 
 namespace BigRedProf.Stories
 {
-	internal interface IScribe
+	public interface IScribe
 	{
 		#region methods
 		public void RecordSomething(Code something);
