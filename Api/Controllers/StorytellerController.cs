@@ -1,37 +1,38 @@
 using BigRedProf.Data;
 using BigRedProf.Stories;
+using BigRedProf.Stories.Memory;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BigRedProf.Stories.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
 public class StorytellerController : ControllerBase
 {
 	#region fields
 	private readonly IPiedPiper _piedPiper;
-	private readonly IStoryteller _storyteller;
+	private readonly MemoryStoryManager _storyManager;
 	private readonly ILogger<ScribeController> _logger;
 	#endregion
 
 	#region constructors
-	public StorytellerController(IPiedPiper piedPiper, IStoryteller storyteller, ILogger<ScribeController> logger)
+	public StorytellerController(IPiedPiper piedPiper, MemoryStoryManager storageManager, ILogger<ScribeController> logger)
     {
 		_piedPiper = piedPiper;
-		_storyteller = storyteller;
+		_storyManager = storageManager;
         _logger = logger;
     }
 	#endregion constructors
 
 	#region web methods
 	[HttpGet]
-	[Route("/[controller]/[action]/{bookmark}")]
-	public void TellMeSomething(long bookmark)
+	[Route("{story}/[controller]/[action]/{bookmark}")]
+	public void TellMeSomething(string story, long bookmark)
     {
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
-		Code thing = _storyteller.TellMeSomething();
-		_storyteller.SetBookmark(bookmark);
+		IStoryteller storyteller = _storyManager.GetStoryteller(story);
+		Code thing = storyteller.TellMeSomething();
+		storyteller.SetBookmark(bookmark);
 
 		Response.ContentType = "application/octet-stream";
 		using (CodeWriter writer = new CodeWriter(Response.Body))

@@ -1,32 +1,32 @@
 using BigRedProf.Data;
 using BigRedProf.Stories;
+using BigRedProf.Stories.Memory;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BigRedProf.Stories.Api.Controllers;
 
 [ApiController]
-[Route("[controller]")]
 public class ScribeController : ControllerBase
 {
 	#region fields
 	private readonly IPiedPiper _piedPiper;
-	private readonly IScribe _scribe;
+	private readonly MemoryStoryManager _storyManager;
 	private readonly ILogger<ScribeController> _logger;
 	#endregion
 
 	#region constructors
-	public ScribeController(IPiedPiper piedPiper, IScribe scribe, ILogger<ScribeController> logger)
+	public ScribeController(IPiedPiper piedPiper, MemoryStoryManager storyManager, ILogger<ScribeController> logger)
     {
 		_piedPiper = piedPiper;
-		_scribe = scribe;
+		_storyManager = storyManager;
         _logger = logger;
     }
 	#endregion constructors
 
 	#region web methods
 	[HttpPost]
-	[Route("/[controller]/[action]")]
-	public void RecordSomething()
+	[Route("{story}/[controller]/[action]")]
+	public void RecordSomething(string story)
     {
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
@@ -36,7 +36,8 @@ public class ScribeController : ControllerBase
 			something = packRat.UnpackModel(codeReader);
 		}
 
-		_scribe.RecordSomething(something);
+		IScribe scribe = _storyManager.GetScribe(story);
+		scribe.RecordSomething(something);
     }
 	#endregion web methods
 }

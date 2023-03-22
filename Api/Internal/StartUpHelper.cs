@@ -25,12 +25,8 @@ namespace BigRedProf.Stories.Api.Internal
 
 			// TODO: read environment variables or other configuration settings
 			// to supported additional stores like kafka
-			IList<Code> things = new List<Code>();
-			IScribe scribe = new MemoryScribe(things);
-			services.AddSingleton<IScribe>(scribe);
-
-			IStoryteller storyteller = new MemoryStoryteller(things);
-			services.AddSingleton(storyteller);
+			MemoryStoryManager memoryStoryManager = new MemoryStoryManager();
+			services.AddSingleton<MemoryStoryManager>(memoryStoryManager);
 		}
 		#endregion
 	}
