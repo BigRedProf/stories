@@ -5,7 +5,9 @@ namespace BigRedProf.Stories.Memory
     public class MemoryStoryteller : IStoryteller
     {
         #region fields
+#pragma warning disable CS0067 // The event 'MemoryStoryteller.GotSomethingForYou' is never used
         public event EventHandler? GotSomethingForYou;
+#pragma warning restore CS0067 // The event 'MemoryStoryteller.GotSomethingForYou' is never used
         #endregion
 
         #region fields

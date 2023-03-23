@@ -1,0 +1,50 @@
+﻿using BigRedProf.Data;
+using System.Diagnostics;
+using System.Net;
+
+namespace BigRedProf.Stories.Internal.ApiClient
+{
+	internal class ApiScribe : IScribe
+	{
+		#region fields
+		private Uri _baseUri;
+		private StoryId _storyId;
+		private IPiedPiper _piedPiper;
+		#endregion
+
+		#region constructors
+		public ApiScribe(Uri baseUri, StoryId storyId, IPiedPiper piedPiper)
+		{
+			Debug.Assert(baseUri != null);
+			Debug.Assert(storyId != null);
+			Debug.Assert(piedPiper != null);
+
+			_baseUri = baseUri;
+			_storyId = storyId;
+			_piedPiper = piedPiper;
+		}
+		#endregion
+
+		#region IScribe methods
+		public void RecordSomething(Code something)
+		{
+			Uri uri = new Uri(_baseUri, $"{_storyId}/Scribe");
+
+			PackRat<Code> packRate = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+			MemoryStream memoryStream = new MemoryStream();
+			using(CodeWriter writer = new CodeWriter(memoryStream)) 
+			{
+				packRate.PackModel(writer, something);
+			}
+			HttpContent content = new ByteArrayContent(memoryStream.ToArray());
+
+			HttpClient client = new HttpClient();
+			using (HttpResponseMessage message = client.PutAsync(uri, content).Result)
+			{
+				if (message.StatusCode != HttpStatusCode.OK)
+					throw new HttpRequestException($"{message.StatusCode}: {message.Content.ToString()}");
+			}
+		}
+		#endregion
+	}
+}
