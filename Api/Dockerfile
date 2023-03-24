@@ -7,11 +7,11 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["api/BigRedProf.Stories.Api.csproj", "api/"]
+COPY ["Api/BigRedProf.Stories.Api.csproj", "Api/"]
 COPY ["Stories/BigRedProf.Stories.csproj", "Stories/"]
-RUN dotnet restore "api/BigRedProf.Stories.Api.csproj"
+RUN dotnet restore "Api/BigRedProf.Stories.Api.csproj"
 COPY . .
-WORKDIR "/src/api"
+WORKDIR "/src/Api"
 RUN dotnet build "BigRedProf.Stories.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
