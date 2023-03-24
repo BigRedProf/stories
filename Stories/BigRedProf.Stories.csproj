@@ -4,10 +4,25 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+
+		<Title>Stories Library</Title>
+		<Description>Stories capture a series of things over time.</Description>
+		<Copyright>Big Red Professor</Copyright>
+		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
+		<Authors>BigRedProf</Authors>
+		<Company>Big Red Professor</Company>
+		<Product>Stories Library</Product>
+		<Version>0.5.0</Version>
+
+		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
+		<!--<IncludeSymbols>True</IncludeSymbols>-->
+		<!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
+		<DebugType>embedded</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="BigRedProf.Data" Version="0.5.17" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
   </ItemGroup>
 
 </Project>
