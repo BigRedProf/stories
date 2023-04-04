@@ -1,22 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>5c5c9938-2c69-4f26-9354-e1808a1c0281</UserSecretsId>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <DockerfileBuildArguments>--build-arg GITHUB_PAT_PACKAGE_REGISTRY</DockerfileBuildArguments>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UserSecretsId>5c5c9938-2c69-4f26-9354-e1808a1c0281</UserSecretsId>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<DockerfileBuildArguments>--build-arg GITHUB_PAT_PACKAGE_REGISTRY</DockerfileBuildArguments>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.4" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.2" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
+		<Title>Stories Api</Title>
+		<Description>Exposes stories via a web service.</Description>
+		<Copyright>Big Red Professor</Copyright>
+		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
+		<Authors>BigRedProf</Authors>
+		<Company>Big Red Professor</Company>
+		<Product>Stories Api</Product>
+		<Version>0.5.0</Version>
 
-  <ItemGroup>
-    <ProjectReference Include="..\Stories\BigRedProf.Stories.csproj" />
-  </ItemGroup>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.4" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.2" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Stories\BigRedProf.Stories.csproj" />
+	</ItemGroup>
 
 </Project>
