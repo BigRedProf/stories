@@ -28,6 +28,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region IScribe methods
 		public void RecordSomething(Code something)
 		{
+			Task task = RecordSomethingAsync(something);
+			task.Wait();
+		}
+
+        public async Task RecordSomethingAsync(Code something)
+		{
 			Uri uri = new Uri(_baseUri, $"{_storyId}/Scribe");
 
 			PackRat<Code> packRate = _piedPiper.GetPackRat<Code>(SchemaId.Code);
@@ -39,7 +45,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			HttpContent content = new ByteArrayContent(memoryStream.ToArray());
 
 			HttpClient client = new HttpClient();
-			using (HttpResponseMessage message = client.PutAsync(uri, content).Result)
+			using (HttpResponseMessage message = await client.PutAsync(uri, content))
 			{
 				if (message.StatusCode != HttpStatusCode.OK)
 					throw new HttpRequestException($"{message.StatusCode}: {message.Content.ToString()}");

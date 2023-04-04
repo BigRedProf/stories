@@ -19,8 +19,10 @@ namespace BigRedProf.Stories
 		#endregion
 
 		#region methods
+		public Task<bool> HasSomethingForMeAsync();
 		public Code TellMeSomething();
-		public void SetBookmark(long bookmark);
+        public Task<Code> TellMeSomethingAsync();
+        public void SetBookmark(long bookmark);
 		#endregion
 	}
 }

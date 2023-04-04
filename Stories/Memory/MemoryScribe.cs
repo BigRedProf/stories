@@ -23,6 +23,12 @@ namespace BigRedProf.Stories.Memory
         {
             _things.Add(something);
         }
+
+        public Task RecordSomethingAsync(Code something)
+        {
+            RecordSomething(something);
+            return Task.CompletedTask;
+        }
         #endregion
     }
 }

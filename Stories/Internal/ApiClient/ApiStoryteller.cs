@@ -46,18 +46,23 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		{
 			get
 			{
-				HttpClient client = new HttpClient();
-				Uri uri = new Uri(_baseUri, $"{_storyId}/Storyteller/HasSomethingForMe");
-
-				bool hasSomethingForMe = client.GetFromJsonAsync<bool>(uri).Result;
-
-				return hasSomethingForMe;
+				return HasSomethingForMeAsync().Result;
 			}
 		}
-		#endregion
+        #endregion
 
-		#region IStoryteller methods
-		public void SetBookmark(long bookmark)
+        #region IStoryteller methods
+        public async Task<bool> HasSomethingForMeAsync()
+        {
+            HttpClient client = new HttpClient();
+            Uri uri = new Uri(_baseUri, $"{_storyId}/Storyteller/HasSomethingForMe");
+
+            bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
+
+            return hasSomethingForMe;
+        }
+
+        public void SetBookmark(long bookmark)
 		{
 			if(bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark), "Bookmark must be zero or greater.");
@@ -67,10 +72,15 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		public Code TellMeSomething()
 		{
+			return TellMeSomethingAsync().Result;
+		}
+
+		public async Task<Code> TellMeSomethingAsync()
+		{
 			HttpClient client = new HttpClient();
 			Uri uri = new Uri(_baseUri, $"{_storyId}/Storyteller/TellMeSomething/{_bookmark}");
 
-			byte[] byteArray = client.GetByteArrayAsync(uri).Result;
+			byte[] byteArray = await client.GetByteArrayAsync(uri);
 
 			Code code;
 			PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);

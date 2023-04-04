@@ -42,6 +42,12 @@ namespace BigRedProf.Stories.Memory
         #endregion
 
         #region IStoryteller methods
+        public Task<bool> HasSomethingForMeAsync()
+        {
+            Task<bool> task = new Task<bool>(() => HasSomethingForMe);
+            return task;
+        }
+
         public Code TellMeSomething()
         {
             if (Bookmark > int.MaxValue)
@@ -51,6 +57,12 @@ namespace BigRedProf.Stories.Memory
             ++Bookmark;
 
             return thing;
+        }
+
+        public Task<Code> TellMeSomethingAsync()
+        {
+            Task<Code> task = new Task<Code>(() => TellMeSomething());
+            return task;
         }
 
         public void SetBookmark(long bookmark)

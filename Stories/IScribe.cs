@@ -6,6 +6,7 @@ namespace BigRedProf.Stories
 	{
 		#region methods
 		public void RecordSomething(Code something);
-		#endregion
-	}
+        public Task RecordSomethingAsync(Code something);
+        #endregion
+    }
 }
