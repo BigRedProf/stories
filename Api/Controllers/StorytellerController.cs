@@ -26,6 +26,19 @@ public class StorytellerController : ControllerBase
 	#region web methods
 	[HttpGet]
 	[Route("{story}/[controller]/[action]/{bookmark}")]
+	public bool HasSomethingForMe(string story, long bookmark)
+	{
+		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+
+		IStoryteller storyteller = _storyManager.GetStoryteller(story);
+		storyteller.SetBookmark(bookmark);
+		bool hasSomethingForMe = storyteller.HasSomethingForMe;
+
+		return hasSomethingForMe;
+	}
+
+	[HttpGet]
+	[Route("{story}/[controller]/[action]/{bookmark}")]
 	public void TellMeSomething(string story, long bookmark)
     {
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);

@@ -55,7 +55,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
         public async Task<bool> HasSomethingForMeAsync()
         {
             HttpClient client = new HttpClient();
-            Uri uri = new Uri(_baseUri, $"{_storyId}/Storyteller/HasSomethingForMe");
+            Uri uri = new Uri(_baseUri, $"{_storyId}/Storyteller/HasSomethingForMe/{_bookmark}");
 
             bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
 
