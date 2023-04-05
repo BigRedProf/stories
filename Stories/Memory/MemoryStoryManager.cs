@@ -44,6 +44,7 @@ namespace BigRedProf.Stories.Memory
 					new MemoryScribe(things),
 					new MemoryStoryteller(things)
 				);				
+				_dictionary.Add(id, actors);
 			}
 
 			return actors;

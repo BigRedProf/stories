@@ -17,10 +17,24 @@ namespace BigRedProf.Stories
 		{
 			_id = ValidateAndNormalizeStoryId(id);
 		}
-		#endregion
+        #endregion
 
-		#region object methods
-		public override string ToString()
+        #region object methods
+        public override bool Equals(object? obj)
+        {
+			StoryId? other = obj as StoryId;
+			if(other == null) 
+				return false;
+
+            return _id.Equals(other._id);
+        }
+
+        public override int GetHashCode()
+        {
+			return _id.GetHashCode();
+        }
+
+        public override string ToString()
 		{
 			return _id;
 		}
