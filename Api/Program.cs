@@ -12,9 +12,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // my stuff
+StartUpHelper.AddCorsService(builder.Services);
 StartUpHelper.ConfigureKestrel(builder.Services);
 StartUpHelper.InjectDependencies(builder.Services);
-
 
 var app = builder.Build();
 
@@ -28,5 +28,8 @@ if (app.Environment.IsDevelopment())
 app.UseAuthorization();
 
 app.MapControllers();
+
+// my stuff
+StartUpHelper.UseCors(app);
 
 app.Run();
