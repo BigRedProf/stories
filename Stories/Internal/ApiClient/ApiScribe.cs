@@ -45,7 +45,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			HttpContent content = new ByteArrayContent(memoryStream.ToArray());
 
 			HttpClient client = new HttpClient();
-			using (HttpResponseMessage message = await client.PutAsync(uri, content))
+			using (HttpResponseMessage message = await client.PostAsync(uri, content))
 			{
 				if (message.StatusCode != HttpStatusCode.OK)
 					throw new HttpRequestException($"{message.StatusCode}: {message.Content.ToString()}");

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -12,7 +12,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Library</Product>
-		<Version>0.5.3</Version>
+		<Version>0.5.4</Version>
 
 		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
 		<!--<IncludeSymbols>True</IncludeSymbols>-->
