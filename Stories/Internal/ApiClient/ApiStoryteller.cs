@@ -90,6 +90,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				 code = packRat.UnpackModel(reader);
 			}
 
+			++_bookmark;
+
 			return code;
 		}
 		#endregion
