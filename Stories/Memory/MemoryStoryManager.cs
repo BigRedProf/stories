@@ -1,53 +1,43 @@
 ﻿using BigRedProf.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BigRedProf.Stories.Memory
 {
 	public class MemoryStoryManager
 	{
 		#region fields
-		private IDictionary<StoryId, Tuple<MemoryScribe, MemoryStoryteller>> _dictionary;
+		private IDictionary<StoryId, IList<Code>> _dictionary;
 		#endregion
 
 		#region constructors
 		public MemoryStoryManager()
 		{
-			_dictionary = new Dictionary<StoryId, Tuple<MemoryScribe, MemoryStoryteller>>();
+			_dictionary = new Dictionary<StoryId, IList<Code>>();
 		}
 		#endregion
 
 		#region methods
 		public MemoryScribe GetScribe(StoryId id)
 		{
-			return GetOrCreateStoryActors(id).Item1;
+			return new MemoryScribe(GetOrCreateListOfThings(id));
 		}
 
 		public MemoryStoryteller GetStoryteller(StoryId id)
 		{
-			return GetOrCreateStoryActors(id).Item2;
+			return new MemoryStoryteller(GetOrCreateListOfThings(id));
 		}
 		#endregion
 
 		#region private methods
-		private Tuple<MemoryScribe, MemoryStoryteller> GetOrCreateStoryActors(StoryId id)
+		private IList<Code> GetOrCreateListOfThings(StoryId id)
 		{
-			Tuple<MemoryScribe, MemoryStoryteller>? actors = null ;
-			if(!_dictionary.TryGetValue(id, out actors))
+			IList<Code>? things = null;
+			if(!_dictionary.TryGetValue(id, out things))
 			{
-				IList<Code> things = new List<Code>();
-				actors = new Tuple<MemoryScribe, MemoryStoryteller>
-				(
-					new MemoryScribe(things),
-					new MemoryStoryteller(things)
-				);				
-				_dictionary.Add(id, actors);
+				things = new List<Code>();
+				_dictionary.Add(id, things);
 			}
 
-			return actors;
+			return things;
 		}
 		#endregion
 	}
