@@ -44,8 +44,8 @@ public class StorytellerController : ControllerBase
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
 		IStoryteller storyteller = _storyManager.GetStoryteller(story);
-		Code thing = storyteller.TellMeSomething();
 		storyteller.SetBookmark(bookmark);
+		Code thing = storyteller.TellMeSomething();
 
 		Response.ContentType = "application/octet-stream";
 		using (CodeWriter writer = new CodeWriter(Response.Body))
