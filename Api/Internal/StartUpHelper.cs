@@ -37,7 +37,8 @@ namespace BigRedProf.Stories.Api.Internal
 		{
 			string[] origins = new string[]
 			{
-				"https://localhost:7290"
+				"https://localhost:7290",
+				"https://mike.bigredprof.net:7290"
 			};
 			services.AddCors(
 				options =>
