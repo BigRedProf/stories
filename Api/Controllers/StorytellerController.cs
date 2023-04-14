@@ -1,5 +1,6 @@
 using BigRedProf.Data;
 using BigRedProf.Stories;
+using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,6 +29,8 @@ public class StorytellerController : ControllerBase
 	[Route("{story}/[controller]/[action]/{bookmark}")]
 	public bool HasSomethingForMe(string story, long bookmark)
 	{
+		story = Helper.HackHackFixStoryId(story);
+
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
 		IStoryteller storyteller = _storyManager.GetStoryteller(story);
@@ -41,6 +44,8 @@ public class StorytellerController : ControllerBase
 	[Route("{story}/[controller]/[action]/{bookmark}")]
 	public void TellMeSomething(string story, long bookmark)
     {
+		story = Helper.HackHackFixStoryId(story);
+
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
 		IStoryteller storyteller = _storyManager.GetStoryteller(story);

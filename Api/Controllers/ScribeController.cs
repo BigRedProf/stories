@@ -1,5 +1,6 @@
 using BigRedProf.Data;
 using BigRedProf.Stories;
+using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,6 +29,8 @@ public class ScribeController : ControllerBase
 	[Route("{story}/[controller]/[action]")]
 	public void RecordSomething(string story)
     {
+		story = Helper.HackHackFixStoryId(story);
+
 		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
 		Code something;
