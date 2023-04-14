@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using System.Diagnostics;
 using System.Net;
+using System.Web;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
@@ -34,7 +35,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
         public async Task RecordSomethingAsync(Code something)
 		{
-			Uri uri = new Uri(_baseUri, $"{_storyId}/Scribe/RecordSomething");
+			Uri uri = new Uri(_baseUri, $"{HttpUtility.UrlEncode(_storyId)}/Scribe/RecordSomething");
 
 			PackRat<Code> packRate = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 			MemoryStream memoryStream = new MemoryStream();
