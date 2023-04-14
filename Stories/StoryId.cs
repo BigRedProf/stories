@@ -46,15 +46,19 @@ namespace BigRedProf.Stories
 			if (id == null)
 				throw new ArgumentNullException(nameof(id));
 
-			if (id.Length > 64)
-				throw new FormatException("A story identifier must be 64-characters or less.");
+			if (id.Length > 128)
+				throw new FormatException("A story identifier must be 128-characters or less.");
 
 			id = id.ToLowerInvariant();
 
 			foreach(char c in id)
 			{
-				if (!(c >= 'a' && c <= 'z' || c == '-'))
-					throw new FormatException("A story identifier can only use the characters [a-z] and dashes (-).");
+				if (!(c >= 'a' && c <= 'z' || c == '-' || c == '/'))
+				{
+					throw new FormatException(
+						"A story identifier can only use the characters [a-z] and dashes (-) and slashes (/)."
+					);
+				}
 			}
 
 			return id;
