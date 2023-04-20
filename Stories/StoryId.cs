@@ -53,10 +53,11 @@ namespace BigRedProf.Stories
 
 			foreach(char c in id)
 			{
-				if (!(c >= 'a' && c <= 'z' || c == '-' || c == '/'))
+				if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '/'))
 				{
 					throw new FormatException(
-						"A story identifier can only use the characters [a-z] and dashes (-) and slashes (/)."
+						"A story identifier can only use the letters [a-z], " +
+						"the numbers [0-9], dashes (-), and slashes (/)."
 					);
 				}
 			}
