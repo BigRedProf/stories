@@ -37,6 +37,8 @@ namespace BigRedProf.Stories.Api.Internal
 		{
 			string[] origins = new string[]
 			{
+				"https://digihouse.bigredprof.net",
+				"http://localhost:5100",
 				"https://localhost:7290",
 				"https://mike.bigredprof.net:7290"
 			};
