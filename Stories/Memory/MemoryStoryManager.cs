@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Data;
+using System.Collections.Concurrent;
 
 namespace BigRedProf.Stories.Memory
 {
@@ -11,7 +12,7 @@ namespace BigRedProf.Stories.Memory
 		#region constructors
 		public MemoryStoryManager()
 		{
-			_dictionary = new Dictionary<StoryId, IList<Code>>();
+			_dictionary = new ConcurrentDictionary<StoryId, IList<Code>>();
 		}
 		#endregion
 

@@ -6,6 +6,7 @@ namespace BigRedProf.Stories.Memory
     {
         #region fields
         private readonly IList<Code> _things;
+        private object _writeLock;
         #endregion
 
         #region constructors
@@ -15,13 +16,18 @@ namespace BigRedProf.Stories.Memory
                 throw new ArgumentNullException(nameof(things));
 
             _things = things;
+
+            _writeLock = new object();
         }
         #endregion
 
         #region IScribe methods
         public void RecordSomething(Code something)
         {
-            _things.Add(something);
+            lock (_writeLock)
+            {
+                _things.Add(something);
+            }
         }
 
         public Task RecordSomethingAsync(Code something)
