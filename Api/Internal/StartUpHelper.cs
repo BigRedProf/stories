@@ -35,10 +35,6 @@ namespace BigRedProf.Stories.Api.Internal
 
 		public static void AddCorsService(IServiceCollection services) 
 		{
-			string[] origins = new string[]
-			{
-				"*"
-			};
 			services.AddCors(
 				options =>
 				{
@@ -46,9 +42,7 @@ namespace BigRedProf.Stories.Api.Internal
 						name: CorsPolicyName,
 						policy =>
 						{
-							policy.WithOrigins(origins)
-								.AllowAnyHeader()
-								.AllowAnyMethod()
+							policy.SetIsOriginAllowed(_ => true)
 								.AllowCredentials();
 						}
 					);
