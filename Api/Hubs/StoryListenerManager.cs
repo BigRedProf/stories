@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace BigRedProf.Stories.Api.Hubs
 {
-	// TODO: Concurrency!!!
+	// TODO: review concurrency logic (was written quickly and doesn't feel right)
 	public class StoryListenerManager
 	{
 		#region fields
+		private readonly object _startStopLock;
+		private readonly object _disconnectLock;
 		private readonly IPiedPiper _piedPiper;
 		private readonly MemoryStoryManager _storyManager;
 		private readonly ILogger<StoryListenerManager> _logger;
@@ -26,6 +28,9 @@ namespace BigRedProf.Stories.Api.Hubs
 			IHubContext<StoryListenerHub> hubContext
 		)
 		{
+			_startStopLock = new object();
+			_disconnectLock = new object();
+
 			_piedPiper = piedPiper;
 			_storyManager = storageManager;
 			_logger = logger;
@@ -40,41 +45,50 @@ namespace BigRedProf.Stories.Api.Hubs
 		#region methods
 		public void StartListeningToStory(string clientId, string storyId)
 		{
-			// if nobody's listening to this story yet, create a new storyteller
-			CreateStoryListener(storyId);
+			lock(_startStopLock)
+			{
+				// if nobody's listening to this story yet, create a new storyteller
+				CreateStoryListener(storyId);
 
-			// associate this client with this story
-			HashSet<string> clientsSet = GetClientsSet(storyId);
-			clientsSet.Add(clientId);
+				// associate this client with this story
+				HashSet<string> clientsSet = GetClientsSet(storyId);
+				clientsSet.Add(clientId);
 
-			// associate this story with this client
-			HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
-			storiesSet.Add(storyId);
+				// associate this story with this client
+				HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
+				storiesSet.Add(storyId);
+			}
 		}
 
 		public void StopListeningToStory(string clientId, string storyId)
 		{
-			// dissociate this story from this client
-			HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
-			storiesSet.Remove(storyId);
+			lock(_startStopLock)
+			{
+				// dissociate this story from this client
+				HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
+				storiesSet.Remove(storyId);
 
-			// dissociate this client from this story
-			HashSet<string> clientsSet = GetClientsSet(storyId);
-			clientsSet.Remove(clientId);
+				// dissociate this client from this story
+				HashSet<string> clientsSet = GetClientsSet(storyId);
+				clientsSet.Remove(clientId);
 
-			// if there are no more clients listening, we can stop listening too
-			if (clientsSet.Count == 0)
-				DestroyStoryListener(storyId);				
+				// if there are no more clients listening, we can stop listening too
+				if (clientsSet.Count == 0)
+					DestroyStoryListener(storyId);
+			}
 		}
 
 		public void DisconnectClient(string clientId)
 		{
-			// if the client didn't already stop listening, make it stop listening now
-			if (_clientToStoriesMap.ContainsKey(clientId))
+			lock (_disconnectLock)
 			{
-				HashSet<StoryId> storyIds = _clientToStoriesMap[clientId];
-				foreach (StoryId storyId in storyIds)
-					StopListeningToStory(clientId, storyId.ToString());
+				// if the client didn't already stop listening, make it stop listening now
+				if (_clientToStoriesMap.ContainsKey(clientId))
+				{
+					HashSet<StoryId> storyIds = _clientToStoriesMap[clientId];
+					foreach (StoryId storyId in storyIds)
+						StopListeningToStory(clientId, storyId.ToString());
+				}
 			}
 		}
 		#endregion
