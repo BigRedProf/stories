@@ -4,7 +4,7 @@ using System.Collections.Specialized;
 
 namespace BigRedProf.Stories.Memory
 {
-	public class MemoryStoryListener : StoryListener
+    public class MemoryStoryListener : StoryListenerBase
 	{
 		#region fields
 		private readonly ObservableCollection<Code> _things;

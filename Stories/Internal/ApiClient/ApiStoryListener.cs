@@ -7,7 +7,7 @@ using System.Web;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
-	public class ApiStoryListener : StoryListener, IDisposable, IAsyncDisposable
+    internal class ApiStoryListener : StoryListenerBase, IDisposable, IAsyncDisposable
 	{
 		#region fields
 		private Uri _baseUri;

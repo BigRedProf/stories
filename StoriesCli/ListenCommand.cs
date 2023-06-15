@@ -1,12 +1,13 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
 
 namespace BigRedProf.Stories.StoriesCli
 {
-	public class ListenCommand : Command
+    public class ListenCommand : Command
 	{
 		#region fields
-		private StoryListener? _storyListener;
+		private IStoryListener? _storyListener;
 		#endregion
 
 		#region Command methods
@@ -17,7 +18,8 @@ namespace BigRedProf.Stories.StoriesCli
 
 			long bookmark = options.Bookmark == null ? 0 : options.Bookmark.Value;
 
-			_storyListener = new ApiStoryListener(options.BaseUri!, options.Story!, piedPiper, bookmark);
+			ApiClient apiClient = new ApiClient(options.BaseUri!, piedPiper);
+			_storyListener = apiClient.GetStoryListener(options.Story!, bookmark);
 			_storyListener.SomethingHappenedAsync += StoryListener_SomethingHappenedAsync;
 			_storyListener.StartListening();
 

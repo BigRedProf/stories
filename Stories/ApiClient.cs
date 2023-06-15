@@ -38,7 +38,21 @@ namespace BigRedProf.Stories
 			if (storyId == null)
 				throw new ArgumentNullException(nameof(storyId));
 
+			if(bookmark < 0)
+				throw new ArgumentOutOfRangeException(nameof(bookmark));
+
 			return new ApiStoryteller(_baseUri, storyId, _piedPiper, bookmark);
+		}
+
+		public IStoryListener GetStoryListener(StoryId storyId, long bookmark)
+		{
+			if (storyId == null)
+				throw new ArgumentNullException(nameof(storyId));
+
+			if (bookmark < 0)
+				throw new ArgumentOutOfRangeException(nameof(bookmark));
+
+			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark);
 		}
 		#endregion
 	}
