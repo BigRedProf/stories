@@ -110,7 +110,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region event handlers
 		private void HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
-			if (Bookmark >= offset)
+			if (Bookmark > offset)
 				return; // issue warning?? not sure we should ever be ahead of these events
 
 			while (Bookmark < offset)
@@ -125,6 +125,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			Code code = GetCodeFromByteArray(byteArray);
 			InvokeSomethingHappenedEvent(Bookmark, code);
+			
+			++Bookmark;
 		}
 		#endregion
 
