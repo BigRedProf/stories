@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using CommandLine;
 
 namespace BigRedProf.Stories.StoriesCli
@@ -16,5 +17,14 @@ namespace BigRedProf.Stories.StoriesCli
 
 		[Option('b', "bookmark", Required = false, HelpText = "The first bookmark to start listening at.")]
 		public long? Bookmark { get; set; }
+
+		[Option("modelAssemblies", Required = false, HelpText = "The path to a model assembly.")]
+		public IEnumerable<string>? ModelAssemblies { get; set; }
+
+		[Option("thingFormat", Required = false, HelpText = "How to format things. Choices are: RawCode or ModelWithSchema.")]
+		public ThingFormat? ThingFormat { get; set; }
+
+		[Option("modelFormat", Required = false, HelpText = "How to format models. Choices are: ToString or Reflection.")]
+		public ModelFormat? ModelFormat { get; set; }
 	}
 }
