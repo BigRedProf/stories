@@ -15,8 +15,12 @@ builder.Services.AddSwaggerGen();
 StartUpHelper.AddCorsService(builder.Services);
 StartUpHelper.ConfigureKestrel(builder.Services);
 StartUpHelper.InjectDependencies(builder.Services);
+StartUpHelper.AddSignalRService(builder.Services);
 
 var app = builder.Build();
+
+// my stuff
+StartUpHelper.UseResponseCompressionForSignalR(app);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -31,5 +35,6 @@ app.MapControllers();
 
 // my stuff
 StartUpHelper.UseCors(app);
+StartUpHelper.ConfigureSignalR(app);
 
 app.Run();

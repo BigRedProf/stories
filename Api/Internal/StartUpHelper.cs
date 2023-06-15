@@ -1,5 +1,7 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Api.Hubs;
 using BigRedProf.Stories.Memory;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace BigRedProf.Stories.Api.Internal
@@ -21,6 +23,18 @@ namespace BigRedProf.Stories.Api.Internal
 			);
 		}
 
+		public static void ConfigureSignalR(IApplicationBuilder app)
+		{
+			app.UseRouting();
+
+			app.UseEndpoints(
+				endpoints =>
+				{
+					endpoints.MapHub<StoryListenerHub>("/_StorylistenerHub");
+				}
+			);
+		}
+
 		public static void InjectDependencies(IServiceCollection services)
 		{
 			IPiedPiper piedPiper = new PiedPiper();
@@ -31,6 +45,8 @@ namespace BigRedProf.Stories.Api.Internal
 			// to supported additional stores like kafka
 			MemoryStoryManager memoryStoryManager = new MemoryStoryManager();
 			services.AddSingleton<MemoryStoryManager>(memoryStoryManager);
+
+			services.AddSingleton<StoryListenerManager>();
 		}
 
 		public static void AddCorsService(IServiceCollection services) 
@@ -50,9 +66,30 @@ namespace BigRedProf.Stories.Api.Internal
 			);			
 		}
 
+		public static void AddSignalRService(IServiceCollection services)
+		{
+			services.AddSignalR().AddMessagePackProtocol();
+			services.AddResponseCompression(
+				opts =>
+				{
+					opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
+						new string[] 
+						{
+							"application/octet-stream"
+						}
+					);
+				}
+			);
+		}
+
 		public static void UseCors(WebApplication app)
 		{
 			app.UseCors(CorsPolicyName);
+		}
+
+		public static void UseResponseCompressionForSignalR(WebApplication app)
+		{
+			app.UseResponseCompression();
 		}
 		#endregion
 	}

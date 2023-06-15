@@ -12,7 +12,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Library</Product>
-		<Version>0.5.8</Version>
+		<Version>0.5.9</Version>
 
 		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
 		<!--<IncludeSymbols>True</IncludeSymbols>-->
@@ -22,7 +22,10 @@
 
   <ItemGroup>
     <PackageReference Include="BigRedProf.Data" Version="0.5.17" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.7" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>
