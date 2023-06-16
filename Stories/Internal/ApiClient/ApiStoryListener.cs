@@ -33,7 +33,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_hubConnection = new HubConnectionBuilder()
 					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
-					.AddMessagePackProtocol()
+					//.AddMessagePackProtocol()
 					.ConfigureLogging(
 						logging =>
 						{

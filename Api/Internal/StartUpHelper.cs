@@ -68,7 +68,7 @@ namespace BigRedProf.Stories.Api.Internal
 
 		public static void AddSignalRService(IServiceCollection services)
 		{
-			services.AddSignalR().AddMessagePackProtocol();
+			//services.AddSignalR().AddMessagePackProtocol();
 			services.AddResponseCompression(
 				opts =>
 				{
