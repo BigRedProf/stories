@@ -131,7 +131,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region event handlers
-		private void HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
+		private async void HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
 			if (Bookmark > offset)
 				return; // issue warning?? not sure we should ever be ahead of these events
@@ -140,7 +140,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			{
 				// we've fallen behind in the story and need to catch up with a Storyteller
 				_catchUpStoryteller.SetBookmark(Bookmark);
-				Code catchUpCode = _catchUpStoryteller.TellMeSomething();
+				Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
 				InvokeSomethingHappenedEvent(Bookmark, catchUpCode);
 
 				++Bookmark;
