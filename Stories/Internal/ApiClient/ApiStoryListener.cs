@@ -19,6 +19,17 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		#region constructors
 		public ApiStoryListener(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark)
+			: this(baseUri, storyId, piedPiper, bookmark, LogLevel.Information, false)
+		{
+		}
+
+		public ApiStoryListener(
+			Uri baseUri, 
+			StoryId storyId, 
+			IPiedPiper piedPiper, 
+			long bookmark, 
+			LogLevel signalRLogLevel, 
+			bool addConsoleLogging)
 			: base(storyId)
 		{
 			Debug.Assert(baseUri != null);
@@ -38,10 +49,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 						logging =>
 						{
 							// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException
-							//logging.AddConsole();
+							if(addConsoleLogging)
+								logging.AddConsole();
 							logging.SetMinimumLevel(LogLevel.Information);
-							//logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
-							//logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
+							logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel);
+							logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel);
 						}
 					)
 					.Build();

@@ -1,5 +1,6 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Internal.ApiClient;
+using Microsoft.Extensions.Logging;
 
 namespace BigRedProf.Stories
 {
@@ -53,6 +54,22 @@ namespace BigRedProf.Stories
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
 			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark);
+		}
+
+		public IStoryListener GetStoryListener(
+			StoryId storyId, 
+			long bookmark, 
+			LogLevel signalRLogLevel, 
+			bool addConsoleLogging
+		)
+		{
+			if (storyId == null)
+				throw new ArgumentNullException(nameof(storyId));
+
+			if (bookmark < 0)
+				throw new ArgumentOutOfRangeException(nameof(bookmark));
+
+			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, signalRLogLevel, addConsoleLogging);
 		}
 		#endregion
 	}

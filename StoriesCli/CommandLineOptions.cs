@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using CommandLine;
+using Microsoft.Extensions.Logging;
 
 namespace BigRedProf.Stories.StoriesCli
 {
@@ -8,6 +9,9 @@ namespace BigRedProf.Stories.StoriesCli
 	{
 		[Value(0, MetaName = "Command", Required = true, HelpText = "The stories command to run.")]
 		public string? Command { get; set; }
+
+		[Option("logLevel", Required = false, HelpText = "The SignalR log level")]
+		public LogLevel? LogLevel { get; set; }
 
 		[Option('u', "BaseUri", Required = true, HelpText = "The base URI of the stories service.")]
 		public Uri? BaseUri { get; set; }
