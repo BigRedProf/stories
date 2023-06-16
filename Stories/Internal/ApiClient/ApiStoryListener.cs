@@ -33,11 +33,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_hubConnection = new HubConnectionBuilder()
 					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
-					//.AddMessagePackProtocol()
+					.AddMessagePackProtocol()
 					.ConfigureLogging(
 						logging =>
 						{
-							logging.AddConsole();
+							// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException
+							//logging.AddConsole();
 							logging.SetMinimumLevel(LogLevel.Information);
 							//logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
 							//logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
