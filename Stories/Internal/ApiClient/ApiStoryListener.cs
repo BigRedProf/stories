@@ -19,7 +19,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		#region constructors
 		public ApiStoryListener(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark)
-			: this(baseUri, storyId, piedPiper, bookmark, LogLevel.Information, false)
+			: this(baseUri, storyId, piedPiper, bookmark, null, null, false)
 		{
 		}
 
@@ -28,8 +28,10 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			StoryId storyId, 
 			IPiedPiper piedPiper, 
 			long bookmark, 
-			LogLevel signalRLogLevel, 
-			bool addConsoleLogging)
+			LogLevel? signalRLogLevel,
+			ILoggerProvider? loggerProvider,
+			bool addConsoleLogging
+		)
 			: base(storyId)
 		{
 			Debug.Assert(baseUri != null);
@@ -48,12 +50,20 @@ namespace BigRedProf.Stories.Internal.ApiClient
 					.ConfigureLogging(
 						logging =>
 						{
-							// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException
-							if(addConsoleLogging)
-								logging.AddConsole();
 							logging.SetMinimumLevel(LogLevel.Information);
-							logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel);
-							logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel);
+							if (signalRLogLevel != null)
+							{
+								logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel.Value);
+								logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel.Value);
+							}
+							if (addConsoleLogging)
+								logging.AddConsole();
+
+							// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException. Use
+							// @inject ILoggerProvider LoggerProvider
+							// and pass it as the loggerProvider parameter here instead.
+							if (loggerProvider != null)
+								logging.AddProvider(loggerProvider);
 						}
 					)
 					.Build();

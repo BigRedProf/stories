@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -36,7 +37,10 @@ namespace BigRedProf.Stories.StoriesCli
 			long bookmark = options.Bookmark == null ? 0 : options.Bookmark.Value;
 
 			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper);
-			_storyListener = apiClient.GetStoryListener(options.Story!, bookmark);
+			if (options.LogLevel == null)
+				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark);
+			else
+				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark, options.LogLevel.Value, null, true);
 			_storyListener.SomethingHappenedAsync += StoryListener_SomethingHappenedAsync;
 			_storyListener.StartListening();
 

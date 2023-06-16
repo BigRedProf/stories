@@ -59,7 +59,8 @@ namespace BigRedProf.Stories
 		public IStoryListener GetStoryListener(
 			StoryId storyId, 
 			long bookmark, 
-			LogLevel signalRLogLevel, 
+			LogLevel? signalRLogLevel,
+			ILoggerProvider? loggerProvider,
 			bool addConsoleLogging
 		)
 		{
@@ -69,7 +70,7 @@ namespace BigRedProf.Stories
 			if (bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
-			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, signalRLogLevel, addConsoleLogging);
+			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, signalRLogLevel, loggerProvider, addConsoleLogging);
 		}
 		#endregion
 	}
