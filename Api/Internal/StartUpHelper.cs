@@ -51,6 +51,7 @@ namespace BigRedProf.Stories.Api.Internal
 
 		public static void AddCorsService(IServiceCollection services) 
 		{
+			// TODO: review
 			services.AddCors(
 				options =>
 				{
@@ -58,7 +59,9 @@ namespace BigRedProf.Stories.Api.Internal
 						name: CorsPolicyName,
 						policy =>
 						{
-							policy.SetIsOriginAllowed(_ => true)
+							policy.AllowAnyHeader()
+								.AllowAnyMethod()
+								.SetIsOriginAllowed(_ => true)
 								.AllowCredentials();
 						}
 					);
