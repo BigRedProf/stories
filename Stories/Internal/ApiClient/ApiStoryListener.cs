@@ -39,8 +39,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 						{
 							logging.AddConsole();
 							logging.SetMinimumLevel(LogLevel.Information);
-							logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
-							logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
+							//logging.AddFilter("Microsoft.AspNetCore.SignalR", LogLevel.Debug);
+							//logging.AddFilter("Microsoft.AspNetCore.Http.Connections", LogLevel.Debug);
 						}
 					)
 					.Build();
