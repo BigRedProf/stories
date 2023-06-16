@@ -59,10 +59,12 @@ namespace BigRedProf.Stories.Api.Internal
 						name: CorsPolicyName,
 						policy =>
 						{
-							policy.AllowAnyHeader()
+							policy
+								.AllowAnyHeader()
 								.AllowAnyMethod()
+								.AllowCredentials()
 								.SetIsOriginAllowed(_ => true)
-								.AllowCredentials();
+							;
 						}
 					);
 				}
