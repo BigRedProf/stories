@@ -119,21 +119,39 @@ namespace BigRedProf.Stories.StoriesCli
 
 			stringBuilder.Append(model.GetType().Name);
 			stringBuilder.Append('(');
+			stringBuilder.Append(FormatValueUsingReflection(model));
+			stringBuilder.Append(")");
 
-			IList<FieldInfo> fields = model.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
-			for(int i = 0; i < fields.Count; ++i)
+			return stringBuilder.ToString();
+		}
+
+		private string FormatValueUsingReflection(object? value)
+		{
+			if (value == null)
+				return "(null)";
+
+			if (value.GetType().IsPrimitive)
+				return value.ToString() ?? "(null)";
+
+			if (value is string || value is Guid || value is decimal)
+				return value.ToString() ?? "(null)";
+
+			StringBuilder stringBuilder = new StringBuilder();
+
+			IList<FieldInfo> fields = value.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public);
+			for (int i = 0; i < fields.Count; ++i)
 			{
-				if(i != 0)
+				if (i != 0)
 					stringBuilder.Append(", ");
 
 				FieldInfo field = fields[i];
 				stringBuilder.Append(field.Name);
 				stringBuilder.Append('=');
-				stringBuilder.Append(field.GetValue(model));
+				stringBuilder.Append(FormatValueUsingReflection(field.GetValue(value)));
 			}
 
-			IList<PropertyInfo> properties = model.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
-			for(int i = 0; i < properties.Count; ++i)
+			IList<PropertyInfo> properties = value.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public);
+			for (int i = 0; i < properties.Count; ++i)
 			{
 				if (i != 0)
 					stringBuilder.Append(", ");
@@ -141,10 +159,8 @@ namespace BigRedProf.Stories.StoriesCli
 				PropertyInfo property = properties[i];
 				stringBuilder.Append(property.Name);
 				stringBuilder.Append('=');
-				stringBuilder.Append(property.GetValue(model));
+				stringBuilder.Append(FormatValueUsingReflection(property.GetValue(value)));
 			}
-
-			stringBuilder.Append(")");
 
 			return stringBuilder.ToString();
 		}
