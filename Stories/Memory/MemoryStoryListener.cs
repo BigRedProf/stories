@@ -44,7 +44,7 @@ namespace BigRedProf.Stories.Memory
 		#endregion
 
 		#region event handlers
-		private void Things_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+		private async void Things_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
 		{
 			if (e.Action != NotifyCollectionChangedAction.Add)
 				return;
@@ -54,7 +54,7 @@ namespace BigRedProf.Stories.Memory
 
 			while (Bookmark < _things.Count)
 			{
-				InvokeSomethingHappenedEvent(Bookmark, _things[(int) Bookmark]);
+				await InvokeSomethingHappenedEventAsync(Bookmark, _things[(int) Bookmark]);
 				++Bookmark;
 			}
 		}

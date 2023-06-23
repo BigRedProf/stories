@@ -40,7 +40,7 @@ abstract public class StoryListenerBase : IStoryListener
     #endregion
 
     #region protected methods
-    protected async void InvokeSomethingHappenedEvent(long offset, Code thing)
+    protected async Task InvokeSomethingHappenedEventAsync(long offset, Code thing)
     {
         if (SomethingHappenedAsync != null)
             await SomethingHappenedAsync(this, new SomethingHappenedEventArgs(offset, thing));

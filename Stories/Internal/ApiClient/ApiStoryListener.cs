@@ -14,12 +14,16 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private IPiedPiper _piedPiper;
 		private HubConnection _hubConnection;
 		private IStoryteller _catchUpStoryteller;
+		private Timer _timer;
+		private TimeSpan _timerPollingFrequency;
+		private DateTime _lastTimeSomethingHappened;
+		private bool _isInsideTimerCallback;
 		private bool _isDisposed;
 		#endregion
 
 		#region constructors
-		public ApiStoryListener(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark)
-			: this(baseUri, storyId, piedPiper, bookmark, null, null, false)
+		public ApiStoryListener(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark, TimeSpan timerPollingFrequency)
+			: this(baseUri, storyId, piedPiper, bookmark, timerPollingFrequency, null, null, false)
 		{
 		}
 
@@ -28,6 +32,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			StoryId storyId, 
 			IPiedPiper piedPiper, 
 			long bookmark, 
+			TimeSpan timerPollingFrequency,
 			LogLevel? signalRLogLevel,
 			ILoggerProvider? loggerProvider,
 			bool addConsoleLogging
@@ -43,6 +48,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Bookmark = bookmark;
 
 			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark);
+
+			_timerPollingFrequency = timerPollingFrequency;
+			_timer = new Timer(Timer_Callback, null, 0, _timerPollingFrequency.Milliseconds);
+			_lastTimeSomethingHappened = DateTime.MinValue;
+			_isInsideTimerCallback = false;
 
 			_hubConnection = new HubConnectionBuilder()
 					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
@@ -131,7 +141,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region event handlers
-		private async void HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
+		private async Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
 			if (Bookmark > offset)
 				return; // issue warning?? not sure we should ever be ahead of these events
@@ -141,15 +151,43 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				// we've fallen behind in the story and need to catch up with a Storyteller
 				_catchUpStoryteller.SetBookmark(Bookmark);
 				Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
-				InvokeSomethingHappenedEvent(Bookmark, catchUpCode);
+				await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
 
 				++Bookmark;
 			}
 
 			Code code = GetCodeFromByteArray(byteArray);
-			InvokeSomethingHappenedEvent(Bookmark, code);
+			await InvokeSomethingHappenedEventAsync(Bookmark, code);
 			
 			++Bookmark;
+		}
+
+		private async void Timer_Callback(object? state)
+		{
+			if (_isInsideTimerCallback)
+				return;
+
+			DateTime now = DateTime.UtcNow;
+			if (now - _lastTimeSomethingHappened < _timerPollingFrequency)
+				return;
+
+			try
+			{
+				_isInsideTimerCallback = true;
+
+				_catchUpStoryteller.SetBookmark(Bookmark);
+				while (_catchUpStoryteller.HasSomethingForMe)
+				{
+					Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
+					await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
+
+					++Bookmark;
+				}
+			}
+			finally
+			{
+				_isInsideTimerCallback = false;
+			}
 		}
 		#endregion
 
