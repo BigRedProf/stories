@@ -179,7 +179,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				_isInsideTimerCallback = true;
 
 				_catchUpStoryteller.SetBookmark(Bookmark);
-				while (_catchUpStoryteller.HasSomethingForMe)
+				while (await _catchUpStoryteller.HasSomethingForMeAsync())
 				{
 					Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
 					await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
