@@ -143,6 +143,9 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region event handlers
 		private async Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
+			if (_isInsideTimerCallback)
+				return;	// the catch-up storyteller is busy, so defer to it
+
 			if (Bookmark > offset)
 				return; // issue warning?? not sure we should ever be ahead of these events
 
