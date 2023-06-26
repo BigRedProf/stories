@@ -73,7 +73,19 @@ namespace BigRedProf.Stories.Api.Internal
 
 		public static void AddSignalRService(IServiceCollection services)
 		{
-			services.AddSignalR().AddMessagePackProtocol();
+			services
+				.AddSignalR()
+				.AddMessagePackProtocol()
+				.AddHubOptions<StoryListenerHub>(
+					options =>
+					{
+						// make this somewhat long as Digihouse Unity load can be very slow and
+						// runs on lone browser thread
+						options.KeepAliveInterval = TimeSpan.FromMinutes(5);
+					}
+				)
+			;
+			
 			services.AddResponseCompression(
 				opts =>
 				{
