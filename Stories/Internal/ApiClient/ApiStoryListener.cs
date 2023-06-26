@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Web;
@@ -54,9 +55,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_lastTimeSomethingHappened = DateTime.MinValue;
 			_isInsideTimerCallback = false;
 
-			_hubConnection = new HubConnectionBuilder()
+			IHubConnectionBuilder hubConnectionBuilder = new HubConnectionBuilder()
 					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
 					.AddMessagePackProtocol()
+					.WithAutomaticReconnect()
+
 					.ConfigureLogging(
 						logging =>
 						{
@@ -75,8 +78,21 @@ namespace BigRedProf.Stories.Internal.ApiClient
 							if (loggerProvider != null)
 								logging.AddProvider(loggerProvider);
 						}
-					)
-					.Build();
+					);
+
+			var httpClient = new HttpClient
+			{
+				// make this somewhat long as Unity load can be very slow and runs on lone browser thread
+				Timeout = TimeSpan.FromMinutes(5)
+			};
+			hubConnectionBuilder.Services.Configure<HttpClientFactoryOptions>(
+				options =>
+				{
+					options.HttpClientActions.Add(client => client.Timeout = httpClient.Timeout);
+				}
+			);
+
+			_hubConnection = hubConnectionBuilder.Build();
 
 			_hubConnection.On<long, byte[]>("SomethingHappened", HubConnection_OnSomethingHappened);
 		}
