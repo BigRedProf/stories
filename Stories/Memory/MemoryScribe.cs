@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Data;
+using System.Diagnostics;
 
 namespace BigRedProf.Stories.Memory
 {
@@ -24,9 +25,12 @@ namespace BigRedProf.Stories.Memory
         #region IScribe methods
         public void RecordSomething(Code something)
         {
+            if (something == null)
+                throw new ArgumentNullException(nameof(something));
+
             lock (_writeLock)
             {
-                _things.Add(something);
+                _things.Add(something!);
             }
         }
 
