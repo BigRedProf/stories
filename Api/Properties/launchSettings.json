@@ -34,9 +34,10 @@
         "launchBrowser": true,
         "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
         "publishAllPorts": true,
-        "useSSL": true,
-        "DockerfileRunArguments": "--network mike-net"
-    }
+        "useSSL": false,
+		"DockerfileRunArguments": "--network mike-net",
+		"httpPort": 43027
+	}
   },
   "$schema": "https://json.schemastore.org/launchsettings.json",
   "iisSettings": {
