@@ -1,20 +1,23 @@
 ﻿using BigRedProf.Stories.Events;
+using System.Threading.Tasks;
 
-namespace BigRedProf.Stories;
-public interface IStoryListener
+namespace BigRedProf.Stories
 {
-	#region events
-	public event AsyncEventHandler<SomethingHappenedEventArgs>? SomethingHappenedAsync;
-	#endregion
+	public interface IStoryListener
+	{
+		#region events
+		public event AsyncEventHandler<SomethingHappenedEventArgs>? SomethingHappenedAsync;
+		#endregion
 
-	#region properties
-	public long Bookmark { get; }
-	#endregion
+		#region properties
+		public long Bookmark { get; }
+		#endregion
 
-	#region methods
-	public void StartListening();
-	public Task StartListeningAsync();
-	public void StopListening();
-	public Task StopListeningAsync();
-	#endregion
+		#region methods
+		public void StartListening();
+		public Task StartListeningAsync();
+		public void StopListening();
+		public Task StopListeningAsync();
+		#endregion
+	}
 }
