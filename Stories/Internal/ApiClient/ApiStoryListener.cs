@@ -190,6 +190,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		private async void Timer_Callback(object? state)
 		{
+			await InvokeConnectionStatusChangedAsync("HACKHACK_Timer_Callback", _isInsideTimerCallback.ToString(), null);
+
 			if (_isInsideTimerCallback)
 				return;
 
@@ -200,11 +202,13 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			try
 			{
 				_isInsideTimerCallback = true;
+				await InvokeConnectionStatusChangedAsync("HACKHACK_Timer_Callback_Try", _isInsideTimerCallback.ToString(), null);
 
 				_catchUpStoryteller.SetBookmark(Bookmark);
 				while (await _catchUpStoryteller.HasSomethingForMeAsync())
 				{
 					Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
+					await InvokeConnectionStatusChangedAsync("HACKHACK_Timer_Callback_HasSomethingForMe", catchUpCode, null);
 					await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
 
 					++Bookmark;
