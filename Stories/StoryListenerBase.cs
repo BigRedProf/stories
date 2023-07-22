@@ -1,5 +1,6 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Events;
+using System;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories
@@ -8,6 +9,7 @@ namespace BigRedProf.Stories
 	{
 		#region IStoryListener events
 		public event AsyncEventHandler<SomethingHappenedEventArgs>? SomethingHappenedAsync;
+		public event AsyncEventHandler<ConnectionStatusEventArgs>? ConnectionStatusChangedAsync;
 		#endregion
 
 		#region constructors
@@ -45,6 +47,12 @@ namespace BigRedProf.Stories
 		{
 			if (SomethingHappenedAsync != null)
 				await SomethingHappenedAsync(this, new SomethingHappenedEventArgs(offset, thing));
+		}
+
+		protected async Task InvokeConnectionStatusChangedAsync(string status, string? message, Exception? exception)
+		{
+			if (ConnectionStatusChangedAsync != null)
+				await ConnectionStatusChangedAsync(this, new ConnectionStatusEventArgs(status, message, exception));
 		}
 		#endregion
 	}

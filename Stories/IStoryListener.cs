@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Stories.Events;
+using System;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories
@@ -7,6 +8,7 @@ namespace BigRedProf.Stories
 	{
 		#region events
 		public event AsyncEventHandler<SomethingHappenedEventArgs>? SomethingHappenedAsync;
+		public event AsyncEventHandler<ConnectionStatusEventArgs>? ConnectionStatusChangedAsync;
 		#endregion
 
 		#region properties

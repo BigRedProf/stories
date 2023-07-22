@@ -61,6 +61,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_hubConnection = new HubConnectionBuilder()
 					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
 					.AddMessagePackProtocol()
+					.WithAutomaticReconnect()
 					.ConfigureLogging(
 						logging =>
 						{
@@ -82,6 +83,9 @@ namespace BigRedProf.Stories.Internal.ApiClient
 					)
 					.Build();
 
+			_hubConnection.Closed += HubConnection_Closed;
+			_hubConnection.Reconnecting += HubConnection_Reconnecting;
+			_hubConnection.Reconnected += HubConnection_Reconnected;
 			_hubConnection.On<long, byte[]>("SomethingHappened", HubConnection_OnSomethingHappened);
 		}
 		#endregion
@@ -145,6 +149,21 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region event handlers
+		private async Task HubConnection_Reconnected(string? arg)
+		{
+			await InvokeConnectionStatusChangedAsync("reconnected", arg, null);
+		}
+
+		private async Task HubConnection_Reconnecting(Exception? arg)
+		{
+			await InvokeConnectionStatusChangedAsync("reconnecting", null, arg);
+		}
+
+		private async Task HubConnection_Closed(Exception? arg)
+		{
+			await InvokeConnectionStatusChangedAsync("closed", null, arg);
+		}
+
 		private async Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
 			if (_isInsideTimerCallback)
