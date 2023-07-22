@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
+using System.Timers;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -54,7 +54,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark);
 
 			_timerPollingFrequency = timerPollingFrequency;
-			_timer = new Timer(Timer_Callback, null, 0, _timerPollingFrequency.Milliseconds);
+			_timer = new Timer(_timerPollingFrequency.Milliseconds);
+			_timer.Elapsed += Timer_Elapsed;
 			_lastTimeSomethingHappened = DateTime.MinValue;
 			_isInsideTimerCallback = false;
 
@@ -106,6 +107,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			await _hubConnection.StartAsync();
 			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId.ToString());
+			_timer.Start();
 		}
 
 		override public void StopListening()
@@ -123,6 +125,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId.ToString());
 			await _hubConnection.StopAsync();
+			_timer.Stop();
 		}
 		#endregion
 
@@ -188,7 +191,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			++Bookmark;
 		}
 
-		private async void Timer_Callback(object? state)
+
+		private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
 		{
 			await InvokeConnectionStatusChangedAsync("HACKHACK_Timer_Callback", _isInsideTimerCallback.ToString(), null);
 
