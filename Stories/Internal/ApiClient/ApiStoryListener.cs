@@ -54,7 +54,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark);
 
 			_timerPollingFrequency = timerPollingFrequency;
-			_timer = new Timer(_timerPollingFrequency.Milliseconds);
+			_timer = new Timer(_timerPollingFrequency.TotalMilliseconds);
 			_timer.Elapsed += Timer_Elapsed;
 			_lastTimeSomethingHappened = DateTime.MinValue;
 			_isInsideTimerCallback = false;
