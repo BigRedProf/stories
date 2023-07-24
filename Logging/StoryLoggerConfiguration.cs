@@ -8,7 +8,6 @@ namespace BigRedProf.Stories.Logging
 		#region properties
 		public string BaseStoryUrl { get; set; } = default!;
 		public string StoryId { get; set; } = default!;
-
 		#endregion
 	}
 }
