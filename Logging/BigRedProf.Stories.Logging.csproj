@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<Title>Stories Logging Library</Title>
+		<Description>Allows logs to be recorded in stories.</Description>
+		<Copyright>Big Red Professor</Copyright>
+		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
+		<Authors>BigRedProf</Authors>
+		<Company>Big Red Professor</Company>
+		<Product>Stories Library</Product>
+		<Version>0.5.1</Version>
+	</PropertyGroup>
+
+</Project>
