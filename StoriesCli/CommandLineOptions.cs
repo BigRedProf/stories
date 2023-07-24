@@ -22,7 +22,7 @@ namespace BigRedProf.Stories.StoriesCli
 		[Option('b', "bookmark", Required = false, HelpText = "The first bookmark to start listening at.")]
 		public long? Bookmark { get; set; }
 
-		[Option("modelAssemblies", Required = false, HelpText = "The path to a model assembly.")]
+		[Option("modelAssemblies", Required = false, Separator = ',', HelpText = "The path to a model assembly.")]
 		public IEnumerable<string>? ModelAssemblies { get; set; }
 
 		[Option("thingFormat", Required = false, HelpText = "How to format things. Choices are: RawCode or ModelWithSchema.")]
