@@ -49,7 +49,7 @@ namespace BigRedProf.Stories.Logging
 			string message = formatter(state, exception);
 			string entry = $"{_name} :{eventId}: {logLevel}: message";
 
-			Code encodedEntry = _piedPiper.EncodeModel<string>(entry, SchemaId.TextUtf8);
+			Code encodedEntry = _piedPiper.EncodeModelWithSchema(entry, SchemaId.TextUtf8);
 
 			// NOTE: We need to use async here to support BlazorWasm. It's OK, though not ideal,
 			// to ignore the result here since we're logging.
