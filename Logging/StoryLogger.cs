@@ -43,11 +43,10 @@ namespace BigRedProf.Stories.Logging
 
 		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
 		{
-			// TODO: consider the other arguments provided (logLevel, eventId)
 			// TODO: support batching
 
 			string message = formatter(state, exception);
-			string entry = $"{_name} :{eventId}: {logLevel}: message";
+			string entry = $"{_name} :{eventId}: {logLevel}: ${message}";
 
 			Code encodedEntry = _piedPiper.EncodeModelWithSchema(entry, SchemaId.TextUtf8);
 
