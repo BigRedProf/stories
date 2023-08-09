@@ -26,7 +26,7 @@ public class StorytellerController : ControllerBase
 
 	#region web methods
 	[HttpGet]
-	[Route("{story}/[controller]/[action]/{bookmark}")]
+	[Route("v1/{story}/[controller]/[action]/{bookmark}")]
 	public bool HasSomethingForMe(string story, long bookmark)
 	{
 		story = Helper.HackHackFixStoryId(story);
@@ -41,7 +41,7 @@ public class StorytellerController : ControllerBase
 	}
 
 	[HttpGet]
-	[Route("{story}/[controller]/[action]/{bookmark}")]
+	[Route("v1/{story}/[controller]/[action]/{bookmark}")]
 	public void TellMeSomething(string story, long bookmark)
     {
 		story = Helper.HackHackFixStoryId(story);

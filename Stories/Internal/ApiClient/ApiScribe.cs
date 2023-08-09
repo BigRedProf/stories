@@ -39,7 +39,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
         public async Task RecordSomethingAsync(Code something)
 		{
-			Uri uri = new Uri(_baseUri, $"{HttpUtility.UrlEncode(_storyId)}/Scribe/RecordSomething");
+			Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Scribe/RecordSomething");
 
 			PackRat<Code> packRate = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 			MemoryStream memoryStream = new MemoryStream();

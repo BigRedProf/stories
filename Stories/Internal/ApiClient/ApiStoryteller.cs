@@ -60,7 +60,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
         public async Task<bool> HasSomethingForMeAsync()
         {
             HttpClient client = new HttpClient();
-            Uri uri = new Uri(_baseUri, $"{HttpUtility.UrlEncode(_storyId)}/Storyteller/HasSomethingForMe/{_bookmark}");
+            Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/HasSomethingForMe/{_bookmark}");
 
             bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
 
@@ -83,7 +83,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		public async Task<Code> TellMeSomethingAsync()
 		{
 			HttpClient client = new HttpClient();
-			Uri uri = new Uri(_baseUri, $"{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{_bookmark}");
+			Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{_bookmark}");
 
 			byte[] byteArray = await client.GetByteArrayAsync(uri);
 

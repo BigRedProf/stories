@@ -26,7 +26,7 @@ public class ScribeController : ControllerBase
 
 	#region web methods
 	[HttpPost]
-	[Route("{story}/[controller]/[action]")]
+	[Route("v1/{story}/[controller]/[action]")]
 	public void RecordSomething(string story)
     {
 		story = Helper.HackHackFixStoryId(story);
