@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "bigredprof.data.packratcompiler": {
+      "version": "0.5.23",
+      "commands": [
+        "prc"
+      ]
+    }
+  }
+}

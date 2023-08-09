@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
@@ -14,5 +14,19 @@
 		<Version>0.5.1</Version>
 
 	</PropertyGroup>
+
+	<Target Name="RunPackRatCompiler" BeforeTargets="Build">
+		<Exec WorkingDirectory="$(ProjectDir)" Command="dotnet prc $(ProjectFileName) -o $(IntermediateOutputPath)" ContinueOnError="false" ConsoleToMSBuild="true">
+			<Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
+		</Exec>
+	</Target>
+
+	<ItemGroup>
+		<Compile Include="$(IntermediateOutputPath)\*PackRat.g.cs"></Compile>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="BigRedProf.Data" Version="0.5.27" />
+	</ItemGroup>
 
 </Project>

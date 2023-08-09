@@ -2,6 +2,7 @@ using BigRedProf.Data;
 using BigRedProf.Stories;
 using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
+using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BigRedProf.Stories.Api.Controllers;
@@ -13,6 +14,7 @@ public class StorytellerController : ControllerBase
 	private readonly IPiedPiper _piedPiper;
 	private readonly MemoryStoryManager _storyManager;
 	private readonly ILogger<ScribeController> _logger;
+	private readonly PackRat<ListOfStoryThings> _listOfStoryThingsPackRat;
 	#endregion
 
 	#region constructors
@@ -21,7 +23,9 @@ public class StorytellerController : ControllerBase
 		_piedPiper = piedPiper;
 		_storyManager = storageManager;
         _logger = logger;
-    }
+
+		_listOfStoryThingsPackRat = _piedPiper.GetPackRat<ListOfStoryThings>(StoriesSchemaId.ListOfStoryThings);
+	}
 	#endregion constructors
 
 	#region web methods
@@ -30,8 +34,6 @@ public class StorytellerController : ControllerBase
 	public bool HasSomethingForMe(string story, long bookmark)
 	{
 		story = Helper.HackHackFixStoryId(story);
-
-		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
 
 		IStoryteller storyteller = _storyManager.GetStoryteller(story);
 		storyteller.SetBookmark(bookmark);
@@ -42,21 +44,43 @@ public class StorytellerController : ControllerBase
 
 	[HttpGet]
 	[Route("v1/{story}/[controller]/[action]/{bookmark}")]
-	public void TellMeSomething(string story, long bookmark)
+	public IActionResult TellMeSomething(string story, long bookmark, long? limit = null)
     {
 		story = Helper.HackHackFixStoryId(story);
 
-		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+		if (limit.HasValue && limit.Value < 1)
+			return BadRequest("The 'limit' parameter must be at least 1.");
+
+		IList<StoryThing> storyThings = limit.HasValue ?
+			new List<StoryThing>((int)limit.Value) :
+			new List<StoryThing>();
 
 		IStoryteller storyteller = _storyManager.GetStoryteller(story);
 		storyteller.SetBookmark(bookmark);
-		Code thing = storyteller.TellMeSomething();
+
+		bool hasReachedLimit = false;
+		while (storyteller.HasSomethingForMe && !hasReachedLimit)
+		{
+			StoryThing storyThing = new StoryThing()
+			{
+				Offset = storyteller.Bookmark,
+				Thing = storyteller.TellMeSomething()
+			};
+			storyThings.Add(storyThing);
+			hasReachedLimit = limit.HasValue && (storyThings.Count == limit.Value);
+		}
 
 		Response.ContentType = "application/octet-stream";
 		using (CodeWriter writer = new CodeWriter(Response.Body))
 		{
-			packRat.PackModel(writer, thing);
+			ListOfStoryThings listOfStoryThings = new ListOfStoryThings()
+			{
+				StoryThings = storyThings
+			};
+			_listOfStoryThingsPackRat.PackModel(writer, listOfStoryThings);
 		}
+
+		return Ok();
     }
 	#endregion web methods
 }

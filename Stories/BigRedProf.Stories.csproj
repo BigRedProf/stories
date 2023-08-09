@@ -11,7 +11,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Library</Product>
-		<Version>0.5.28</Version>
+		<Version>0.5.29</Version>
 
 		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
 		<!--<IncludeSymbols>True</IncludeSymbols>-->
@@ -20,12 +20,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BigRedProf.Data" Version="0.5.27" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.7" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
     <PackageReference Include="System.Net.Http.Json" Version="7.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\models\BigRedProf.Stories.Models.csproj" />
   </ItemGroup>
 
 </Project>
