@@ -8,9 +8,11 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 ARG GITHUB_PAT_PACKAGE_REGISTRY
 WORKDIR /src
+RUN dotnet nuget add source --username BigRedProf --password ${GITHUB_PAT_PACKAGE_REGISTRY} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
+COPY [".config/dotnet-tools.json", ".config/"]
+RUN dotnet tool restore
 COPY ["Api/BigRedProf.Stories.Api.csproj", "Api/"]
 COPY ["Stories/BigRedProf.Stories.csproj", "Stories/"]
-RUN dotnet nuget add source --username BigRedProf --password ${GITHUB_PAT_PACKAGE_REGISTRY} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
 RUN dotnet restore "Api/BigRedProf.Stories.Api.csproj"
 COPY . .
 WORKDIR "/src/Api"

@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Api.Hubs;
 using BigRedProf.Stories.Memory;
+using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
@@ -39,6 +40,7 @@ namespace BigRedProf.Stories.Api.Internal
 		{
 			IPiedPiper piedPiper = new PiedPiper();
 			piedPiper.RegisterDefaultPackRats();
+			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 			services.AddSingleton<IPiedPiper>(piedPiper);
 
 			// TODO: read environment variables or other configuration settings
