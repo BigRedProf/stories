@@ -21,10 +21,10 @@ jobs:
           dotnet-version: 7.0.x
       - name: Add NuGet Source
         run: dotnet nuget add source --username BigRedProf --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
-      - name: Restore dotnet tools
-        run: dotnet tool restore
       - name: Restore
         run: dotnet restore
+      - name: Restore dotnet tools
+        run: dotnet tool restore
       - name: Build Debug
         run: dotnet build --no-restore
       - name: Test Debug
