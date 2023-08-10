@@ -2,6 +2,7 @@ using BigRedProf.Data;
 using BigRedProf.Stories;
 using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
+using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BigRedProf.Stories.Api.Controllers;
@@ -13,6 +14,7 @@ public class ScribeController : ControllerBase
 	private readonly IPiedPiper _piedPiper;
 	private readonly MemoryStoryManager _storyManager;
 	private readonly ILogger<ScribeController> _logger;
+	private readonly PackRat<ListOfThings> _listOfThingsPackRat;
 	#endregion
 
 	#region constructors
@@ -21,7 +23,9 @@ public class ScribeController : ControllerBase
 		_piedPiper = piedPiper;
 		_storyManager = storyManager;
         _logger = logger;
-    }
+
+		_listOfThingsPackRat = _piedPiper.GetPackRat<ListOfThings>(StoriesSchemaId.ListOfThings);
+	}
 	#endregion constructors
 
 	#region web methods
@@ -31,16 +35,14 @@ public class ScribeController : ControllerBase
     {
 		story = Helper.HackHackFixStoryId(story);
 
-		PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
-
-		Code something;
+		ListOfThings listOfThings;
 		using (CodeReader codeReader = new CodeReader(Request.Body))
 		{
-			something = packRat.UnpackModel(codeReader);
+			listOfThings = _listOfThingsPackRat.UnpackModel(codeReader);
 		}
 
 		IScribe scribe = _storyManager.GetScribe(story);
-		scribe.RecordSomething(something);
+		scribe.RecordSomething(listOfThings.Things.ToArray());
     }
 	#endregion web methods
 }

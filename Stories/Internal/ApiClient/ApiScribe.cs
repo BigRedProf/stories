@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Models;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -15,6 +16,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private Uri _baseUri;
 		private StoryId _storyId;
 		private IPiedPiper _piedPiper;
+		private PackRat<ListOfThings> _listOfThingsPackRat;
 		#endregion
 
 		#region constructors
@@ -27,25 +29,31 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_baseUri = baseUri;
 			_storyId = storyId;
 			_piedPiper = piedPiper;
+
+			_listOfThingsPackRat = _piedPiper.GetPackRat<ListOfThings>(StoriesSchemaId.ListOfThings);
 		}
 		#endregion
 
 		#region IScribe methods
-		public void RecordSomething(Code something)
+		public void RecordSomething(params Code[] things)
 		{
-			Task task = RecordSomethingAsync(something);
+			Task task = RecordSomethingAsync(things);
 			task.Wait();
 		}
 
-        public async Task RecordSomethingAsync(Code something)
+        public async Task RecordSomethingAsync(params Code[] things)
 		{
 			Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Scribe/RecordSomething");
 
-			PackRat<Code> packRate = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+			ListOfThings listOfThings = new ListOfThings()
+			{
+				Things = things
+			};
+
 			MemoryStream memoryStream = new MemoryStream();
 			using(CodeWriter writer = new CodeWriter(memoryStream)) 
 			{
-				packRate.PackModel(writer, something);
+				_listOfThingsPackRat.PackModel(writer, listOfThings);
 			}
 			HttpContent content = new ByteArrayContent(memoryStream.ToArray());
 

@@ -26,24 +26,28 @@ namespace BigRedProf.Stories.Memory
         #endregion
 
         #region IScribe methods
-        public void RecordSomething(Code something)
+        public void RecordSomething(params Code[] things)
         {
-            RecordSomethingAsync(something);
+            Task task = RecordSomethingAsync(things);
+            task.Wait();
         }
 
-        public Task RecordSomethingAsync(Code something)
+        public Task RecordSomethingAsync(params Code[] things)
         {
-			if (something == null)
-				throw new ArgumentNullException(nameof(something));
+			if (things == null)
+				throw new ArgumentNullException(nameof(things));
 
 			lock (_writeLock)
 			{
-				StoryThing storyThing = new StoryThing()
-				{
-					Offset = _things.Count,
-					Thing = something
-				};
-				_things.Add(storyThing);
+                foreach(Code thing in things)
+                {
+					StoryThing storyThing = new StoryThing()
+					{
+						Offset = _things.Count,
+						Thing = thing
+					};
+					_things.Add(storyThing);
+				}
 			}
 
 			return Task.CompletedTask;

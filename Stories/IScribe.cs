@@ -6,8 +6,8 @@ namespace BigRedProf.Stories
 	public interface IScribe
 	{
 		#region methods
-		public void RecordSomething(Code something);
-        public Task RecordSomethingAsync(Code something);
+		public void RecordSomething(params Code[] things);
+        public Task RecordSomethingAsync(params Code[] things);
         #endregion
     }
 }
