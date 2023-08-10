@@ -39,3 +39,5 @@ jobs:
         run: dotnet nuget push ./Stories/bin/Release/*.nupkg --source "github" --skip-duplicate
       - name: Push BigRedProf.Stories.Logging package
         run: dotnet nuget push ./Logging/bin/Release/*.nupkg --source "github" --skip-duplicate
+      - name: Push BigRedProf.Stories.Models package
+        run: dotnet nuget push ./Models/bin/Release/*.nupkg --source "github" --skip-duplicate
