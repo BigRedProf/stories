@@ -50,7 +50,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_listOfStoryThingsPackRat = _piedPiper.GetPackRat<ListOfStoryThings>(StoriesSchemaId.ListOfStoryThings);
 			_currentBatchOffset = 0;
 			_currentBatchLength = 0;
-			_currentBatchStoryteller = new MemoryStoryteller(new Code[0]);
+			_currentBatchStoryteller = new MemoryStoryteller(new StoryThing[0]);
 		}
 		#endregion
 
@@ -94,23 +94,23 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_bookmark = bookmark;
 		}
 
-		public Code TellMeSomething()
+		public StoryThing TellMeSomething()
 		{
 			return TellMeSomethingAsync().Result;
 		}
 
-		public async Task<Code> TellMeSomethingAsync()
+		public async Task<StoryThing> TellMeSomethingAsync()
 		{
-			Code code;
+			StoryThing thing;
 
 			// First, check if it's in our current batch of story things.
 			if(_bookmark >= _currentBatchOffset && _bookmark < _currentBatchOffset + _currentBatchLength)
 			{
 				_currentBatchStoryteller.SetBookmark(_bookmark - _currentBatchOffset);
-				code = await _currentBatchStoryteller.TellMeSomethingAsync();
+				thing = await _currentBatchStoryteller.TellMeSomethingAsync();
 				++_bookmark;
 				
-				return code;
+				return thing;
 			}
 
 			// If not, retrieve it from the stories service.
@@ -131,12 +131,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_currentBatchOffset = _bookmark;
 			_currentBatchLength = listOfStoryThings.StoryThings.Count;
-			_currentBatchStoryteller = new MemoryStoryteller(listOfStoryThings.StoryThings.Select(st => st.Thing).ToList());
+			_currentBatchStoryteller = new MemoryStoryteller(listOfStoryThings.StoryThings);
 
-			code = await _currentBatchStoryteller.TellMeSomethingAsync();
+			thing = await _currentBatchStoryteller.TellMeSomethingAsync();
 			++_bookmark;
 
-			return code;
+			return thing;
 		}
 		#endregion
 

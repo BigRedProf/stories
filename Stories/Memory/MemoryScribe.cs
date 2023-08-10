@@ -1,20 +1,20 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Models;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories.Memory
 {
-    public class MemoryScribe : IScribe
+	public class MemoryScribe : IScribe
     {
         #region fields
-        private readonly IList<Code> _things;
+        private readonly IList<StoryThing> _things;
         private object _writeLock;
         #endregion
 
         #region constructors
-        public MemoryScribe(IList<Code> things)
+        public MemoryScribe(IList<StoryThing> things)
         {
             if (things == null)
                 throw new ArgumentNullException(nameof(things));
@@ -28,19 +28,25 @@ namespace BigRedProf.Stories.Memory
         #region IScribe methods
         public void RecordSomething(Code something)
         {
-            if (something == null)
-                throw new ArgumentNullException(nameof(something));
-
-            lock (_writeLock)
-            {
-                _things.Add(something!);
-            }
+            RecordSomethingAsync(something);
         }
 
         public Task RecordSomethingAsync(Code something)
         {
-            RecordSomething(something);
-            return Task.CompletedTask;
+			if (something == null)
+				throw new ArgumentNullException(nameof(something));
+
+			lock (_writeLock)
+			{
+				StoryThing storyThing = new StoryThing()
+				{
+					Offset = _things.Count,
+					Thing = something
+				};
+				_things.Add(storyThing);
+			}
+
+			return Task.CompletedTask;
         }
         #endregion
     }

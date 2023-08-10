@@ -99,10 +99,10 @@ namespace BigRedProf.Stories.Api.Hubs
 			MemoryStoryListener memoryStoryListener = (MemoryStoryListener)sender!;
 			IHubClients hubClients = _hubContext.Clients;
 			IClientProxy clientProxy = hubClients.Group(memoryStoryListener.StoryId.ToString());
-			byte[] thingAsByteArray = GetByteArrayFromCode(e.Thing);
+			byte[] thingAsByteArray = GetByteArrayFromCode(e.Thing.Thing);
 			await clientProxy.SendAsync(
 				"SomethingHappened",
-				e.Offset,
+				e.Thing.Offset,
 				thingAsByteArray
 			);
 		}

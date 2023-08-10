@@ -61,11 +61,13 @@ public class StorytellerController : ControllerBase
 		bool hasReachedLimit = false;
 		while (storyteller.HasSomethingForMe && !hasReachedLimit)
 		{
-			StoryThing storyThing = new StoryThing()
+			StoryThing storyThing = storyteller.TellMeSomething();
+			if (storyThing.Offset != storyteller.Bookmark)
 			{
-				Offset = storyteller.Bookmark,
-				Thing = storyteller.TellMeSomething()
-			};
+				throw new InvalidOperationException(
+					$"Story corrupt. Expected offset {storyteller.Bookmark}. Actual offset {storyThing.Offset}"
+				);
+			}
 			storyThings.Add(storyThing);
 			hasReachedLimit = limit.HasValue && (storyThings.Count == limit.Value);
 		}

@@ -1,11 +1,11 @@
-﻿using BigRedProf.Data;
+﻿using BigRedProf.Stories.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories.Memory
 {
-    public class MemoryStoryteller : IStoryteller
+	public class MemoryStoryteller : IStoryteller
     {
         #region fields
 #pragma warning disable CS0067 // The event 'MemoryStoryteller.GotSomethingForYou' is never used
@@ -14,11 +14,11 @@ namespace BigRedProf.Stories.Memory
         #endregion
 
         #region fields
-        private readonly IList<Code> _things;
+        private readonly IList<StoryThing> _things;
         #endregion
 
         #region constructors
-        public MemoryStoryteller(IList<Code> things)
+        public MemoryStoryteller(IList<StoryThing> things)
         {
             if (things == null)
                 throw new ArgumentNullException(nameof(things));
@@ -51,20 +51,20 @@ namespace BigRedProf.Stories.Memory
             return task;
         }
 
-        public Code TellMeSomething()
+        public StoryThing TellMeSomething()
         {
             if (Bookmark > int.MaxValue)
                 throw new InvalidOperationException("MemoryStoryTeller does not support bookmarks > 2^31");
 
-            Code thing = _things[(int)Bookmark];
+            StoryThing thing = _things[(int)Bookmark];
             ++Bookmark;
 
             return thing;
         }
 
-        public Task<Code> TellMeSomethingAsync()
+        public Task<StoryThing> TellMeSomethingAsync()
         {
-            Task<Code> task = new Task<Code>(() => TellMeSomething());
+            Task<StoryThing> task = new Task<StoryThing>(() => TellMeSomething());
             return task;
         }
 

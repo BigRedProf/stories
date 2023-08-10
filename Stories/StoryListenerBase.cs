@@ -1,5 +1,6 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Events;
+using BigRedProf.Stories.Models;
 using System;
 using System.Threading.Tasks;
 
@@ -43,10 +44,10 @@ namespace BigRedProf.Stories
 		#endregion
 
 		#region protected methods
-		protected async Task InvokeSomethingHappenedEventAsync(long offset, Code thing)
+		protected async Task InvokeSomethingHappenedEventAsync(StoryThing thing)
 		{
 			if (SomethingHappenedAsync != null)
-				await SomethingHappenedAsync(this, new SomethingHappenedEventArgs(offset, thing));
+				await SomethingHappenedAsync(this, new SomethingHappenedEventArgs(thing));
 		}
 
 		protected async Task InvokeConnectionStatusChangedAsync(string status, string? message, Exception? exception)

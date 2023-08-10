@@ -7,11 +7,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Timers;
 using System.Threading.Tasks;
-using System.Web;
+using BigRedProf.Stories.Models;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
-    internal class ApiStoryListener : StoryListenerBase, IDisposable, IAsyncDisposable
+	internal class ApiStoryListener : StoryListenerBase, IDisposable, IAsyncDisposable
 	{
 		#region fields
 		private Uri _baseUri;
@@ -20,6 +20,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private IStoryteller _catchUpStoryteller;
 		private Timer _timer;
 		private TimeSpan _timerPollingFrequency;
+		private PackRat<StoryThing> _storyThingPackRat;
 		private DateTime _lastTimeSomethingHappened;
 		private bool _isInsideTimerCallback;
 		private bool _isDisposed;
@@ -58,6 +59,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_baseUri = baseUri;
 			_piedPiper = piedPiper;
 			Bookmark = bookmark;
+
+			_storyThingPackRat = _piedPiper.GetPackRat<StoryThing>(StoriesSchemaId.StoryThing);
 
 			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
 
@@ -187,14 +190,14 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			{
 				// we've fallen behind in the story and need to catch up with a Storyteller
 				_catchUpStoryteller.SetBookmark(Bookmark);
-				Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
-				await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
+				StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
+				await InvokeSomethingHappenedEventAsync(catchUpThing);
 
 				++Bookmark;
 			}
 
-			Code code = GetCodeFromByteArray(byteArray);
-			await InvokeSomethingHappenedEventAsync(Bookmark, code);
+			StoryThing thing = GetStoryThingFromByteArray(byteArray);
+			await InvokeSomethingHappenedEventAsync(thing);
 			
 			++Bookmark;
 		}
@@ -216,8 +219,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				_catchUpStoryteller.SetBookmark(Bookmark);
 				while (await _catchUpStoryteller.HasSomethingForMeAsync())
 				{
-					Code catchUpCode = await _catchUpStoryteller.TellMeSomethingAsync();
-					await InvokeSomethingHappenedEventAsync(Bookmark, catchUpCode);
+					StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
+					await InvokeSomethingHappenedEventAsync(catchUpThing);
 
 					++Bookmark;
 				}
@@ -230,17 +233,16 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region private methods
-		private Code GetCodeFromByteArray(byte[] byteArray)
+		private StoryThing GetStoryThingFromByteArray(byte[] byteArray)
 		{
-			Code code;
-			PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+			StoryThing thing;
 			MemoryStream memoryStream = new MemoryStream(byteArray);
 			using (CodeReader reader = new CodeReader(memoryStream))
 			{
-				code = packRat.UnpackModel(reader);
+				thing = _storyThingPackRat.UnpackModel(reader);
 			}
 
-			return code;
+			return thing;
 		}
 		#endregion
 	}

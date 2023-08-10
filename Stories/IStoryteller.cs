@@ -1,8 +1,5 @@
-﻿using BigRedProf.Data;
+﻿using BigRedProf.Stories.Models;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories
@@ -20,8 +17,8 @@ namespace BigRedProf.Stories
 
 		#region methods
 		public Task<bool> HasSomethingForMeAsync();
-		public Code TellMeSomething();
-        public Task<Code> TellMeSomethingAsync();
+		public StoryThing TellMeSomething();
+        public Task<StoryThing> TellMeSomethingAsync();
         public void SetBookmark(long bookmark);
 		#endregion
 	}

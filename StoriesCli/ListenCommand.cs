@@ -73,10 +73,10 @@ namespace BigRedProf.Stories.StoriesCli
 		#region event handlers
 		private Task StoryListener_SomethingHappenedAsync(object? sender, Events.SomethingHappenedEventArgs e)
 		{
-			Console.Write(e.Offset);
+			Console.Write(e.Thing.Offset);
 			Console.Write(": ");
 			
-			string formattedThing = FormatThing(e.Thing);
+			string formattedThing = FormatThing(e.Thing.Thing);
 			Console.WriteLine(formattedThing);
 
 			return Task.CompletedTask;

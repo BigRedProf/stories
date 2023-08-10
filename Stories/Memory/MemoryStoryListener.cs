@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Models;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -10,11 +11,11 @@ namespace BigRedProf.Stories.Memory
     public class MemoryStoryListener : StoryListenerBase
 	{
 		#region fields
-		private readonly ObservableCollection<Code> _things;
+		private readonly ObservableCollection<StoryThing> _things;
 		#endregion
 
 		#region constructors
-		public MemoryStoryListener(StoryId storyId, ObservableCollection<Code> things)
+		public MemoryStoryListener(StoryId storyId, ObservableCollection<StoryThing> things)
 			: base(storyId)
 		{
 			_things = things;
@@ -57,7 +58,7 @@ namespace BigRedProf.Stories.Memory
 
 			while (Bookmark < _things.Count)
 			{
-				await InvokeSomethingHappenedEventAsync(Bookmark, _things[(int) Bookmark]);
+				await InvokeSomethingHappenedEventAsync(_things[(int) Bookmark]);
 				++Bookmark;
 			}
 		}
