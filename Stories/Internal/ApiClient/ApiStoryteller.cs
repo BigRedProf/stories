@@ -75,15 +75,22 @@ namespace BigRedProf.Stories.Internal.ApiClient
         #region IStoryteller methods
         public async Task<bool> HasSomethingForMeAsync()
         {
+			Debug.WriteLine("*** ApiStoryteller.HasSomethingForMeAsync ***");
 			if (await _currentBatchStoryteller.HasSomethingForMeAsync())
+			{
+				Debug.WriteLine($"** currBatch has something for me **");
 				return true;
+			}
+			Debug.WriteLine($"** currBatch NO has nothing for me **");
 
-            HttpClient client = new HttpClient();
+			HttpClient client = new HttpClient();
             Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/HasSomethingForMe/{_bookmark}");
 
-            bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
+			Debug.WriteLine($"** calling API **");
+			bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
+			Debug.WriteLine($"** API call complete. result={hasSomethingForMe} **");
 
-            return hasSomethingForMe;
+			return hasSomethingForMe;
         }
 
         public void SetBookmark(long bookmark)
