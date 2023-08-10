@@ -61,8 +61,9 @@ public class StorytellerController : ControllerBase
 		bool hasReachedLimit = false;
 		while (storyteller.HasSomethingForMe && !hasReachedLimit)
 		{
+			long expectedOffset = storyteller.Bookmark;
 			StoryThing storyThing = storyteller.TellMeSomething();
-			if (storyThing.Offset != storyteller.Bookmark)
+			if (storyThing.Offset != expectedOffset)
 			{
 				throw new InvalidOperationException(
 					$"Story corrupt. Expected offset {storyteller.Bookmark}. Actual offset {storyThing.Offset}"
