@@ -39,7 +39,8 @@ namespace BigRedProf.Stories.Memory
         {
             get
             {
-                return Bookmark < _things.Count;
+                Task<bool> result = HasSomethingForMeAsync();
+                return result.Result;
             }
         }
         #endregion
@@ -47,28 +48,28 @@ namespace BigRedProf.Stories.Memory
         #region IStoryteller methods
         public Task<bool> HasSomethingForMeAsync()
         {
-            Task<bool> task = new Task<bool>(() => HasSomethingForMe);
-            return task;
-        }
+            bool result = (Bookmark < _things.Count);
+            return Task.FromResult(result);
+		}
 
         public StoryThing TellMeSomething()
         {
-            if (Bookmark > int.MaxValue)
-                throw new InvalidOperationException("MemoryStoryTeller does not support bookmarks > 2^31");
-
-            StoryThing thing = _things[(int)Bookmark];
-            ++Bookmark;
-
-            return thing;
+            Task<StoryThing> task = TellMeSomethingAsync();
+            return task.Result;
         }
 
         public Task<StoryThing> TellMeSomethingAsync()
         {
-            Task<StoryThing> task = new Task<StoryThing>(() => TellMeSomething());
-            return task;
-        }
+			if (Bookmark > int.MaxValue)
+				throw new InvalidOperationException("MemoryStoryTeller does not support bookmarks > 2^31");
 
-        public void SetBookmark(long bookmark)
+			StoryThing thing = _things[(int)Bookmark];
+			++Bookmark;
+
+			return Task.FromResult(thing);
+		}
+
+		public void SetBookmark(long bookmark)
         {
             if (Bookmark > int.MaxValue)
                 throw new InvalidOperationException("MemoryStoryTeller does not support bookmarks > 2^31");
