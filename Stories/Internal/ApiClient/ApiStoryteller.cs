@@ -1,9 +1,14 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Memory;
+using BigRedProf.Stories.Models;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -22,10 +27,15 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private StoryId _storyId;
 		private IPiedPiper _piedPiper;
 		private long _bookmark;
+		private readonly long? _tellLimit;
+		private readonly PackRat<ListOfStoryThings> _listOfStoryThingsPackRat;
+		private long _currentBatchOffset;
+		private long _currentBatchLength;
+		private MemoryStoryteller _currentBatchStoryteller;
 		#endregion
 
 		#region constructors
-		public ApiStoryteller(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark)
+		public ApiStoryteller(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark, long? tellLimit)
 		{
 			Debug.Assert(baseUri != null);
 			Debug.Assert(storyId != null);
@@ -35,6 +45,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_storyId = storyId;
 			_piedPiper = piedPiper;
 			_bookmark = bookmark;
+			_tellLimit = tellLimit;
+
+			_listOfStoryThingsPackRat = _piedPiper.GetPackRat<ListOfStoryThings>(StoriesSchemaId.ListOfStoryThings);
+			_currentBatchOffset = 0;
+			_currentBatchLength = 0;
+			_currentBatchStoryteller = new MemoryStoryteller(new Code[0]);
 		}
 		#endregion
 
@@ -59,6 +75,9 @@ namespace BigRedProf.Stories.Internal.ApiClient
         #region IStoryteller methods
         public async Task<bool> HasSomethingForMeAsync()
         {
+			if (await _currentBatchStoryteller.HasSomethingForMeAsync())
+				return true;
+
             HttpClient client = new HttpClient();
             Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/HasSomethingForMe/{_bookmark}");
 
@@ -82,22 +101,54 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		public async Task<Code> TellMeSomethingAsync()
 		{
+			Code code;
+
+			// First, check if it's in our current batch of story things.
+			if(_bookmark >= _currentBatchOffset && _bookmark < _currentBatchOffset + _currentBatchLength)
+			{
+				_currentBatchStoryteller.SetBookmark(_bookmark - _currentBatchOffset);
+				code = await _currentBatchStoryteller.TellMeSomethingAsync();
+				++_bookmark;
+				
+				return code;
+			}
+
+			// If not, retrieve it from the stories service.
 			HttpClient client = new HttpClient();
-			Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{_bookmark}");
+			Uri uri = GetTellMeSomethingUri(_bookmark);
 
 			byte[] byteArray = await client.GetByteArrayAsync(uri);
 
-			Code code;
-			PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+			ListOfStoryThings listOfStoryThings = new ListOfStoryThings();
 			MemoryStream memoryStream = new MemoryStream(byteArray);
 			using (CodeReader reader = new CodeReader(memoryStream))
 			{
-				 code = packRat.UnpackModel(reader);
+				 listOfStoryThings = _listOfStoryThingsPackRat.UnpackModel(reader);
 			}
 
+			if (listOfStoryThings.StoryThings.Count < 1)
+				throw new InvalidOperationException("Less than 1 story thing returned.");
+
+			_currentBatchOffset = _bookmark;
+			_currentBatchLength = listOfStoryThings.StoryThings.Count;
+			_currentBatchStoryteller = new MemoryStoryteller(listOfStoryThings.StoryThings.Select(st => st.Thing).ToList());
+
+			code = await _currentBatchStoryteller.TellMeSomethingAsync();
 			++_bookmark;
 
 			return code;
+		}
+		#endregion
+
+		#region private methods
+		private Uri GetTellMeSomethingUri(long bookmark)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append($"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{_bookmark}");
+			if(_tellLimit.HasValue)
+				stringBuilder.Append($"?limit={_tellLimit.Value}");
+
+			return new Uri(_baseUri, stringBuilder.ToString());
 		}
 		#endregion
 	}

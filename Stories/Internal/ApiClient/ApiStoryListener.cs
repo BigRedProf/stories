@@ -26,8 +26,15 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region constructors
-		public ApiStoryListener(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark, TimeSpan timerPollingFrequency)
-			: this(baseUri, storyId, piedPiper, bookmark, timerPollingFrequency, null, null, false)
+		public ApiStoryListener(
+			Uri baseUri,
+			StoryId storyId, 
+			IPiedPiper piedPiper, 
+			long bookmark, 
+			long? tellLimit,
+			TimeSpan timerPollingFrequency
+		)
+			: this(baseUri, storyId, piedPiper, bookmark, tellLimit, timerPollingFrequency, null, null, false)
 		{
 		}
 
@@ -36,6 +43,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			StoryId storyId, 
 			IPiedPiper piedPiper, 
 			long bookmark, 
+			long? tellLimit,
 			TimeSpan timerPollingFrequency,
 			LogLevel? signalRLogLevel,
 			ILoggerProvider? loggerProvider,
@@ -51,7 +59,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_piedPiper = piedPiper;
 			Bookmark = bookmark;
 
-			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark);
+			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
 
 			_timerPollingFrequency = timerPollingFrequency;
 			_timer = new Timer(_timerPollingFrequency.TotalMilliseconds);

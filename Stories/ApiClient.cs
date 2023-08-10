@@ -35,7 +35,7 @@ namespace BigRedProf.Stories
 			return new ApiScribe(_baseUri, storyId, _piedPiper);
 		}
 
-		public IStoryteller GetStoryteller(StoryId storyId, long bookmark)
+		public IStoryteller GetStoryteller(StoryId storyId, long bookmark, long? tellLimit)
 		{
 			if (storyId == null)
 				throw new ArgumentNullException(nameof(storyId));
@@ -43,10 +43,10 @@ namespace BigRedProf.Stories
 			if(bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
-			return new ApiStoryteller(_baseUri, storyId, _piedPiper, bookmark);
+			return new ApiStoryteller(_baseUri, storyId, _piedPiper, bookmark, tellLimit);
 		}
 
-		public IStoryListener GetStoryListener(StoryId storyId, long bookmark, TimeSpan timerPollingFrequency)
+		public IStoryListener GetStoryListener(StoryId storyId, long bookmark, long? tellLimit, TimeSpan timerPollingFrequency)
 		{
 			if (storyId == null)
 				throw new ArgumentNullException(nameof(storyId));
@@ -54,12 +54,13 @@ namespace BigRedProf.Stories
 			if (bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
-			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, timerPollingFrequency);
+			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, tellLimit, timerPollingFrequency);
 		}
 
 		public IStoryListener GetStoryListener(
 			StoryId storyId, 
 			long bookmark,
+			long? tellLimit,
 			TimeSpan timerPollingFrequency,
 			LogLevel? signalRLogLevel,
 			ILoggerProvider? loggerProvider,
@@ -73,7 +74,7 @@ namespace BigRedProf.Stories
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
 			return new ApiStoryListener(
-				_baseUri, storyId, _piedPiper, bookmark, timerPollingFrequency, 
+				_baseUri, storyId, _piedPiper, bookmark, tellLimit, timerPollingFrequency, 
 				signalRLogLevel, loggerProvider, addConsoleLogging
 			);
 		}

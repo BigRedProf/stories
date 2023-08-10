@@ -39,13 +39,14 @@ namespace BigRedProf.Stories.StoriesCli
 			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper);
 			if (options.LogLevel == null)
 			{
-				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark, TimeSpan.FromSeconds(5));
+				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark, 1000, TimeSpan.FromSeconds(5));
 			}
 			else
 			{
 				_storyListener = apiClient.GetStoryListener(
 					options.Story!, 
 					bookmark, 
+					1000,
 					TimeSpan.FromSeconds(5), 
 					options.LogLevel.Value, 
 					null, 
