@@ -26,7 +26,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="BigRedProf.Data" Version="0.5.27" />
+	  <PackageReference Include="BigRedProf.Data" Version="0.5.28" />
 	</ItemGroup>
 
 </Project>
