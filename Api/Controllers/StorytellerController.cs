@@ -83,7 +83,7 @@ public class StorytellerController : ControllerBase
 			_listOfStoryThingsPackRat.PackModel(writer, listOfStoryThings);
 		}
 
-		return Ok();
+		return new EmptyResult();	// can't return "OK" here since we manually wrote to Response.Body
     }
 	#endregion web methods
 }
