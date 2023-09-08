@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Models",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Models", "StoriesCli.Models\BigRedProf.Stories.StoriesCli.Models.csproj", "{A31A90E0-A142-497E-95D4-47CFBF23837D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging.Models", "Logging.Models\BigRedProf.Stories.Logging.Models.csproj", "{B8BA6605-498C-4983-9AA9-19B2C5BCA471}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +50,9 @@ Global
 		{A31A90E0-A142-497E-95D4-47CFBF23837D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A31A90E0-A142-497E-95D4-47CFBF23837D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A31A90E0-A142-497E-95D4-47CFBF23837D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
