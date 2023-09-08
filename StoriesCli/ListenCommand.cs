@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
+using BigRedProf.Stories.Models;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reflection;
@@ -22,6 +23,7 @@ namespace BigRedProf.Stories.StoriesCli
 		{
 			_piedPiper = new PiedPiper();
 			_piedPiper.RegisterDefaultPackRats();
+			_piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 			if(options.ModelAssemblies != null)
 			{
 				foreach (string assemblyPath in options.ModelAssemblies)
