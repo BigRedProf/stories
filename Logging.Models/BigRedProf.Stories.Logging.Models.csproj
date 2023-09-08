@@ -27,6 +27,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BigRedProf.Data" Version="0.5.30" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
 	</ItemGroup>
 
 </Project>

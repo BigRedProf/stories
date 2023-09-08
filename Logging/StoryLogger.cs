@@ -1,4 +1,5 @@
 ﻿using BigRedProf.Data;
+using BigRedProf.Stories.Logging.Models;
 using Microsoft.Extensions.Logging;
 using System;
 
@@ -46,9 +47,16 @@ namespace BigRedProf.Stories.Logging
 			// TODO: support batching
 
 			string message = formatter(state, exception);
-			string entry = $"{_name} :{eventId}: {logLevel}: ${message}";
+			LogEntry logEntry = new LogEntry()
+			{
+				LogName = _name,
+				EventId = eventId.Id,
+				EventName = eventId.Name,
+				Level = logLevel,
+				Message = message
+			};
 
-			Code encodedEntry = _piedPiper.EncodeModelWithSchema(entry, SchemaId.TextUtf8);
+			Code encodedEntry = _piedPiper.EncodeModelWithSchema(logEntry, StoriesLoggingSchemaId.LogEntry);
 
 			// NOTE: We need to use async here to support BlazorWasm. It's OK, though not ideal,
 			// to ignore the result here since we're logging.
