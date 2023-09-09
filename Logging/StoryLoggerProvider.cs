@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
+using System.Timers;
 
 namespace BigRedProf.Stories.Logging
 {
@@ -14,6 +15,8 @@ namespace BigRedProf.Stories.Logging
 		private StoryLoggerConfiguration _config;
 		private readonly ConcurrentDictionary<string, StoryLogger> _loggers;
 		private IScribe _scribe;
+		private Timer _timer;
+		private bool _isDisposed;
 		#endregion
 
 		#region constructors
@@ -28,17 +31,43 @@ namespace BigRedProf.Stories.Logging
 			StoryId storyId = config.CurrentValue.StoryId;
 			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper);
 			_scribe = apiClient.GetScribe(storyId);
+
+			_timer = new Timer(TimeSpan.FromMinutes(5).Milliseconds);
+			_timer.Elapsed += Timer_Elapsed;
+			_timer.Start();
+
+			_isDisposed = false;
+		}
+		#endregion
+
+		#region methods
+		public void FlushAllStoryLoggers()
+		{
+			if(_isDisposed)
+				throw new ObjectDisposedException(nameof(StoryLoggerProvider));
+
+			foreach(StoryLogger logger in _loggers.Values)
+				logger.Flush();
 		}
 		#endregion
 
 		#region ILoggerProvider methods
 		public ILogger CreateLogger(string categoryName)
 		{
+			if (_isDisposed)
+				throw new ObjectDisposedException(nameof(StoryLoggerProvider));
+
 			return _loggers.GetOrAdd(categoryName, categoryName => new StoryLogger(_piedPiper, categoryName, _scribe));
 		}
 
 		public void Dispose()
 		{
+			if (_isDisposed)
+				return;
+
+			_timer.Stop();
+			FlushAllStoryLoggers();
+
 			_loggers.Clear();
 			_onChangeToken?.Dispose();
 		}
@@ -48,6 +77,13 @@ namespace BigRedProf.Stories.Logging
 		private StoryLoggerConfiguration GetConfig()
 		{
 			return _config;
+		}
+		#endregion
+
+		#region event handlers
+		private void Timer_Elapsed(object sender, ElapsedEventArgs e)
+		{
+			FlushAllStoryLoggers();
 		}
 		#endregion
 
