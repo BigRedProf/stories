@@ -32,7 +32,7 @@ namespace BigRedProf.Stories.Logging
 			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper);
 			_scribe = apiClient.GetScribe(storyId);
 
-			_timer = new Timer(TimeSpan.FromMinutes(5).Milliseconds);
+			_timer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds);
 			_timer.Elapsed += Timer_Elapsed;
 			_timer.Start();
 
