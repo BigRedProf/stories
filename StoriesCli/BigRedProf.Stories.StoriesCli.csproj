@@ -11,6 +11,18 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Resources\CreateBookmarkTable.sql" />
+	  <None Remove="Resources\CreateLogEntryPropertyTable.sql" />
+	  <None Remove="Resources\CreateLogEntryTable.sql" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Resources\CreateLogEntryPropertyTable.sql" />
+	  <EmbeddedResource Include="Resources\CreateBookmarkTable.sql" />
+	  <EmbeddedResource Include="Resources\CreateLogEntryTable.sql" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="CommandLineParser" Version="2.9.1" />
 		<PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
 	</ItemGroup>

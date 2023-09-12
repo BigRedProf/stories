@@ -100,7 +100,7 @@ namespace BigRedProf.Stories.Logging
 			{
 				logEntryProperties[index] = new LogEntryProperty
 				{
-					Key = keyValuePair.Key,
+					Name = keyValuePair.Key,
 					Value = keyValuePair.Value?.ToString() ?? string.Empty
 				};
 				++index;
