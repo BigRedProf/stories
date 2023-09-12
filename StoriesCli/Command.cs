@@ -10,7 +10,7 @@
 		#endregion
 
 		#region methods
-		abstract public int Run(CommandLineOptions options);
+		abstract public int Run(BaseCommandLineOptions options);
 		abstract protected void OnCancelKeyPress();
 		#endregion
 

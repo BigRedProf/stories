@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
+using BigRedProf.Stories.Logging.Models;
 using BigRedProf.Stories.Models;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -19,11 +20,14 @@ namespace BigRedProf.Stories.StoriesCli
 		#endregion
 
 		#region Command methods
-		public override int Run(CommandLineOptions options)
+		public override int Run(BaseCommandLineOptions commandLineOptions)
 		{
+			ListenOptions options = (ListenOptions)commandLineOptions;
+
 			_piedPiper = new PiedPiper();
 			_piedPiper.RegisterDefaultPackRats();
 			_piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
+			_piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 			if(options.ModelAssemblies != null)
 			{
 				foreach (string assemblyPath in options.ModelAssemblies)

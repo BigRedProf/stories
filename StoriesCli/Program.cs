@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+using System.Collections.Generic;
 
 namespace BigRedProf.Stories.StoriesCli
 {
@@ -7,21 +8,30 @@ namespace BigRedProf.Stories.StoriesCli
 		#region static functions
 		static private int Main(string[] args)
 		{
-			int exitCode = CommandLine.Parser.Default.ParseArguments<CommandLineOptions>(args)
-				.MapResult<CommandLineOptions, int>(
-					options => RunOptions(options),
+			// Parse arguments for multiple option classes
+			return CommandLine.Parser.Default.ParseArguments<ListenOptions, SyncLogsToSqlOptions>(args)
+				.MapResult(
+					(ListenOptions listenOptions) => RunOptions(listenOptions),
+					(SyncLogsToSqlOptions syncOptions) => RunOptions(syncOptions),
 					errors => HandleParseError(errors)
 				);
-			return exitCode;
 		}
 
-		static private int RunOptions(CommandLineOptions options)
+		static private int RunOptions(BaseCommandLineOptions options)
 		{
 			Command command;
-			switch(options.Command)
+			if (options is ListenOptions)
 			{
-				case "listen": command = new ListenCommand(); break;
-				default: Console.Error.WriteLine("Invalid command."); return 1;
+				command = new ListenCommand();
+			}
+			else if (options is SyncLogsToSqlOptions)
+			{
+				command = new SyncLogsToSqlCommand();
+			}
+			else
+			{
+				Console.Error.WriteLine("Invalid command.");
+				return 1;
 			}
 
 			return command.Run(options);
