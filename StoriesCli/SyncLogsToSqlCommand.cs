@@ -38,7 +38,8 @@ namespace BigRedProf.Stories.StoriesCli
 				_piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 
 				ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper);
-				_storyListener = apiClient.GetStoryListener(options.Story, 0, 1000, TimeSpan.FromSeconds(5));
+				long nextOffset = GetNextOffset(options.Story, connection);
+				_storyListener = apiClient.GetStoryListener(options.Story, nextOffset, 1000, TimeSpan.FromSeconds(5));
 				_storyListener.SomethingHappenedAsync += (sender, e) =>
 				{
 					SaveToDatabase(connection, e.Thing, options.Story);
@@ -157,5 +158,28 @@ namespace BigRedProf.Stories.StoriesCli
 				}
 			}
 		}
-	}
+
+        private long GetNextOffset(string storyId, SqlConnection connection)
+        {
+            string sql = "SELECT NextOffset FROM Bookmark WHERE StoryID = @StoryId";
+
+            using (SqlCommand cmd = new SqlCommand(sql, connection))
+            {
+                cmd.Parameters.AddWithValue("@StoryId", storyId);
+
+                object result = cmd.ExecuteScalar();
+                if (result != null && result != DBNull.Value)
+                {
+                    return (long)result;
+                }
+                else
+                {
+                    // Handle the scenario where the storyId doesn't have an associated offset.
+                    // This could potentially throw an error, or you might decide on a default behavior.
+                    throw new Exception($"No offset found for StoryID {storyId}.");
+                }
+            }
+        }
+
+    }
 }
