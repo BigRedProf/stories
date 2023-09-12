@@ -1,9 +1,10 @@
 ﻿using BigRedProf.Data;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 
 namespace BigRedProf.Stories.Logging.Models
 {
-	[RegisterPackRat(StoriesLoggingSchemaId.LogEntry)]
+    [RegisterPackRat(StoriesLoggingSchemaId.LogEntry)]
 	public class LogEntry
 	{
 		#region properties
@@ -21,6 +22,9 @@ namespace BigRedProf.Stories.Logging.Models
 
 		[PackField(5, SchemaId.TextUtf8)]
 		public string Message { get; set; } = default!;
+
+		[PackListField(6, StoriesLoggingSchemaId.LogEntryProperty, ByteAligned.Yes)]
+		public IList<LogEntryProperty> Properties = default!;
 		#endregion
 	}
 }

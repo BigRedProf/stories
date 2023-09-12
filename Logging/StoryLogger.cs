@@ -61,13 +61,15 @@ namespace BigRedProf.Stories.Logging
 		public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
 		{
 			string message = formatter(state, exception);
+			IList<LogEntryProperty> properties = ExtractProperties(state);
 			LogEntry logEntry = new LogEntry()
 			{
 				LogName = _name,
 				EventId = eventId.Id,
 				EventName = eventId.Name,
 				Level = logLevel,
-				Message = message
+				Message = message,
+				Properties = properties
 			};
 
 			Code encodedEntry = _piedPiper.EncodeModelWithSchema(logEntry, StoriesLoggingSchemaId.LogEntry);
@@ -82,6 +84,29 @@ namespace BigRedProf.Stories.Logging
 				Flush();
 
 			// otherwise, we'll wait for StoryLoggerProvider to flush us periodically or when it's disposed
+		}
+		#endregion
+
+		#region private functions
+		private static IList<LogEntryProperty> ExtractProperties(object? state)
+		{
+			IEnumerable<KeyValuePair<string, object>>? keyValuePairs = state as IEnumerable<KeyValuePair<string, object>>;
+			if (keyValuePairs == null)
+				return Array.Empty<LogEntryProperty>();
+
+			int index = 0;
+			var logEntryProperties = new LogEntryProperty[keyValuePairs.Count()];
+			foreach (KeyValuePair<string, object> keyValuePair in keyValuePairs)
+			{
+				logEntryProperties[index] = new LogEntryProperty
+				{
+					Key = keyValuePair.Key,
+					Value = keyValuePair.Value?.ToString() ?? string.Empty
+				};
+				++index;
+			}
+
+			return logEntryProperties;
 		}
 		#endregion
 	}
