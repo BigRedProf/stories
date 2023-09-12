@@ -115,8 +115,6 @@ namespace BigRedProf.Stories.StoriesCli
 
         private void SaveToDatabase(SqlConnection connection, StoryThing thing, string storyId)
 		{
-			Console.WriteLine($"** SaveToDatabase, offset={thing.Offset}");
-
 			var logEntry = _piedPiper?.DecodeModelWithSchema(thing.Thing).Model as LogEntry;
 			if (logEntry != null)
 			{
@@ -147,13 +145,11 @@ namespace BigRedProf.Stories.StoriesCli
 						command.Parameters.AddWithValue("@ExpectedOffset", thing.Offset);
 						if (command.ExecuteNonQuery() == 0)
 						{
-                            Console.WriteLine($"** rollback");
                             transaction.Rollback();
 							return;
 						}
 					}
 
-                    Console.WriteLine($"** commit");
                     transaction.Commit();
 				}
 			}
