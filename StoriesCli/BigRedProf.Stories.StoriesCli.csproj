@@ -12,11 +12,13 @@
 
 	<ItemGroup>
 	  <None Remove="Resources\CreateBookmarkTable.sql" />
+	  <None Remove="Resources\CreateGetLogEntriesWithPropertiesProc.sql" />
 	  <None Remove="Resources\CreateLogEntryPropertyTable.sql" />
 	  <None Remove="Resources\CreateLogEntryTable.sql" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <EmbeddedResource Include="Resources\CreateGetLogEntriesWithPropertiesProc.sql" />
 	  <EmbeddedResource Include="Resources\CreateLogEntryPropertyTable.sql" />
 	  <EmbeddedResource Include="Resources\CreateBookmarkTable.sql" />
 	  <EmbeddedResource Include="Resources\CreateLogEntryTable.sql" />

@@ -64,6 +64,7 @@ namespace BigRedProf.Stories.StoriesCli
             ExecuteNonQueryCommand(connection, "CreateBookmarkTable.sql");
             ExecuteNonQueryCommand(connection, "CreateLogEntryTable.sql");
             ExecuteNonQueryCommand(connection, "CreateLogEntryPropertyTable.sql");
+            ExecuteNonQueryCommand(connection, "CreateGetLogEntriesWithPropertiesProc.sql");
 
             // Check if a row with the given StoryId exists in the Bookmark table
             string checkRowSql = "SELECT COUNT(*) FROM Bookmark WHERE StoryId = @StoryId";
