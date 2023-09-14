@@ -13,8 +13,14 @@ namespace BigRedProf.Stories.StoriesCli
 {
     public class SyncLogsToSqlCommand : Command
     {
+        private readonly ILogger<SyncLogsToSqlCommand> _logger;
         private IPiedPiper? _piedPiper;
         private IStoryListener? _storyListener;
+
+        public SyncLogsToSqlCommand(ILogger<SyncLogsToSqlCommand> logger)
+        {
+            _logger = logger;
+        }
 
         public override int Run(BaseCommandLineOptions commandLineOptions)
         {

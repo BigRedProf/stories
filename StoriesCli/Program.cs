@@ -1,5 +1,8 @@
 ﻿using CommandLine;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace BigRedProf.Stories.StoriesCli
 {
@@ -8,16 +11,25 @@ namespace BigRedProf.Stories.StoriesCli
 		#region static functions
 		static private int Main(string[] args)
 		{
+			// Set up dependency injection
+			var serviceProvider = new ServiceCollection()
+				.AddLogging(builder =>
+				{
+					builder.AddConsole();
+					builder.SetMinimumLevel(LogLevel.Warning); // Set log level
+				})
+				.BuildServiceProvider();
+
 			// Parse arguments for multiple option classes
 			return CommandLine.Parser.Default.ParseArguments<ListenOptions, SyncLogsToSqlOptions>(args)
 				.MapResult(
-					(ListenOptions listenOptions) => RunOptions(listenOptions),
-					(SyncLogsToSqlOptions syncOptions) => RunOptions(syncOptions),
+					(ListenOptions listenOptions) => RunOptions(serviceProvider, listenOptions),
+					(SyncLogsToSqlOptions syncOptions) => RunOptions(serviceProvider, syncOptions),
 					errors => HandleParseError(errors)
 				);
 		}
 
-		static private int RunOptions(BaseCommandLineOptions options)
+		static private int RunOptions(ServiceProvider serviceProvider, BaseCommandLineOptions options)
 		{
 			Command command;
 			if (options is ListenOptions)
@@ -26,7 +38,8 @@ namespace BigRedProf.Stories.StoriesCli
 			}
 			else if (options is SyncLogsToSqlOptions)
 			{
-				command = new SyncLogsToSqlCommand();
+				ILogger<SyncLogsToSqlCommand> logger = serviceProvider.GetService<ILogger<SyncLogsToSqlCommand>>()!;
+				command = new SyncLogsToSqlCommand(logger);
 			}
 			else
 			{
