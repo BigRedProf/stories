@@ -92,7 +92,7 @@ namespace BigRedProf.Stories.StoriesCli
             if (logEntry != null)
             {
                 long offset = thing.Offset;
-                if (!DateTime.TryParse(GetPropertyValue(logEntry, "Timestamp"), out DateTime timestamp))
+                if (!DateTime.TryParse(GetPropertyValue(logEntry, "__Timestamp__"), out DateTime timestamp))
                     timestamp = DateTime.Parse("1976-06-23");
                 string originalFormat = GetPropertyValue(logEntry, "{OriginalFormat}");
 

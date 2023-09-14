@@ -108,7 +108,7 @@ namespace BigRedProf.Stories.Logging
 
 			logEntryProperties[index] = new LogEntryProperty
 			{
-				Name = "Timestamp",
+				Name = "__Timestamp__",
 				Value = DateTime.UtcNow.ToString()
 			};
 
