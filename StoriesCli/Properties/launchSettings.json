@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "BigRedProf.Stories.StoriesCli": {
+      "commandName": "Project",
+      "commandLineArgs": "synclogs2sql -u https://stories-MIKE.bigredprof.net -s digihouse/logs --sqlServer ANNIE --sqlDatabase BigRedProf --sqlUsername sa -p \"Password1!\" --sqlTrustServerCertificate"
+    }
+  }
+}
