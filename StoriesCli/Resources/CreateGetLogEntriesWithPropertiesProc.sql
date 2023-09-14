@@ -3,6 +3,9 @@ BEGIN
     EXEC('CREATE PROCEDURE [dbo].[GetLogEntriesWithProperties]
         AS
         BEGIN
+            -- Drop the global temp table if it exists
+            IF OBJECT_ID(''tempdb..##LogEntriesWithProperties'') IS NOT NULL DROP TABLE ##LogEntriesWithProperties;
+
             DECLARE @columns NVARCHAR(MAX) = '''';
             DECLARE @sql     NVARCHAR(MAX) = '''';
 
@@ -18,9 +21,9 @@ BEGIN
             IF LEN(@columns) > 0
             BEGIN
                 SET @sql = ''
-                SELECT le.*, p.*
+                SELECT le.*, '' + @columns + '' INTO ##LogEntriesWithProperties
                 FROM LogEntry le
-                JOIN (
+                LEFT JOIN (
                     SELECT StoryId, Offset, '' + @columns + '' 
                     FROM (
                         SELECT StoryId, Offset, Name AS __Property__Name__, Value
