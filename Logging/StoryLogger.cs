@@ -95,7 +95,7 @@ namespace BigRedProf.Stories.Logging
 				return Array.Empty<LogEntryProperty>();
 
 			int index = 0;
-			var logEntryProperties = new LogEntryProperty[keyValuePairs.Count()];
+			var logEntryProperties = new LogEntryProperty[keyValuePairs.Count() + 1];
 			foreach (KeyValuePair<string, object> keyValuePair in keyValuePairs)
 			{
 				logEntryProperties[index] = new LogEntryProperty
@@ -105,6 +105,12 @@ namespace BigRedProf.Stories.Logging
 				};
 				++index;
 			}
+
+			logEntryProperties[index] = new LogEntryProperty
+			{
+				Name = "Timestamp",
+				Value = DateTime.UtcNow.ToString()
+			};
 
 			return logEntryProperties;
 		}
