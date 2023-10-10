@@ -31,18 +31,35 @@ public class ScribeController : ControllerBase
 	#region web methods
 	[HttpPost]
 	[Route("v1/{story}/[controller]/[action]")]
-	public void RecordSomething(string story)
+	public IActionResult RecordSomething(string story)
     {
 		story = Helper.HackHackFixStoryId(story);
 
 		ListOfThings listOfThings;
 		using (CodeReader codeReader = new CodeReader(Request.Body))
 		{
-			listOfThings = _listOfThingsPackRat.UnpackModel(codeReader);
+			try
+			{
+				listOfThings = _listOfThingsPackRat.UnpackModel(codeReader);
+			}
+			catch (Exception ex)
+			{
+				Guid correlationId = Guid.NewGuid();
+				string message = ex.Message;
+				_logger.LogWarning(
+					ex, 
+					"Failed to unpack ListOfThings model. Correlation ID: {correlationId} Message: {message}", 
+					correlationId,  
+					message
+				);
+				return BadRequest($"Failed to unpack ListOfThings model. Correlation ID: {correlationId}");
+			}
 		}
 
 		IScribe scribe = _storyManager.GetScribe(story);
 		scribe.RecordSomething(listOfThings.Things.ToArray());
+
+		return Ok();
     }
 	#endregion web methods
 }
