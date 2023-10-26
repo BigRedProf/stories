@@ -10,10 +10,11 @@ namespace BigRedProf.Stories
 		#region fields
 		private Uri _baseUri;
 		private IPiedPiper _piedPiper;
+		ILogger<ApiClient> _logger;
 		#endregion
 
 		#region constructors
-		public ApiClient(Uri baseUri, IPiedPiper piedPiper)
+		public ApiClient(Uri baseUri, IPiedPiper piedPiper, ILogger<ApiClient> logger)
 		{
 			if(baseUri == null)
 				throw new ArgumentNullException(nameof(baseUri));
@@ -21,8 +22,12 @@ namespace BigRedProf.Stories
 			if(piedPiper == null)
 				throw new ArgumentNullException(nameof(piedPiper));
 
+			if(logger == null)
+				throw new ArgumentNullException(nameof(logger));
+
 			_baseUri = baseUri;
 			_piedPiper = piedPiper;
+			_logger = logger;
 		}
 		#endregion
 
@@ -54,7 +59,7 @@ namespace BigRedProf.Stories
 			if (bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
-			return new ApiStoryListener(_baseUri, storyId, _piedPiper, bookmark, tellLimit, timerPollingFrequency);
+			return new ApiStoryListener(_baseUri, storyId, _piedPiper, _logger, bookmark, tellLimit, timerPollingFrequency);
 		}
 
 		public IStoryListener GetStoryListener(
@@ -74,7 +79,7 @@ namespace BigRedProf.Stories
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
 			return new ApiStoryListener(
-				_baseUri, storyId, _piedPiper, bookmark, tellLimit, timerPollingFrequency, 
+				_baseUri, storyId, _piedPiper, _logger, bookmark, tellLimit, timerPollingFrequency, 
 				signalRLogLevel, loggerProvider, addConsoleLogging
 			);
 		}

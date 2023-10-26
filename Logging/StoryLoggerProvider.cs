@@ -20,7 +20,7 @@ namespace BigRedProf.Stories.Logging
 		#endregion
 
 		#region constructors
-		public StoryLoggerProvider(IPiedPiper piedPiper, IOptionsMonitor<StoryLoggerConfiguration> config)
+		public StoryLoggerProvider(IPiedPiper piedPiper, ILogger<ApiClient> apiClientLogger, IOptionsMonitor<StoryLoggerConfiguration> config)
 		{
 			_piedPiper = piedPiper;
 			_config = config.CurrentValue;
@@ -29,7 +29,7 @@ namespace BigRedProf.Stories.Logging
 
 			Uri baseStoryUrl = new Uri(config.CurrentValue.BaseStoryUrl);
 			StoryId storyId = config.CurrentValue.StoryId;
-			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper);
+			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper, apiClientLogger);
 			_scribe = apiClient.GetScribe(storyId);
 
 			_timer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds);

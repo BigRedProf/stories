@@ -8,6 +8,7 @@ using System.IO;
 using System.Timers;
 using System.Threading.Tasks;
 using BigRedProf.Stories.Models;
+using System.Net.NetworkInformation;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
@@ -16,6 +17,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region fields
 		private Uri _baseUri;
 		private IPiedPiper _piedPiper;
+		private ILogger<Stories.ApiClient> _logger;
 		private HubConnection _hubConnection;
 		private IStoryteller _catchUpStoryteller;
 		private Timer _timer;
@@ -31,11 +33,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Uri baseUri,
 			StoryId storyId, 
 			IPiedPiper piedPiper, 
+			ILogger<Stories.ApiClient> logger,
 			long bookmark, 
 			long? tellLimit,
 			TimeSpan timerPollingFrequency
 		)
-			: this(baseUri, storyId, piedPiper, bookmark, tellLimit, timerPollingFrequency, null, null, false)
+			: this(baseUri, storyId, piedPiper, logger, bookmark, tellLimit, timerPollingFrequency, null, null, false)
 		{
 		}
 
@@ -43,6 +46,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Uri baseUri, 
 			StoryId storyId, 
 			IPiedPiper piedPiper, 
+			ILogger<Stories.ApiClient> logger,
 			long bookmark, 
 			long? tellLimit,
 			TimeSpan timerPollingFrequency,
@@ -55,9 +59,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Debug.Assert(baseUri != null);
 			Debug.Assert(storyId != null);
 			Debug.Assert(piedPiper != null);
+			Debug.Assert(logger != null);
 
 			_baseUri = baseUri;
 			_piedPiper = piedPiper;
+			_logger = logger;
 			Bookmark = bookmark;
 
 			_storyThingPackRat = _piedPiper.GetPackRat<StoryThing>(StoriesSchemaId.StoryThing);
@@ -99,22 +105,35 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_hubConnection.Reconnecting += HubConnection_Reconnecting;
 			_hubConnection.Reconnected += HubConnection_Reconnected;
 			_hubConnection.On<long, byte[]>("SomethingHappened", HubConnection_OnSomethingHappened);
+
+			_isDisposed = false;
+			_isInsideTimerCallback = false;
 		}
 		#endregion
 
 		#region StoryListener methods
 		override public void StartListening()
 		{
-			if (_hubConnection == null)
+			if (_isDisposed)
+			{
+				_logger.LogWarning("ApiStoryListener.StartListening called when already disposed.");
 				throw new ObjectDisposedException(nameof(ApiStoryListener));
+			}
+
+			_logger.LogWarning("ApiStoryListener.StartListening called. Consider using async method instead.");
 
 			StartListeningAsync().Wait();
 		}
 
 		override public async Task StartListeningAsync()
 		{
-			if (_hubConnection == null)
+			if (_isDisposed)
+			{
+				_logger.LogWarning("ApiStoryListener.StartListeningAsync called when already disposed.");
 				throw new ObjectDisposedException(nameof(ApiStoryListener));
+			}
+
+			_logger.LogDebug("Enter ApiStoryListener.StartListeningAsync");
 
 			await _hubConnection.StartAsync();
 			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId.ToString());
@@ -123,8 +142,13 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		override public void StopListening()
 		{
-			if (_hubConnection == null)
+			if (_isDisposed)
+			{
+				_logger.LogWarning("ApiStoryListener.StopListening called when already disposed.");
 				throw new ObjectDisposedException(nameof(ApiStoryListener));
+			}
+
+			_logger.LogWarning("ApiStoryListener.StopListening called. Consider using async method instead.");
 
 			StopListeningAsync().Wait();
 		}
@@ -132,7 +156,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		override public async Task StopListeningAsync()
 		{
 			if (_isDisposed)
+			{
+				_logger.LogWarning("ApiStoryListener.StopListeningAsync called when already disposed.");
 				throw new ObjectDisposedException(nameof(ApiStoryListener));
+			}
+
+			_logger.LogDebug("Enter ApiStoryListener.StopListeningAsync");
 
 			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId.ToString());
 			await _hubConnection.StopAsync();
@@ -143,17 +172,18 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region IDisposable methods
 		public void Dispose()
 		{
+			_logger.LogWarning("ApiStoryListener.Dispose called. Consider using async method instead.");
+
 			if (!_isDisposed)
-			{
 				_hubConnection.DisposeAsync().AsTask().Wait();
-				_isDisposed = true;
-			}
 		}
 		#endregion
 
 		#region IAsyncDisposable methods
 		public async ValueTask DisposeAsync()
 		{
+			_logger.LogDebug("Enter ApiStoryListener.DisposeAsync");
+
 			if (!_isDisposed)
 			{
 				await _hubConnection.DisposeAsync();
@@ -165,38 +195,63 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region event handlers
 		private async Task HubConnection_Reconnected(string? arg)
 		{
+			_logger.LogInformation("Enter ApiStoryListener.HubConnection_Reconnected. Arg={arg}", arg);
+
 			await InvokeConnectionStatusChangedAsync("reconnected", arg, null);
 		}
 
 		private async Task HubConnection_Reconnecting(Exception? arg)
 		{
+			_logger.LogInformation("Enter ApiStoryListener.HubConnection_Reconnecting. Arg={arg}", arg);
+
 			await InvokeConnectionStatusChangedAsync("reconnecting", null, arg);
 		}
 
 		private async Task HubConnection_Closed(Exception? arg)
 		{
+			_logger.LogInformation("Enter ApiStoryListener.HubConnection_Closed. Arg={arg}", arg);
+
 			await InvokeConnectionStatusChangedAsync("closed", null, arg);
 		}
 
 		private async Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
+			_logger.LogDebug("Enter ApiStoryListener.HubConnection_OnSomethingHappened. Offset={offset}", offset);
+
 			if (_isInsideTimerCallback)
-				return;	// the catch-up storyteller is busy, so defer to it
+			{
+				// the catch-up storyteller is busy, so defer to it
+				_logger.LogDebug("The catch-up storyteller is busy, so defer to it.");
+				return; 
+			}
 
 			if (Bookmark > offset)
-				return; // issue warning?? not sure we should ever be ahead of these events
+			{
+				// the catch-up storyteller is ahead of us and must have already told us about this thing
+				_logger.LogDebug("The catch-up storyteller is ahead of us and must have already told us about this thing.");
+				return;
+			}
 
 			while (Bookmark < offset)
 			{
 				// we've fallen behind in the story and need to catch up with a Storyteller
+				_logger.LogDebug(
+					"We've fallen behind in the story and need to catch up with a Storyteller. Bookmark={Bookmark},Offset={Offset}", 
+					Bookmark, 
+					offset
+				);
 				_catchUpStoryteller.SetBookmark(Bookmark);
 				StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
+				_logger.LogDebug("Catch-up thing retrieved. Offset={Offset}", catchUpThing.Offset);
+				_logger.LogTrace("Catch-up thing retrieved. Thing={Thing}", catchUpThing.Thing.ToString());
 				await InvokeSomethingHappenedEventAsync(catchUpThing);
 
 				++Bookmark;
 			}
 
 			StoryThing thing = GetStoryThingFromByteArray(byteArray);
+			_logger.LogDebug("Thing retrieved. Offset={Offset}", thing.Offset);
+			_logger.LogTrace("Thing retrieved. Thing={Thing}", thing.Thing.ToString());
 			await InvokeSomethingHappenedEventAsync(thing);
 			
 			++Bookmark;
@@ -205,6 +260,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
 		{
+			_logger.LogDebug(
+				"Enter ApiStoryListener.Timer_Elapsed. IsInsideTimerCallback={IsInsideTimerCallback}", 
+				_isInsideTimerCallback
+			);
+
 			if (_isInsideTimerCallback)
 				return;
 
@@ -214,12 +274,16 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			try
 			{
+				_logger.LogDebug("Setting IsInsideTimerCallback to true.");
 				_isInsideTimerCallback = true;
 
 				_catchUpStoryteller.SetBookmark(Bookmark);
 				while (await _catchUpStoryteller.HasSomethingForMeAsync())
 				{
+					_logger.LogDebug("Requesting thing. Bookmark={Bookmark}.", Bookmark);
 					StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
+					_logger.LogDebug("Catch-up thing retrieved. Offset={Offset}", catchUpThing.Offset);
+					_logger.LogTrace("Catch-up thing retrieved. Thing={Thing}", catchUpThing.Thing.ToString());
 					await InvokeSomethingHappenedEventAsync(catchUpThing);
 
 					++Bookmark;
@@ -227,6 +291,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			}
 			finally
 			{
+				_logger.LogDebug("Finally, setting IsInsideTimerCallback to false.");
 				_isInsideTimerCallback = false;
 			}
 		}

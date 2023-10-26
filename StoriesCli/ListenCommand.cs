@@ -13,10 +13,18 @@ namespace BigRedProf.Stories.StoriesCli
     public class ListenCommand : Command
 	{
 		#region fields
+		private readonly ILogger<ApiClient> _apiClientLogger;
 		private IPiedPiper? _piedPiper;
 		private IStoryListener? _storyListener;
 		private ThingFormat _thingFormat;
 		private ModelFormat _modelFormat;
+		#endregion
+
+		#region constructors
+		public ListenCommand(ILogger<ApiClient> apiClientLogger)
+		{
+			_apiClientLogger = apiClientLogger;
+		}
 		#endregion
 
 		#region Command methods
@@ -42,7 +50,7 @@ namespace BigRedProf.Stories.StoriesCli
 
 			long bookmark = options.Bookmark == null ? 0 : options.Bookmark.Value;
 
-			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper);
+			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper, _apiClientLogger);
 			if (options.LogLevel == null)
 			{
 				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark, 1000, TimeSpan.FromSeconds(5));

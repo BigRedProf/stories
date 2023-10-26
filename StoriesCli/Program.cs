@@ -34,12 +34,14 @@ namespace BigRedProf.Stories.StoriesCli
 			Command command;
 			if (options is ListenOptions)
 			{
-				command = new ListenCommand();
+				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;
+				command = new ListenCommand(apiClientLogger);
 			}
 			else if (options is SyncLogsToSqlOptions)
 			{
 				ILogger<SyncLogsToSqlCommand> logger = serviceProvider.GetService<ILogger<SyncLogsToSqlCommand>>()!;
-				command = new SyncLogsToSqlCommand(logger);
+				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;
+				command = new SyncLogsToSqlCommand(logger, apiClientLogger);
 			}
 			else
 			{

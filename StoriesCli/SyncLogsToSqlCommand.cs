@@ -14,12 +14,14 @@ namespace BigRedProf.Stories.StoriesCli
     public class SyncLogsToSqlCommand : Command
     {
         private readonly ILogger<SyncLogsToSqlCommand> _logger;
+        private readonly ILogger<ApiClient> _apiClientLogger;
         private IPiedPiper? _piedPiper;
         private IStoryListener? _storyListener;
 
-        public SyncLogsToSqlCommand(ILogger<SyncLogsToSqlCommand> logger)
+        public SyncLogsToSqlCommand(ILogger<SyncLogsToSqlCommand> logger, ILogger<ApiClient> apiClientLogger)
         {
             _logger = logger;
+            _apiClientLogger = apiClientLogger;
         }
 
         public override int Run(BaseCommandLineOptions commandLineOptions)
@@ -44,7 +46,7 @@ namespace BigRedProf.Stories.StoriesCli
                 _piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
                 _piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 
-                ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper);
+                ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper, _apiClientLogger);
                 long nextOffset = GetNextOffset(options.Story, connection);
                 _storyListener = apiClient.GetStoryListener(options.Story, nextOffset, 1000, TimeSpan.FromSeconds(5));
                 _storyListener.SomethingHappenedAsync += (sender, e) =>
