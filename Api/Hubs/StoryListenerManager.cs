@@ -161,7 +161,7 @@ namespace BigRedProf.Stories.Api.Hubs
 		private byte[] GetByteArrayFromStoryThing(StoryThing storyThing)
 		{
 			MemoryStream memoryStream = new MemoryStream(storyThing.Thing.Length / 8 + 1 + 4);
-			PackRat<StoryThing> packRat = _piedPiper.GetPackRat<StoryThing>(SchemaId.Code);
+			PackRat<StoryThing> packRat = _piedPiper.GetPackRat<StoryThing>(StoriesSchemaId.StoryThing);
 			using (CodeWriter writer = new CodeWriter(memoryStream))
 			{
 				packRat.PackModel(writer, storyThing);
