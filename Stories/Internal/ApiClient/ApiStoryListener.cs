@@ -300,14 +300,32 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region private methods
 		private StoryThing GetStoryThingFromByteArray(byte[] byteArray)
 		{
-			StoryThing thing;
-			MemoryStream memoryStream = new MemoryStream(byteArray);
-			using (CodeReader reader = new CodeReader(memoryStream))
-			{
-				thing = _storyThingPackRat.UnpackModel(reader);
-			}
+			_logger.LogDebug("Enter ApiStoryListener.GetStoryThingFromByteArray. ByteArrayLen={ByteArrayLen}", byteArray.Length);
+			string base64ByteArray = Convert.ToBase64String(byteArray);
+			_logger.LogTrace("Base64ByteArray={Base64ByteArray}", base64ByteArray);
 
-			return thing;
+			StoryThing? thing = null;
+			try
+			{
+				MemoryStream memoryStream = new MemoryStream(byteArray);
+				using (CodeReader reader = new CodeReader(memoryStream))
+				{
+					_logger.LogDebug("Calling UnpackModel");
+					thing = _storyThingPackRat.UnpackModel(reader);
+					_logger.LogDebug("Called UnpackModel. Offset={Offset},Thing={Thing}", thing.Offset, thing.Thing);
+				}
+			}
+			catch(Exception ex)
+			{
+				_logger.LogError(ex, "Failed to unpack model");
+			}
+			finally
+			{
+				_logger.LogDebug("finally");
+			}
+			_logger.LogDebug("Exit ApiStoryListener.GetStoryThingFromByteArray.");
+
+			return thing!;
 		}
 		#endregion
 	}
