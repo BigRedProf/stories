@@ -1,6 +1,7 @@
 ﻿using BigRedProf.Data;
 using BigRedProf.Stories.Events;
 using BigRedProf.Stories.Memory;
+using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BigRedProf.Stories.Api.Hubs
@@ -99,7 +100,7 @@ namespace BigRedProf.Stories.Api.Hubs
 			MemoryStoryListener memoryStoryListener = (MemoryStoryListener)sender!;
 			IHubClients hubClients = _hubContext.Clients;
 			IClientProxy clientProxy = hubClients.Group(memoryStoryListener.StoryId.ToString());
-			byte[] thingAsByteArray = GetByteArrayFromCode(e.Thing.Thing);
+			byte[] thingAsByteArray = GetByteArrayFromStoryThing(e.Thing);
 			await clientProxy.SendAsync(
 				"SomethingHappened",
 				e.Thing.Offset,
@@ -157,13 +158,13 @@ namespace BigRedProf.Stories.Api.Hubs
 			return storiesMap;
 		}
 
-		private byte[] GetByteArrayFromCode(Code code)
+		private byte[] GetByteArrayFromStoryThing(StoryThing storyThing)
 		{
-			MemoryStream memoryStream = new MemoryStream((code.Length + 7) / 8 );
-			PackRat<Code> packRat = _piedPiper.GetPackRat<Code>(SchemaId.Code);
+			MemoryStream memoryStream = new MemoryStream(storyThing.Thing.Length / 8 + 1 + 4);
+			PackRat<StoryThing> packRat = _piedPiper.GetPackRat<StoryThing>(SchemaId.Code);
 			using (CodeWriter writer = new CodeWriter(memoryStream))
 			{
-				packRat.PackModel(writer, code);
+				packRat.PackModel(writer, storyThing);
 			}
 			
 			return memoryStream.ToArray();
