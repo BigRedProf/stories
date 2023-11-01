@@ -169,7 +169,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				_logger.LogTrace("Catch-up thing retrieved. Thing={Thing}", catchUpThing.Thing.ToString());
 				await InvokeSomethingHappenedEventAsync(catchUpThing);
 
-				_bookmark = _catchUpStoryteller.Bookmark;
+				++_bookmark;
 			}
 
 			SetLastContactTime();
