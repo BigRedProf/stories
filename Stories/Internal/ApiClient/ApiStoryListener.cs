@@ -12,7 +12,7 @@ using System.Net.NetworkInformation;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
-	internal class ApiStoryListener : StoryListenerBase, IDisposable, IAsyncDisposable
+	internal class ApiStoryListener : StoryListenerBase, IAsyncDisposable
 	{
 		#region fields
 		private Uri _baseUri;
@@ -164,16 +164,6 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId.ToString());
 			await _hubConnection.StopAsync();
 			_timer.Stop();
-		}
-		#endregion
-
-		#region IDisposable methods
-		public void Dispose()
-		{
-			_logger.LogWarning("ApiStoryListener.Dispose called. Consider using async method instead.");
-
-			if (!_isDisposed)
-				_hubConnection.DisposeAsync().AsTask().Wait();
 		}
 		#endregion
 
