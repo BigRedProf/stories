@@ -4,26 +4,18 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics;
-using System.IO;
-using System.Timers;
 using System.Threading.Tasks;
 using BigRedProf.Stories.Models;
-using System.Net.NetworkInformation;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
 	internal class ApiStoryListener : StoryListenerBase, IAsyncDisposable
 	{
 		#region fields
-		private Uri _baseUri;
 		private ILogger<Stories.ApiClient> _logger;
 		private HubConnection _hubConnection;
 		private ApiHelper _apiHelper;
-		private IStoryteller _catchUpStoryteller;
-		private Timer _timer;
-		private TimeSpan _timerPollingFrequency;
-		private DateTime _lastTimeSomethingHappened;
-		private bool _isInsideTimerCallback;
+		private StoryThingSequencer _storyThingSequencer;
 		private bool _isDisposed;
 		#endregion
 
@@ -60,22 +52,17 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Debug.Assert(piedPiper != null);
 			Debug.Assert(logger != null);
 
-			_baseUri = baseUri;
 			_logger = logger;
 			Bookmark = bookmark;
 
 			_apiHelper = new ApiHelper(logger, piedPiper);
 
-			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
-
-			_timerPollingFrequency = timerPollingFrequency;
-			_timer = new Timer(_timerPollingFrequency.TotalMilliseconds);
-			_timer.Elapsed += Timer_Elapsed;
-			_lastTimeSomethingHappened = DateTime.MinValue;
-			_isInsideTimerCallback = false;
+			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
+			_storyThingSequencer = new StoryThingSequencer(logger, catchUpStoryteller, bookmark, timerPollingFrequency);
+			_storyThingSequencer.SomethingHappenedAsync += StoryThingSequencer_SomethingHappenedAsync;
 
 			_hubConnection = new HubConnectionBuilder()
-					.WithUrl(new Uri(_baseUri, $"_StorylistenerHub"))
+					.WithUrl(new Uri(baseUri, $"_StorylistenerHub"))
 					.AddMessagePackProtocol()
 					.WithAutomaticReconnect()
 					.ConfigureLogging(
@@ -105,7 +92,6 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_hubConnection.On<long, byte[]>("SomethingHappened", HubConnection_OnSomethingHappened);
 
 			_isDisposed = false;
-			_isInsideTimerCallback = false;
 		}
 		#endregion
 
@@ -135,7 +121,6 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			await _hubConnection.StartAsync();
 			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId.ToString());
-			_timer.Start();
 		}
 
 		override public void StopListening()
@@ -163,7 +148,6 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId.ToString());
 			await _hubConnection.StopAsync();
-			_timer.Stop();
 		}
 		#endregion
 
@@ -174,6 +158,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			if (!_isDisposed)
 			{
+				await _storyThingSequencer.DisposeAsync();
 				await _hubConnection.DisposeAsync();
 				_isDisposed = true;
 			}
@@ -181,6 +166,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region event handlers
+		private async Task StoryThingSequencer_SomethingHappenedAsync(object? sender, Events.SomethingHappenedEventArgs e)
+		{
+			Bookmark = e.Thing.Offset;
+			await InvokeSomethingHappenedEventAsync(e.Thing);
+		}
+
 		private async Task HubConnection_Reconnected(string? arg)
 		{
 			_logger.LogInformation("Enter ApiStoryListener.HubConnection_Reconnected. Arg={arg}", arg);
@@ -202,86 +193,13 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			await InvokeConnectionStatusChangedAsync("closed", null, arg);
 		}
 
-		private async Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
+		private Task HubConnection_OnSomethingHappened(long offset, byte[] byteArray)
 		{
 			_logger.LogDebug("Enter ApiStoryListener.HubConnection_OnSomethingHappened. Offset={offset}", offset);
 
-			if (_isInsideTimerCallback)
-			{
-				// the catch-up storyteller is busy, so defer to it
-				_logger.LogDebug("The catch-up storyteller is busy, so defer to it.");
-				return; 
-			}
-
-			if (Bookmark > offset)
-			{
-				// the catch-up storyteller is ahead of us and must have already told us about this thing
-				_logger.LogDebug("The catch-up storyteller is ahead of us and must have already told us about this thing.");
-				return;
-			}
-
-			while (Bookmark < offset)
-			{
-				// we've fallen behind in the story and need to catch up with a Storyteller
-				_logger.LogDebug(
-					"We've fallen behind in the story and need to catch up with a Storyteller. Bookmark={Bookmark},Offset={Offset}", 
-					Bookmark, 
-					offset
-				);
-				_catchUpStoryteller.SetBookmark(Bookmark);
-				StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
-				_logger.LogDebug("Catch-up thing retrieved. Offset={Offset}", catchUpThing.Offset);
-				_logger.LogTrace("Catch-up thing retrieved. Thing={Thing}", catchUpThing.Thing.ToString());
-				await InvokeSomethingHappenedEventAsync(catchUpThing);
-
-				++Bookmark;
-			}
-
-			StoryThing thing = _apiHelper.GetStoryThingFromByteArray(byteArray);
-			_logger.LogDebug("Thing retrieved. Offset={Offset}", thing.Offset);
-			_logger.LogTrace("Thing retrieved. Thing={Thing}", thing.Thing.ToString());
-			await InvokeSomethingHappenedEventAsync(thing);
-			
-			++Bookmark;
-		}
-
-
-		private async void Timer_Elapsed(object sender, ElapsedEventArgs e)
-		{
-			_logger.LogDebug(
-				"Enter ApiStoryListener.Timer_Elapsed. IsInsideTimerCallback={IsInsideTimerCallback}", 
-				_isInsideTimerCallback
-			);
-
-			if (_isInsideTimerCallback)
-				return;
-
-			DateTime now = DateTime.UtcNow;
-			if (now - _lastTimeSomethingHappened < _timerPollingFrequency)
-				return;
-
-			try
-			{
-				_logger.LogDebug("Setting IsInsideTimerCallback to true.");
-				_isInsideTimerCallback = true;
-
-				_catchUpStoryteller.SetBookmark(Bookmark);
-				while (await _catchUpStoryteller.HasSomethingForMeAsync())
-				{
-					_logger.LogDebug("Requesting thing. Bookmark={Bookmark}.", Bookmark);
-					StoryThing catchUpThing = await _catchUpStoryteller.TellMeSomethingAsync();
-					_logger.LogDebug("Catch-up thing retrieved. Offset={Offset}", catchUpThing.Offset);
-					_logger.LogTrace("Catch-up thing retrieved. Thing={Thing}", catchUpThing.Thing.ToString());
-					await InvokeSomethingHappenedEventAsync(catchUpThing);
-
-					++Bookmark;
-				}
-			}
-			finally
-			{
-				_logger.LogDebug("Finally, setting IsInsideTimerCallback to false.");
-				_isInsideTimerCallback = false;
-			}
+			StoryThing storyThing = _apiHelper.GetStoryThingFromByteArray(byteArray);
+			_storyThingSequencer.SequenceStoryThing(storyThing);
+			return Task.CompletedTask;
 		}
 		#endregion
 	}
