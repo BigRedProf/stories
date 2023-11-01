@@ -16,13 +16,12 @@ namespace BigRedProf.Stories.Internal.ApiClient
 	{
 		#region fields
 		private Uri _baseUri;
-		private IPiedPiper _piedPiper;
 		private ILogger<Stories.ApiClient> _logger;
 		private HubConnection _hubConnection;
+		private ApiHelper _apiHelper;
 		private IStoryteller _catchUpStoryteller;
 		private Timer _timer;
 		private TimeSpan _timerPollingFrequency;
-		private PackRat<StoryThing> _storyThingPackRat;
 		private DateTime _lastTimeSomethingHappened;
 		private bool _isInsideTimerCallback;
 		private bool _isDisposed;
@@ -62,11 +61,10 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Debug.Assert(logger != null);
 
 			_baseUri = baseUri;
-			_piedPiper = piedPiper;
 			_logger = logger;
 			Bookmark = bookmark;
 
-			_storyThingPackRat = _piedPiper.GetPackRat<StoryThing>(StoriesSchemaId.StoryThing);
+			_apiHelper = new ApiHelper(logger, piedPiper);
 
 			_catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
 
@@ -249,7 +247,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				++Bookmark;
 			}
 
-			StoryThing thing = GetStoryThingFromByteArray(byteArray);
+			StoryThing thing = _apiHelper.GetStoryThingFromByteArray(byteArray);
 			_logger.LogDebug("Thing retrieved. Offset={Offset}", thing.Offset);
 			_logger.LogTrace("Thing retrieved. Thing={Thing}", thing.Thing.ToString());
 			await InvokeSomethingHappenedEventAsync(thing);
@@ -294,38 +292,6 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				_logger.LogDebug("Finally, setting IsInsideTimerCallback to false.");
 				_isInsideTimerCallback = false;
 			}
-		}
-		#endregion
-
-		#region private methods
-		private StoryThing GetStoryThingFromByteArray(byte[] byteArray)
-		{
-			_logger.LogDebug("Enter ApiStoryListener.GetStoryThingFromByteArray. ByteArrayLen={ByteArrayLen}", byteArray.Length);
-			string base64ByteArray = Convert.ToBase64String(byteArray);
-			_logger.LogTrace("Base64ByteArray={Base64ByteArray}", base64ByteArray);
-
-			StoryThing? thing = null;
-			try
-			{
-				MemoryStream memoryStream = new MemoryStream(byteArray);
-				using (CodeReader reader = new CodeReader(memoryStream))
-				{
-					_logger.LogDebug("Calling UnpackModel");
-					thing = _storyThingPackRat.UnpackModel(reader);
-					_logger.LogDebug("Called UnpackModel. Offset={Offset},Thing={Thing}", thing.Offset, thing.Thing);
-				}
-			}
-			catch(Exception ex)
-			{
-				_logger.LogError(ex, "Failed to unpack model");
-			}
-			finally
-			{
-				_logger.LogDebug("finally");
-			}
-			_logger.LogDebug("Exit ApiStoryListener.GetStoryThingFromByteArray.");
-
-			return thing!;
 		}
 		#endregion
 	}
