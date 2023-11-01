@@ -168,6 +168,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#region event handlers
 		private async Task StoryThingSequencer_SomethingHappenedAsync(object? sender, Events.SomethingHappenedEventArgs e)
 		{
+			_logger.LogDebug(
+				"Enter ApiStoryListener.StoryThingSequencer_SomethingHappenedAsync. Offset={Offset}", 
+				e.Thing.Offset
+			);
+
 			Bookmark = e.Thing.Offset;
 			await InvokeSomethingHappenedEventAsync(e.Thing);
 		}

@@ -108,7 +108,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 					{
 						_logger.LogError(
 							ex,
-							"Failed to poll.",
+							"Failed to poll. Message={Message}",
 							ex.Message
 						);
 					}
@@ -122,6 +122,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		private async Task ProcessStoryThingAsync(StoryThing storyThing)
 		{
+			_logger.LogDebug(
+				"Enter StoryThingSequencer.ProcessStoryThingAsync. Offset={Offset}", 
+				storyThing.Offset
+			);
+
 			long offset = storyThing.Offset;
 
 			if (_bookmark > offset)
@@ -160,6 +165,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		private async Task PollAsync()
 		{
+			_logger.LogDebug("Enter StoryThingSequencer.PollAsync.");
+
 			_catchUpStoryteller.SetBookmark(_bookmark);
 			while (await _catchUpStoryteller.HasSomethingForMeAsync())
 			{
