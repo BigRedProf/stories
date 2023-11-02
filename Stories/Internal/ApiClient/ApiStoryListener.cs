@@ -174,7 +174,20 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			);
 
 			Bookmark = e.Thing.Offset;
-			await InvokeSomethingHappenedEventAsync(e.Thing);
+			try
+			{
+				await InvokeSomethingHappenedEventAsync(e.Thing);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogWarning(
+					ex,
+					"An exception was thrown by an ApiStoryListener.SomethingHappenedAsync event handler." +
+					"Offset={Offset},Message={Message}",
+					e.Thing.Offset,
+					ex.Message
+				);
+			}
 		}
 
 		private async Task HubConnection_Reconnected(string? arg)
