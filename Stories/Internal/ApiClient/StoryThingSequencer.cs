@@ -161,6 +161,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_logger.LogDebug("Thing retrieved. Offset={Offset}", storyThing.Offset);
 			_logger.LogTrace("Thing retrieved. Thing={Thing}", storyThing.Thing.ToString());
 			await InvokeSomethingHappenedEventAsync(storyThing);
+
+			++_bookmark;
 		}
 
 		private async Task PollAsync()
