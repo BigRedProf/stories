@@ -46,9 +46,9 @@ namespace BigRedProf.Stories.StoriesCli
                 _piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
                 _piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 
-                ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper, _apiClientLogger);
+                ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper, _apiClientLogger, null);
                 long nextOffset = GetNextOffset(options.Story, connection);
-                _storyListener = apiClient.GetStoryListener(options.Story, nextOffset, 1000, TimeSpan.FromSeconds(5));
+                _storyListener = apiClient.GetStoryListener(1000, TimeSpan.FromSeconds(5), options.Story, nextOffset);
                 _storyListener.SomethingHappenedAsync += (sender, e) =>
                 {
                     SaveToDatabase(connection, e.Thing, options.Story);

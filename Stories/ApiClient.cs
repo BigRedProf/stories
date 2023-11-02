@@ -11,23 +11,25 @@ namespace BigRedProf.Stories
 		private Uri _baseUri;
 		private IPiedPiper _piedPiper;
 		ILogger<ApiClient> _logger;
+		Action<ILoggingBuilder> _signalRLoggingBuilderCallback;
 		#endregion
 
 		#region constructors
-		public ApiClient(Uri baseUri, IPiedPiper piedPiper, ILogger<ApiClient> logger)
+		public ApiClient(Uri baseUri, IPiedPiper piedPiper, ILogger<ApiClient> logger, Action<ILoggingBuilder>? signalRLoggingBuilderCallback)
 		{
-			if(baseUri == null)
+			if (baseUri == null)
 				throw new ArgumentNullException(nameof(baseUri));
 
-			if(piedPiper == null)
+			if (piedPiper == null)
 				throw new ArgumentNullException(nameof(piedPiper));
 
-			if(logger == null)
+			if (logger == null)
 				throw new ArgumentNullException(nameof(logger));
 
 			_baseUri = baseUri;
 			_piedPiper = piedPiper;
 			_logger = logger;
+			_signalRLoggingBuilderCallback = signalRLoggingBuilderCallback ?? (_ => { });
 		}
 		#endregion
 
@@ -51,25 +53,11 @@ namespace BigRedProf.Stories
 			return new ApiStoryteller(_baseUri, storyId, _piedPiper, bookmark, tellLimit);
 		}
 
-		public IStoryListener GetStoryListener(StoryId storyId, long bookmark, long? tellLimit, TimeSpan timerPollingFrequency)
-		{
-			if (storyId == null)
-				throw new ArgumentNullException(nameof(storyId));
-
-			if (bookmark < 0)
-				throw new ArgumentOutOfRangeException(nameof(bookmark));
-
-			return new ApiStoryListener(_baseUri, storyId, _piedPiper, _logger, bookmark, tellLimit, timerPollingFrequency);
-		}
-
 		public IStoryListener GetStoryListener(
-			StoryId storyId, 
-			long bookmark,
 			long? tellLimit,
-			TimeSpan timerPollingFrequency,
-			LogLevel? signalRLogLevel,
-			ILoggerProvider? loggerProvider,
-			bool addConsoleLogging
+			TimeSpan pollingFrequency,
+			StoryId storyId,
+			long bookmark
 		)
 		{
 			if (storyId == null)
@@ -78,10 +66,7 @@ namespace BigRedProf.Stories
 			if (bookmark < 0)
 				throw new ArgumentOutOfRangeException(nameof(bookmark));
 
-			return new ApiStoryListener(
-				_baseUri, storyId, _piedPiper, _logger, bookmark, tellLimit, timerPollingFrequency, 
-				signalRLogLevel, loggerProvider, addConsoleLogging
-			);
+			return new ApiStoryListener(_piedPiper, _logger, _signalRLoggingBuilderCallback, tellLimit, pollingFrequency, _baseUri, storyId, bookmark);
 		}
 		#endregion
 	}

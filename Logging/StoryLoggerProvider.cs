@@ -29,7 +29,7 @@ namespace BigRedProf.Stories.Logging
 
 			Uri baseStoryUrl = new Uri(config.CurrentValue.BaseStoryUrl);
 			StoryId storyId = config.CurrentValue.StoryId;
-			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper, apiClientLogger);
+			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper, apiClientLogger, null);
 			_scribe = apiClient.GetScribe(storyId);
 
 			_timer = new Timer(TimeSpan.FromMinutes(5).TotalMilliseconds);

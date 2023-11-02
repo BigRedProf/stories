@@ -21,29 +21,14 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		#region constructors
 		public ApiStoryListener(
+			IPiedPiper piedPiper, 
+			ILogger<Stories.ApiClient> logger,
+			Action<ILoggingBuilder> signalRLoggingBuilderCallback,
+			long? tellLimit,
+			TimeSpan pollingFrequency,
 			Uri baseUri,
-			StoryId storyId, 
-			IPiedPiper piedPiper, 
-			ILogger<Stories.ApiClient> logger,
-			long bookmark, 
-			long? tellLimit,
-			TimeSpan timerPollingFrequency
-		)
-			: this(baseUri, storyId, piedPiper, logger, bookmark, tellLimit, timerPollingFrequency, null, null, false)
-		{
-		}
-
-		public ApiStoryListener(
-			Uri baseUri, 
-			StoryId storyId, 
-			IPiedPiper piedPiper, 
-			ILogger<Stories.ApiClient> logger,
-			long bookmark, 
-			long? tellLimit,
-			TimeSpan timerPollingFrequency,
-			LogLevel? signalRLogLevel,
-			ILoggerProvider? loggerProvider,
-			bool addConsoleLogging
+			StoryId storyId,
+			long bookmark
 		)
 			: base(storyId)
 		{
@@ -58,32 +43,14 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_apiHelper = new ApiHelper(logger, piedPiper);
 
 			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
-			_storyThingSequencer = new StoryThingSequencer(logger, catchUpStoryteller, bookmark, timerPollingFrequency);
+			_storyThingSequencer = new StoryThingSequencer(logger, catchUpStoryteller, bookmark, pollingFrequency);
 			_storyThingSequencer.SomethingHappenedAsync += StoryThingSequencer_SomethingHappenedAsync;
 
 			_hubConnection = new HubConnectionBuilder()
 					.WithUrl(new Uri(baseUri, $"_StorylistenerHub"))
 					.AddMessagePackProtocol()
 					.WithAutomaticReconnect()
-					//.ConfigureLogging(
-					//	logging =>
-					//	{
-					//		logging.SetMinimumLevel(LogLevel.Information);
-					//		if (signalRLogLevel != null)
-					//		{
-					//			logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel.Value);
-					//			logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel.Value);
-					//		}
-					//		if (addConsoleLogging)
-					//			logging.AddConsole();
-
-					//		// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException. Use
-					//		// @inject ILoggerProvider LoggerProvider
-					//		// and pass it as the loggerProvider parameter here instead.
-					//		if (loggerProvider != null)
-					//			logging.AddProvider(loggerProvider);
-					//	}
-					//)
+					.ConfigureLogging(signalRLoggingBuilderCallback)
 					.Build();
 
 			_hubConnection.Closed += HubConnection_Closed;

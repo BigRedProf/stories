@@ -11,7 +11,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Library</Product>
-		<Version>0.5.55</Version>
+		<Version>0.5.56</Version>
 
 		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
 		<!--<IncludeSymbols>True</IncludeSymbols>-->

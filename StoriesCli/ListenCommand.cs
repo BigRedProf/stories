@@ -50,23 +50,24 @@ namespace BigRedProf.Stories.StoriesCli
 
 			long bookmark = options.Bookmark == null ? 0 : options.Bookmark.Value;
 
-			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper, _apiClientLogger);
-			if (options.LogLevel == null)
+			Action<ILoggingBuilder>? signalRLoggingBuilderCallback = null;
+			if(options.LogLevel != null)
 			{
-				_storyListener = apiClient.GetStoryListener(options.Story!, bookmark, 1000, TimeSpan.FromSeconds(5));
+				signalRLoggingBuilderCallback = (ILoggingBuilder loggingBuilder) =>
+				{
+					loggingBuilder.SetMinimumLevel(options.LogLevel.Value);
+					loggingBuilder.AddFilter("Microsoft.AspNetCore.SignalR", options.LogLevel.Value);
+					loggingBuilder.AddFilter("Microsoft.AspNetCore.Http.Connections", options.LogLevel.Value);
+					loggingBuilder.AddConsole();
+				};
 			}
-			else
-			{
-				_storyListener = apiClient.GetStoryListener(
-					options.Story!, 
-					bookmark, 
-					1000,
-					TimeSpan.FromSeconds(5), 
-					options.LogLevel.Value, 
-					null, 
-					true
-				);
-			}
+			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper, _apiClientLogger, signalRLoggingBuilderCallback);
+			_storyListener = apiClient.GetStoryListener(
+				1000,
+				TimeSpan.FromSeconds(5),
+				options.Story!,
+				bookmark
+			);
 			_storyListener.SomethingHappenedAsync += StoryListener_SomethingHappenedAsync;
 			_storyListener.StartListening();
 
