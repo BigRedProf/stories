@@ -65,25 +65,25 @@ namespace BigRedProf.Stories.Internal.ApiClient
 					.WithUrl(new Uri(baseUri, $"_StorylistenerHub"))
 					.AddMessagePackProtocol()
 					.WithAutomaticReconnect()
-					.ConfigureLogging(
-						logging =>
-						{
-							logging.SetMinimumLevel(LogLevel.Information);
-							if (signalRLogLevel != null)
-							{
-								logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel.Value);
-								logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel.Value);
-							}
-							if (addConsoleLogging)
-								logging.AddConsole();
+					//.ConfigureLogging(
+					//	logging =>
+					//	{
+					//		logging.SetMinimumLevel(LogLevel.Information);
+					//		if (signalRLogLevel != null)
+					//		{
+					//			logging.AddFilter("Microsoft.AspNetCore.SignalR", signalRLogLevel.Value);
+					//			logging.AddFilter("Microsoft.AspNetCore.Http.Connections", signalRLogLevel.Value);
+					//		}
+					//		if (addConsoleLogging)
+					//			logging.AddConsole();
 
-							// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException. Use
-							// @inject ILoggerProvider LoggerProvider
-							// and pass it as the loggerProvider parameter here instead.
-							if (loggerProvider != null)
-								logging.AddProvider(loggerProvider);
-						}
-					)
+					//		// NOTE: Trying to AddConsole logging in BlazorWasm throws an InvalidOperationException. Use
+					//		// @inject ILoggerProvider LoggerProvider
+					//		// and pass it as the loggerProvider parameter here instead.
+					//		if (loggerProvider != null)
+					//			logging.AddProvider(loggerProvider);
+					//	}
+					//)
 					.Build();
 
 			_hubConnection.Closed += HubConnection_Closed;
