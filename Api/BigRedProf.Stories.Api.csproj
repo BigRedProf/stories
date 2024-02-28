@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 		<TargetFramework>net7.0</TargetFramework>
@@ -15,7 +15,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Api</Product>
-		<Version>0.6.1</Version>
+		<Version>0.6.2</Version>
 
 	</PropertyGroup>
 
