@@ -2,7 +2,7 @@
 
 namespace BigRedProf.Stories.Models
 {
-	[RegisterPackRat(StoriesSchemaId.StoryThing)]
+	[GeneratePackRat(StoriesSchemaId.StoryThing)]
 	public class StoryThing
 	{
 		#region properties

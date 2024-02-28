@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace BigRedProf.Stories.Logging.Models
 {
-	[RegisterPackRat(StoriesLoggingSchemaId.LogEntryProperty)]
+	[GeneratePackRat(StoriesLoggingSchemaId.LogEntryProperty)]
 	public class LogEntryProperty
 	{
 		#region properties

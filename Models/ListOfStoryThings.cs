@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace BigRedProf.Stories.Models
 {
-	[RegisterPackRat(StoriesSchemaId.ListOfStoryThings)]
+	[GeneratePackRat(StoriesSchemaId.ListOfStoryThings)]
 	public class ListOfStoryThings
 	{
 		#region properties

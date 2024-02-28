@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace BigRedProf.Stories.Logging.Models
 {
-    [RegisterPackRat(StoriesLoggingSchemaId.LogEntry)]
+    [GeneratePackRat(StoriesLoggingSchemaId.LogEntry)]
 	public class LogEntry
 	{
 		#region properties
