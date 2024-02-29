@@ -11,7 +11,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories CLI Models Library</Product>
-		<Version>0.6.3</Version>
+		<Version>0.6.4</Version>
 
 	</PropertyGroup>
 
@@ -22,7 +22,7 @@
 	</Target>
 
 	<ItemGroup>
-		<Compile Include="$(IntermediateOutputPath)\*PackRat.g.cs"></Compile>
+		<Compile Include="$(IntermediateOutputPath)\*.g.cs"></Compile>
 	</ItemGroup>
 
 	<ItemGroup>
