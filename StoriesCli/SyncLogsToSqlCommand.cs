@@ -42,7 +42,7 @@ namespace BigRedProf.Stories.StoriesCli
 
                 // Setup the story listener just like ListenCommand
                 _piedPiper = new PiedPiper();
-                _piedPiper.RegisterDefaultPackRats();
+                _piedPiper.RegisterCorePackRats();
                 _piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
                 _piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 
@@ -96,7 +96,11 @@ namespace BigRedProf.Stories.StoriesCli
 
         private void SaveToDatabase(SqlConnection connection, StoryThing thing, string storyId)
         {
-            var logEntry = _piedPiper?.DecodeModelWithSchema(thing.Thing).Model as LogEntry;
+            ModelWithSchema? modelWithSchema = _piedPiper?.DecodeModel<ModelWithSchema>(thing.Thing, CoreSchema.ModelWithSchema);
+            if (modelWithSchema == null)
+                return;
+
+            LogEntry? logEntry = modelWithSchema.Model as LogEntry;
             if (logEntry != null)
             {
                 long offset = thing.Offset;

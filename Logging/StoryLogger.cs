@@ -72,7 +72,12 @@ namespace BigRedProf.Stories.Logging
 				Properties = properties
 			};
 
-			Code encodedEntry = _piedPiper.EncodeModelWithSchema(logEntry, StoriesLoggingSchemaId.LogEntry);
+			ModelWithSchema modelWithSchema = new ModelWithSchema()
+			{
+				Model = logEntry,
+				SchemaId = StoriesLoggingSchemaId.LogEntry
+			};
+			Code encodedEntry = _piedPiper.EncodeModel<ModelWithSchema>(modelWithSchema, CoreSchema.ModelWithSchema);
 			_encodedLogEntries.Add(encodedEntry);
 
 			// let's autoflush errors and criticals

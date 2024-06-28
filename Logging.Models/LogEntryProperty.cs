@@ -7,10 +7,10 @@ namespace BigRedProf.Stories.Logging.Models
 	public class LogEntryProperty
 	{
 		#region properties
-		[PackField(1, SchemaId.TextUtf8)]
+		[PackField(1, CoreSchema.TextUtf8)]
 		public string Name { get; set; } = default!;
 
-		[PackField(2, SchemaId.TextUtf8)]
+		[PackField(2, CoreSchema.TextUtf8)]
 		public string Value { get; set; } = default!;
 		#endregion
 	}

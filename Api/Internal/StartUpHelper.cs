@@ -39,7 +39,7 @@ namespace BigRedProf.Stories.Api.Internal
 		public static void InjectDependencies(IServiceCollection services)
 		{
 			IPiedPiper piedPiper = new PiedPiper();
-			piedPiper.RegisterDefaultPackRats();
+			piedPiper.RegisterCorePackRats();
 			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 			services.AddSingleton<IPiedPiper>(piedPiper);
 

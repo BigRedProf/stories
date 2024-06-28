@@ -8,19 +8,19 @@ namespace BigRedProf.Stories.Logging.Models
 	public class LogEntry
 	{
 		#region properties
-		[PackField(1, SchemaId.TextUtf8)]
+		[PackField(1, CoreSchema.TextUtf8)]
 		public string LogName { get; set; } = default!;
 
-		[PackField(2, SchemaId.Int32)]
+		[PackField(2, CoreSchema.Int32)]
 		public int EventId { get; set; }
 
-		[PackField(3, SchemaId.TextUtf8, IsNullable = true)]
+		[PackField(3, CoreSchema.TextUtf8, IsNullable = true)]
 		public string? EventName { get; set; }
 
-		[PackField(4, SchemaId.Int32)]
+		[PackField(4, CoreSchema.Int32)]
 		public LogLevel Level { get; set; }
 
-		[PackField(5, SchemaId.TextUtf8)]
+		[PackField(5, CoreSchema.TextUtf8)]
 		public string Message { get; set; } = default!;
 
 		[PackListField(6, StoriesLoggingSchemaId.LogEntryProperty, ByteAligned.Yes)]

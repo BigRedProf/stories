@@ -7,7 +7,7 @@ namespace BigRedProf.Stories.Models
 	public class ListOfThings
 	{
 		#region properties
-		[PackListField(1, SchemaId.Code, ByteAligned.Yes)]
+		[PackListField(1, CoreSchema.Code, ByteAligned.Yes)]
 		public IList<Code> Things = default!;
 		#endregion
 	}

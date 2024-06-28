@@ -33,7 +33,7 @@ namespace BigRedProf.Stories.StoriesCli
 			ListenOptions options = (ListenOptions)commandLineOptions;
 
 			_piedPiper = new PiedPiper();
-			_piedPiper.RegisterDefaultPackRats();
+			_piedPiper.RegisterCorePackRats();
 			_piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 			_piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 			if(options.ModelAssemblies != null)
@@ -110,7 +110,7 @@ namespace BigRedProf.Stories.StoriesCli
 					formattedThing = thing.ToString();
 					break;
 				case ThingFormat.ModelWithSchema:
-					ModelWithSchema modelWithSchema = _piedPiper.DecodeModelWithSchema(thing);
+					ModelWithSchema modelWithSchema = _piedPiper.DecodeModel<ModelWithSchema>(thing, CoreSchema.ModelWithSchema);
 					object model = modelWithSchema.Model;
 					formattedThing = FormatModel(model);
 					break;

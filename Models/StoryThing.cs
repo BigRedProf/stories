@@ -6,14 +6,14 @@ namespace BigRedProf.Stories.Models
 	public class StoryThing
 	{
 		#region properties
-		[PackField(1, SchemaId.Int64)]
+		[PackField(1, CoreSchema.Int64)]
 		public long Offset
 		{
 			get;
 			set;
 		}
 
-		[PackField(2, SchemaId.Code)]
+		[PackField(2, CoreSchema.Code)]
 		public Code Thing
 		{
 			get;
