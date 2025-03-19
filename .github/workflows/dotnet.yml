@@ -21,25 +21,36 @@ jobs:
           dotnet-version: 7.0.x
       - name: Add NuGet Source
         run: dotnet nuget add source --username BigRedProf --password ${{ secrets.BIGREDPROF_GITHUB_PAT_PACKAGE_REGISTRY }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
+        working-directory: src
       - name: Restore
         run: dotnet restore
+        working-directory: src
       - name: Restore dotnet tools
         run: dotnet tool restore
+        working-directory: src
       - name: Build Debug
         run: dotnet build --no-restore
+        working-directory: src
       - name: Test Debug
         run: dotnet test --no-build --verbosity normal
+        working-directory: src
       - name: Build Release
         run: dotnet build --no-restore -c Release
+        working-directory: src
       - name: Test Release
         run: dotnet test --no-build --verbosity normal -c Release
+        working-directory: src
       - name: Pack
         run: dotnet pack -c Release
+        working-directory: src
       - name: Push BigRedProf.Stories package
         run: dotnet nuget push ./Stories/bin/Release/*.nupkg --source "github" --skip-duplicate
+        working-directory: src
       - name: Push BigRedProf.Stories.Logging package
         run: dotnet nuget push ./Logging/bin/Release/*.nupkg --source "github" --skip-duplicate
+        working-directory: src
       - name: Push BigRedProf.Stories.Logging.Models package
         run: dotnet nuget push ./Logging.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
+        working-directory: src
       - name: Push BigRedProf.Stories.Models package
         run: dotnet nuget push ./Models/bin/Release/*.nupkg --source "github" --skip-duplicate
