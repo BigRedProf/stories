@@ -11,11 +11,11 @@ WORKDIR /src
 RUN dotnet nuget add source --username BigRedProf --password ${GITHUB_PAT_PACKAGE_REGISTRY} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
 COPY [".config/dotnet-tools.json", ".config/"]
 RUN dotnet tool restore
-COPY ["Api/BigRedProf.Stories.Api.csproj", "Api/"]
-COPY ["Stories/BigRedProf.Stories.csproj", "Stories/"]
-RUN dotnet restore "Api/BigRedProf.Stories.Api.csproj"
+COPY ["src/Api/BigRedProf.Stories.Api.csproj", "src/Api/"]
+COPY ["src/Core/BigRedProf.Stories.Core.csproj", "src/Core/"]
+RUN dotnet restore "src/Api/BigRedProf.Stories.Api.csproj"
 COPY . .
-WORKDIR "/src/Api"
+WORKDIR "/src/src/Api"
 RUN dotnet build "BigRedProf.Stories.Api.csproj" -c Release -o /app/build
 
 FROM build AS publish
