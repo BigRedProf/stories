@@ -43,8 +43,8 @@ jobs:
       - name: Pack
         run: dotnet pack -c Release
         working-directory: src
-      - name: Push BigRedProf.Stories package
-        run: dotnet nuget push ./Stories/bin/Release/*.nupkg --source "github" --skip-duplicate
+      - name: Push BigRedProf.Stories.Core package
+        run: dotnet nuget push ./Core/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
       - name: Push BigRedProf.Stories.Logging package
         run: dotnet nuget push ./Logging/bin/Release/*.nupkg --source "github" --skip-duplicate
