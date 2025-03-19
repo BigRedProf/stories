@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data;
+﻿using BigRedProf.Data.Core;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
 using BigRedProf.Stories.Models;

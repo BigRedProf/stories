@@ -1,4 +1,4 @@
-using BigRedProf.Data;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories;
 using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;

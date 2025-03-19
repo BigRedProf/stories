@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data;
+﻿using BigRedProf.Data.Core;
 using BigRedProf.Stories.Logging.Models;
 using Microsoft.Extensions.Logging;
 using System;

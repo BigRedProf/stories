@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data;
+﻿using BigRedProf.Data.Core;
 using System.Threading.Tasks;
 
 namespace BigRedProf.Stories

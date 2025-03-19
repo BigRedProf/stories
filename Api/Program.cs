@@ -1,4 +1,4 @@
-using BigRedProf.Data;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Api.Internal;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
