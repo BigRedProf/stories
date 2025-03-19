@@ -54,3 +54,4 @@ jobs:
         working-directory: src
       - name: Push BigRedProf.Stories.Core.Models package
         run: dotnet nuget push ./Core.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
+        working-directory: src
