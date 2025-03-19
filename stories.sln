@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories", "Stories\BigRedProf.Stories.csproj", "{F92AE72A-A810-4475-AE02-F02F7BBD921D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Core", "Core\BigRedProf.Stories.Core.csproj", "{F92AE72A-A810-4475-AE02-F02F7BBD921D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Api", "Api\BigRedProf.Stories.Api.csproj", "{8786FAFB-B7D8-4760-8158-D038E1389F12}"
 EndProject
@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging", "Logging\BigRedProf.Stories.Logging.csproj", "{43F9C3DB-D3F8-48FA-A5A4-CB8A339F8F32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Models", "Models\BigRedProf.Stories.Models.csproj", "{F4A0093F-D4B0-4473-9ECC-FF3B6E72B718}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Core.Models", "Core.Models\BigRedProf.Stories.Core.Models.csproj", "{F4A0093F-D4B0-4473-9ECC-FF3B6E72B718}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Models", "StoriesCli.Models\BigRedProf.Stories.StoriesCli.Models.csproj", "{A31A90E0-A142-497E-95D4-47CFBF23837D}"
 EndProject
