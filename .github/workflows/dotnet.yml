@@ -52,5 +52,5 @@ jobs:
       - name: Push BigRedProf.Stories.Logging.Models package
         run: dotnet nuget push ./Logging.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
-      - name: Push BigRedProf.Stories.Models package
-        run: dotnet nuget push ./Models/bin/Release/*.nupkg --source "github" --skip-duplicate
+      - name: Push BigRedProf.Stories.Core.Models package
+        run: dotnet nuget push ./Core.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
