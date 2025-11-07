@@ -144,7 +144,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private Uri GetTellMeSomethingUri(long bookmark)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append($"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{_bookmark}");
+			stringBuilder.Append($"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{bookmark}");
 			if(_tellLimit.HasValue)
 				stringBuilder.Append($"?limit={_tellLimit.Value}");
 
