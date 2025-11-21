@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
-		<TargetFramework>net7.0</TargetFramework>
+		<TargetFramework>net8.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UserSecretsId>5c5c9938-2c69-4f26-9354-e1808a1c0281</UserSecretsId>
@@ -15,7 +15,7 @@
 		<Authors>BigRedProf</Authors>
 		<Company>Big Red Professor</Company>
 		<Product>Stories Api</Product>
-		<Version>0.6.8</Version>
+		<Version>0.6.9</Version>
 
 	</PropertyGroup>
 
