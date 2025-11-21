@@ -1,8 +1,6 @@
 ﻿using CommandLine;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
-using System.Diagnostics;
 
 namespace BigRedProf.Stories.StoriesCli
 {
@@ -23,8 +21,12 @@ namespace BigRedProf.Stories.StoriesCli
 			// Parse arguments for multiple option classes
 			return CommandLine.Parser.Default.ParseArguments<ListenOptions, SyncLogsToSqlOptions>(args)
 				.MapResult(
-					(ListenOptions listenOptions) => RunOptions(serviceProvider, listenOptions),
-					(SyncLogsToSqlOptions syncOptions) => RunOptions(serviceProvider, syncOptions),
+					(ListenOptions o) => RunOptions(serviceProvider, o),
+					(SyncLogsToSqlOptions o) => RunOptions(serviceProvider, o),
+					(BackupOptions o) => RunOptions(serviceProvider, o),
+					(RestoreOptions o) => RunOptions(serviceProvider, o),
+					(VerifyOptions o) => RunOptions(serviceProvider, o),
+					(InspectOptions o) => RunOptions(serviceProvider, o),
 					errors => HandleParseError(errors)
 				);
 		}
@@ -42,6 +44,24 @@ namespace BigRedProf.Stories.StoriesCli
 				ILogger<SyncLogsToSqlCommand> logger = serviceProvider.GetService<ILogger<SyncLogsToSqlCommand>>()!;
 				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;
 				command = new SyncLogsToSqlCommand(logger, apiClientLogger);
+			}
+			else if(options is BackupOptions)
+			{
+				ILogger<BackupCommand> logger = serviceProvider.GetService<ILogger<BackupCommand>>()!;
+				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;
+				command = new BackupCommand(logger, apiClientLogger);
+			}
+			else if(options is RestoreOptions)
+			{
+				command = new RestoreCommand();
+			}
+			else if (options is VerifyOptions)
+			{
+				command = new VerifyCommand();
+			}
+			else if (options is InspectOptions)
+			{
+				command = new InspectCommand();
 			}
 			else
 			{
