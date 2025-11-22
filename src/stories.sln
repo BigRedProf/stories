@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging.Models", "Logging.Models\BigRedProf.Stories.Logging.Models.csproj", "{B8BA6605-498C-4983-9AA9-19B2C5BCA471}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Test", "StoriesCli.Test\BigRedProf.Stories.StoriesCli.Test.csproj", "{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -54,5 +56,9 @@ Global
 		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8BA6605-498C-4983-9AA9-19B2C5BCA471}.Release|Any CPU.Build.0 = Release|Any CPU
+		{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
