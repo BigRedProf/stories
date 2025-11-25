@@ -10,7 +10,6 @@ namespace BigRedProf.Stories.StoriesCli
 	{
 		#region constants
 		private const long TellLimit = 50_000;
-		private const long CheckpointInterval = 100_000;
 		#endregion
 
 		#region fields
@@ -31,65 +30,25 @@ namespace BigRedProf.Stories.StoriesCli
 		{
 			BackupOptions options = (BackupOptions)baseOpts;
 
-			// PiedPiper & ApiClient
 			IPiedPiper piedPiper = new PiedPiper();
 			piedPiper.RegisterCorePackRats();
 			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 
 			ApiClient apiClient = new ApiClient(options.BaseUri!, piedPiper, _apiClientLogger, null);
+			IStoryteller storyteller = apiClient.GetStoryteller(options.StoryId, 0, TellLimit);
 
-			// Tape library + wizard (series-based)
 			DiskLibrary diskLibrary = new DiskLibrary(options.TapeRoot);
 			BackupWizard backupWizard = BackupWizard.OpenExisting(diskLibrary, options.SeriesId);
 
-			// Optional resume point via BackupWizard checkpoint
-			long bookmark = 0;
-			if (options.IncrementalBackup == true)
-			{
-				try
-				{
-					Code bookmarkCode = backupWizard.GetLatestCheckpoint();
-					bookmark = piedPiper.DecodeModel<long>(bookmarkCode, CoreSchema.Int64);
+			BackupEngine.BackupStoryToSeries(
+				piedPiper,
+				storyteller,
+				diskLibrary,
+				options.SeriesId,
+				options.IncrementalBackup ?? false,
+				_logger
+			);
 
-					_logger.LogInformation("Resuming backup from offset {StartOffset}.", bookmark);
-				}
-				catch (InvalidOperationException)
-				{
-					_logger.LogInformation("No checkpoint found; starting full backup from offset 0.");
-				}
-			}
-
-			IStoryteller storyteller = apiClient.GetStoryteller(options.Story!, bookmark, TellLimit);
-
-			long lastOffset = bookmark;
-
-			while (storyteller.HasSomethingForMe)
-			{
-				StoryThing storyThing = storyteller.TellMeSomething();
-				// Write the Code frame (offset implied by order in series)
-				Code encodedThing = piedPiper.EncodeModel(storyThing.Thing, CoreSchema.Code);
-				backupWizard.Append(encodedThing);
-
-				lastOffset = storyThing.Offset + 1; // next offset expected
-
-				// Opportunistic checkpointing if requested
-				if (storyteller.Bookmark % CheckpointInterval == 0)
-				{
-					if (options.IncrementalBackup == true)
-					{
-						Code lastOffsetCode = piedPiper.EncodeModel(lastOffset, CoreSchema.Int64);
-						backupWizard.SetLatestCheckpoint(lastOffsetCode);
-					}
-				}
-			}
-
-			if (options.IncrementalBackup == true)
-			{
-				Code lastOffsetCode = piedPiper.EncodeModel(lastOffset, CoreSchema.Int64);
-				backupWizard.SetLatestCheckpoint(lastOffsetCode);
-			}
-
-			_logger.LogInformation("Backup complete. Series={SeriesId}, LastOffset={LastOffset}", options.SeriesId, lastOffset);
 			return 0;
 		}
 

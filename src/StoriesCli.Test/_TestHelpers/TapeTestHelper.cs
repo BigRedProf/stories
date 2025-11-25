@@ -1,15 +1,24 @@
-﻿using BigRedProf.Data.Tape;
+﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Tape;
 using BigRedProf.Data.Tape.Libraries;
+using BigRedProf.Stories.Models;
 
 namespace BigRedProf.Stories.StoriesCli.Test._TestHelpers
 {
-	internal class TapeTestHelper
+	internal static class TapeTestHelper
 	{
 		#region methods
-		public static TapeLibrary CreateTapeLibrary(string rootPath)
+		public static IPiedPiper CreatePiedPiper()
 		{
-			Directory.CreateDirectory(rootPath);
-			return new DiskLibrary(rootPath);
+			IPiedPiper piedPiper = new PiedPiper();
+			piedPiper.RegisterCorePackRats();
+			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
+			return piedPiper;
+		}
+
+		public static TapeLibrary CreateTapeLibrary()
+		{
+			return new MemoryLibrary();
 		}
 		#endregion
 	}
