@@ -22,8 +22,8 @@ public class BackupAndRestoreTests
 		IStoryteller storyteller = new MemoryStoryteller(things);
 
 		Guid seriesId = new Guid("11111111-1111-1111-1111-111111111111");
-		//scribe.RecordSomething("0", "00", "10101");
-		scribe.RecordSomething("0000 0001", "0000 0010", "0001 0101");
+		scribe.RecordSomething("0", "00", "10101");
+		//scribe.RecordSomething("0000 0001", "0000 0010", "0001 0101");
 
 		// Act
 		BackupEngine.BackupStoryToSeries(
@@ -48,11 +48,11 @@ public class BackupAndRestoreTests
 
 		// Assert
 		Code code1 = restoredStoryteller.TellMeSomething().Thing;
-		Assert.Equal("00000001", code1);
+		Assert.Equal("0", code1);
 		Code code2 = restoredStoryteller.TellMeSomething().Thing;
-		Assert.Equal("00000010", code2);
+		Assert.Equal("00", code2);
 		Code code3 = restoredStoryteller.TellMeSomething().Thing;
-		Assert.Equal("00010101", code3);
+		Assert.Equal("10101", code3);
 	}
 	#endregion
 }
