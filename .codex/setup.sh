@@ -58,18 +58,27 @@ echo "[setup] dotnet --info"
 dotnet --info
 
 # ----------------------------
+# Persist dotnet for future shells (Codex task phase)
+# ----------------------------
+echo "[setup] Persisting DOTNET_ROOT and PATH for future shells..."
+cat >/etc/profile.d/dotnet.sh <<'EOF'
+export DOTNET_ROOT="/root/.dotnet"
+export PATH="$DOTNET_ROOT:$PATH"
+EOF
+chmod 644 /etc/profile.d/dotnet.sh
+
+echo "[setup] Making dotnet available globally..."
+ln -sf /root/.dotnet/dotnet /usr/local/bin/dotnet
+
+# ----------------------------
 # Speed up restores across runs
 # ----------------------------
 export NUGET_PACKAGES="${HOME}/.nuget/packages"
 mkdir -p "${NUGET_PACKAGES}"
 
-# If you use a NuGet.config in-repo, dotnet will pick it up automatically.
-# If you have private feeds requiring secrets, configure them in the Codex env UI.
-
 # ----------------------------
 # Register BigRedProf NuGet registry (GitHub Packages)
 # ----------------------------
-
 echo "[setup] Registering BigRedProf NuGet registry on GitHub Packages..."
 
 if [ -z "${GITHUB_PAT_PACKAGE_REGISTRY:-}" ]; then
@@ -91,7 +100,7 @@ dotnet nuget add source "https://nuget.pkg.github.com/BigRedProf/index.json" \
 # Install dotnet tools
 # ----------------------------
 if [ -f ".config/dotnet-tools.json" ]; then
-	echo "[maintenance] Restoring local dotnet tools..."
+	echo "[setup] Restoring local dotnet tools..."
 	dotnet tool restore
 fi
 

@@ -61,6 +61,19 @@ echo "[maintenance] global.json SDK version: ${SDK_VERSION}"
 install_dotnet_if_needed "${SDK_VERSION}"
 
 # ----------------------------
+# Persist dotnet for future shells (Codex task phase)
+# ----------------------------
+echo "[maintenance] Persisting DOTNET_ROOT and PATH for future shells..."
+cat >/etc/profile.d/dotnet.sh <<'EOF'
+export DOTNET_ROOT="/root/.dotnet"
+export PATH="$DOTNET_ROOT:$PATH"
+EOF
+chmod 644 /etc/profile.d/dotnet.sh
+
+echo "[maintenance] Making dotnet available globally..."
+ln -sf /root/.dotnet/dotnet /usr/local/bin/dotnet
+
+# ----------------------------
 # NuGet cache
 # ----------------------------
 export NUGET_PACKAGES="${HOME}/.nuget/packages"
