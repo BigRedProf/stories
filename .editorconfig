@@ -1,0 +1,62 @@
+root = true
+
+[*.cs]
+
+########################################
+# Indentation
+########################################
+
+indent_style = tab
+indent_size = tab
+tab_width = 4
+
+########################################
+# Newlines
+########################################
+
+end_of_line = crlf
+insert_final_newline = true
+
+########################################
+# C# Formatting
+########################################
+
+csharp_new_line_before_open_brace = all
+
+########################################
+# var usage (DISALLOW)
+########################################
+
+csharp_style_var_for_built_in_types = false:error
+csharp_style_var_when_type_is_apparent = false:error
+csharp_style_var_elsewhere = false:error
+
+########################################
+# Accessibility modifiers required
+########################################
+
+dotnet_style_require_accessibility_modifiers = always:error
+
+########################################
+# Prefer block bodies (no expression-bodied members)
+########################################
+
+csharp_style_expression_bodied_methods = false:error
+csharp_style_expression_bodied_properties = false:error
+csharp_style_expression_bodied_constructors = false:error
+csharp_style_expression_bodied_operators = false:error
+
+########################################
+# Qualification (optional but consistent)
+########################################
+
+dotnet_style_qualification_for_field = true:warning
+dotnet_style_qualification_for_property = true:warning
+dotnet_style_qualification_for_method = false:silent
+
+########################################
+# Nullable
+########################################
+
+dotnet_diagnostic.CS8618.severity = warning
+dotnet_diagnostic.CS8602.severity = warning
