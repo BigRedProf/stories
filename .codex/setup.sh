@@ -67,6 +67,27 @@ mkdir -p "${NUGET_PACKAGES}"
 # If you have private feeds requiring secrets, configure them in the Codex env UI.
 
 # ----------------------------
+# Register BigRedProf NuGet registry (GitHub Packages)
+# ----------------------------
+
+echo "[setup] Registering BigRedProf NuGet registry on GitHub Packages..."
+
+if [ -z "${GITHUB_PAT_PACKAGE_REGISTRY:-}" ]; then
+	echo "[setup] ERROR: GITHUB_PAT_PACKAGE_REGISTRY is required to restore private BigRedProf packages."
+	echo "[setup] Add it as a Codex environment secret."
+	exit 1
+fi
+
+dotnet nuget remove source "GitHub.BigRedProf" >/dev/null 2>&1 || true
+
+dotnet nuget add source "https://nuget.pkg.github.com/BigRedProf/index.json" \
+	--name "GitHub.BigRedProf" \
+	--username "BigRedProf" \
+	--password "${GITHUB_PAT_PACKAGE_REGISTRY}" \
+	--store-password-in-clear-text \
+	>/dev/null
+
+# ----------------------------
 # Restore + Build
 # ----------------------------
 echo "[setup] Discovering solutions/projects..."

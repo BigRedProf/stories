@@ -66,6 +66,23 @@ install_dotnet_if_needed "${SDK_VERSION}"
 export NUGET_PACKAGES="${HOME}/.nuget/packages"
 mkdir -p "${NUGET_PACKAGES}"
 
+echo "[maintenance] Registering BigRedProf NuGet registry on GitHub Packages..."
+
+if [ -z "${GITHUB_PAT_PACKAGE_REGISTRY:-}" ]; then
+	echo "[maintenance] ERROR: GITHUB_PAT_PACKAGE_REGISTRY is required to restore private BigRedProf packages."
+	echo "[maintenance] Add it as a Codex environment secret."
+	exit 1
+fi
+
+dotnet nuget remove source "GitHub.BigRedProf" >/dev/null 2>&1 || true
+
+dotnet nuget add source "https://nuget.pkg.github.com/BigRedProf/index.json" \
+	--name "GitHub.BigRedProf" \
+	--username "BigRedProf" \
+	--password "${GITHUB_PAT_PACKAGE_REGISTRY}" \
+	--store-password-in-clear-text \
+	>/dev/null
+
 # ----------------------------
 # Restore (and optionally build)
 # ----------------------------
