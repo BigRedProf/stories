@@ -26,14 +26,16 @@ follow CODING_GUIDELINES.md.
 
 ## Build Instructions
 
+The root of the source code is the ./src directory
+
 Restore and build:
 
-    dotnet restore
-    dotnet build -c Release
+	dotnet restore ./src/stories.sln
+	dotnet build -c Release ./src/stories.sln
 
 Run tests (if present):
 
-    dotnet test
+	dotnet test ./src/stories.sln
 
 The SDK version is pinned in `global.json`.
 
