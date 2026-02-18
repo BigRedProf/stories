@@ -88,6 +88,14 @@ dotnet nuget add source "https://nuget.pkg.github.com/BigRedProf/index.json" \
 	>/dev/null
 
 # ----------------------------
+# Install dotnet tools
+# ----------------------------
+if [ -f ".config/dotnet-tools.json" ]; then
+	echo "[maintenance] Restoring local dotnet tools..."
+	dotnet tool restore
+fi
+
+# ----------------------------
 # Restore + Build
 # ----------------------------
 echo "[setup] Discovering solutions/projects..."
