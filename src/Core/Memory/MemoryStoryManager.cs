@@ -1,5 +1,6 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -41,6 +42,9 @@ namespace BigRedProf.Stories.Memory
 		#region private methods
 		private ObservableCollection<StoryThing> GetOrCreateListOfThings(TextTrail storyId)
 		{
+			if (storyId == null)
+				throw new ArgumentNullException(nameof(storyId));
+
 			ObservableCollection<StoryThing>? things = null;
 			if(!_storyThingsDictionary.TryGetValue(storyId, out things))
 			{
@@ -53,6 +57,9 @@ namespace BigRedProf.Stories.Memory
 
 		private MemoryScribe GetOrCreateScribe(TextTrail storyId)
 		{
+			if (storyId == null)
+				throw new ArgumentNullException(nameof(storyId));
+
 			MemoryScribe? scribe = null;
 			if(!_scribeDictionary.TryGetValue(storyId, out scribe))
 			{

@@ -16,6 +16,9 @@ namespace BigRedProf.Stories
 		#region constructors
 		protected StoryListenerBase(TextTrail storyId)
 		{
+			if (storyId == null)
+				throw new ArgumentNullException(nameof(storyId));
+
 			StoryId = storyId;
 		}
 		#endregion

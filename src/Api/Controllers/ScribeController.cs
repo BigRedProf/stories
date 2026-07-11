@@ -29,8 +29,8 @@ public class ScribeController : ControllerBase
 
 	#region web methods
 	[HttpPost]
-	[Route("v1/{storyId}/[controller]/[action]")]
-	public IActionResult RecordSomething(TextTrail storyId)
+	[Route("v1/{storyIdHash}/[controller]/[action]")]
+	public IActionResult RecordSomething(string storyIdHash)
     {
 		ListOfThings listOfThings;
 		using (CodeReader codeReader = new CodeReader(Request.Body))
@@ -53,7 +53,8 @@ public class ScribeController : ControllerBase
 			}
 		}
 
-		IScribe scribe = _storyManager.GetScribe(storyId);
+		TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(storyIdHash);
+		IScribe scribe = _storyManager.GetScribe(internalStoryId);
 		scribe.RecordSomething(listOfThings.Things.ToArray());
 
 		return Ok();

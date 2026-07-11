@@ -35,16 +35,15 @@ namespace BigRedProf.Stories.StoriesCli.Test
 		}
 
 		[Fact]
-		public void ToRouteValue_ShouldRoundTripStoryId()
+		public void ToMultihashString_ShouldReturnUrlSafeStoryIdHash()
 		{
-			TextTrail expectedStoryId = new TextTrail("human friendly", "slashes / ok", "symbols !@#$%^&*()");
+			TextTrail storyId = new TextTrail("human friendly", "slashes / ok", "symbols !@#$%^&*()");
 
-			string routeValue = TextTrailSerializer.ToRouteValue(expectedStoryId);
-			TextTrail actualStoryId = TextTrailSerializer.ParseRouteValue(routeValue);
+			string storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 
-			Assert.DoesNotContain("/", routeValue);
-			Assert.Contains("%2F", routeValue);
-			Assert.Equal(expectedStoryId.Segments, actualStoryId.Segments);
+			Assert.DoesNotContain("/", storyIdHash);
+			Assert.DoesNotContain("+", storyIdHash);
+			Assert.DoesNotContain("=", storyIdHash);
 		}
 
 		[Fact]
@@ -57,6 +56,17 @@ namespace BigRedProf.Stories.StoriesCli.Test
 			string secondHash = TextTrailSerializer.ToMultihashString(secondStoryId);
 
 			Assert.Equal(firstHash, secondHash);
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldCreateInternalStoryIdFromPublicStoryIdHash()
+		{
+			TextTrail publicStoryId = new TextTrail("one", "two");
+			string storyIdHash = TextTrailSerializer.ToMultihashString(publicStoryId);
+
+			TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(publicStoryId);
+
+			Assert.Equal(new string[] { "internal", "story-id-hash", storyIdHash }, internalStoryId.Segments);
 		}
 		#endregion
 

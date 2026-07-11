@@ -20,28 +20,26 @@ namespace BigRedProf.Stories.Api.Hubs
 		#endregion constructors
 
 		#region methods
-		public async Task StartListeningToStory(TextTrail storyId)
+		public async Task StartListeningToStory(string storyIdHash)
 		{
 			string clientId = Context.ConnectionId;
-			string storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 
 			// add this client to the SignalR group for this story
 			await Groups.AddToGroupAsync(clientId, storyIdHash);
 
 			// inform the story listener manager
-			_storyListenerManager.StartListeningToStory(clientId, storyId);
+			_storyListenerManager.StartListeningToStory(clientId, storyIdHash);
 		}
 
-		public async Task StopListeningToStory(TextTrail storyId)
+		public async Task StopListeningToStory(string storyIdHash)
 		{
 			string clientId = Context.ConnectionId;
-			string storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 
 			// remove this client from the SignalR group for this story
 			await Groups.RemoveFromGroupAsync(clientId, storyIdHash);
 
 			// inform the story listener manager
-			_storyListenerManager.StopListeningToStory(clientId, storyId);
+			_storyListenerManager.StopListeningToStory(clientId, storyIdHash);
 		}
 		#endregion
 

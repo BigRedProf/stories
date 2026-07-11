@@ -29,10 +29,11 @@ public class StorytellerController : ControllerBase
 
 	#region web methods
 	[HttpGet]
-	[Route("v1/{storyId}/[controller]/[action]/{bookmark}")]
-	public ActionResult<bool> HasSomethingForMe(TextTrail storyId, long bookmark)
+	[Route("v1/{storyIdHash}/[controller]/[action]/{bookmark}")]
+	public ActionResult<bool> HasSomethingForMe(string storyIdHash, long bookmark)
 	{
-		IStoryteller storyteller = _storyManager.GetStoryteller(storyId);
+		TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(storyIdHash);
+		IStoryteller storyteller = _storyManager.GetStoryteller(internalStoryId);
 		storyteller.SetBookmark(bookmark);
 		bool hasSomethingForMe = storyteller.HasSomethingForMe;
 
@@ -40,8 +41,8 @@ public class StorytellerController : ControllerBase
 	}
 
 	[HttpGet]
-	[Route("v1/{storyId}/[controller]/[action]/{bookmark}")]
-	public IActionResult TellMeSomething(TextTrail storyId, long bookmark, long? limit = null)
+	[Route("v1/{storyIdHash}/[controller]/[action]/{bookmark}")]
+	public IActionResult TellMeSomething(string storyIdHash, long bookmark, long? limit = null)
     {
 		if (limit.HasValue && limit.Value < 1)
 			return BadRequest("The 'limit' parameter must be at least 1.");
@@ -50,7 +51,8 @@ public class StorytellerController : ControllerBase
 			new List<StoryThing>((int)limit.Value) :
 			new List<StoryThing>();
 
-		IStoryteller storyteller = _storyManager.GetStoryteller(storyId);
+		TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(storyIdHash);
+		IStoryteller storyteller = _storyManager.GetStoryteller(internalStoryId);
 		storyteller.SetBookmark(bookmark);
 
 		bool hasReachedLimit = false;

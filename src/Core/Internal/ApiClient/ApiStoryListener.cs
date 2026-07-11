@@ -16,6 +16,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private HubConnection _hubConnection;
 		private ApiHelper _apiHelper;
 		private StoryThingSequencer _storyThingSequencer;
+		private string _storyIdHash;
 		private bool _isDisposed;
 		#endregion
 
@@ -39,10 +40,11 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_logger = logger;
 			Bookmark = bookmark;
+			_storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 
 			_apiHelper = new ApiHelper(logger, piedPiper);
 
-			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, StoryId, piedPiper, Bookmark, tellLimit);
+			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, storyId, piedPiper, Bookmark, tellLimit);
 			_storyThingSequencer = new StoryThingSequencer(logger, catchUpStoryteller, bookmark, pollingFrequency);
 			_storyThingSequencer.SomethingHappenedAsync += StoryThingSequencer_SomethingHappenedAsync;
 
@@ -87,7 +89,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_logger.LogDebug("Enter ApiStoryListener.StartListeningAsync");
 
 			await _hubConnection.StartAsync();
-			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId);
+			await _hubConnection.InvokeAsync("StartListeningToStory", _storyIdHash);
 		}
 
 		override public void StopListening()
@@ -113,7 +115,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_logger.LogDebug("Enter ApiStoryListener.StopListeningAsync");
 
-			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId);
+			await _hubConnection.InvokeAsync("StopListeningToStory", _storyIdHash);
 			await _hubConnection.StopAsync();
 		}
 		#endregion

@@ -23,7 +23,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		#region fields
 		private Uri _baseUri;
-		private TextTrail _storyId;
+		private string _storyIdHash;
 		private IPiedPiper _piedPiper;
 		private long _bookmark;
 		private readonly long? _tellLimit;
@@ -41,7 +41,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Debug.Assert(piedPiper != null);
 
 			_baseUri = baseUri;
-			_storyId = storyId;
+			_storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 			_piedPiper = piedPiper;
 			_bookmark = bookmark;
 			_tellLimit = tellLimit;
@@ -78,8 +78,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				return true;
 
 			HttpClient client = new HttpClient();
-			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
-            Uri uri = new Uri(_baseUri, $"v1/{storyIdRouteValue}/Storyteller/HasSomethingForMe/{_bookmark}");
+            Uri uri = new Uri(_baseUri, $"v1/{_storyIdHash}/Storyteller/HasSomethingForMe/{_bookmark}");
 
 			using (HttpResponseMessage response = await client.GetAsync(uri))
 			{
@@ -153,8 +152,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private Uri GetTellMeSomethingUri(long bookmark)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
-			stringBuilder.Append($"v1/{storyIdRouteValue}/Storyteller/TellMeSomething/{bookmark}");
+			stringBuilder.Append($"v1/{_storyIdHash}/Storyteller/TellMeSomething/{bookmark}");
 			if(_tellLimit.HasValue)
 				stringBuilder.Append($"?limit={_tellLimit.Value}");
 

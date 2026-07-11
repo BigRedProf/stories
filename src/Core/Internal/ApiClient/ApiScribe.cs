@@ -13,7 +13,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 	{
 		#region fields
 		private Uri _baseUri;
-		private TextTrail _storyId;
+		private string _storyIdHash;
 		private IPiedPiper _piedPiper;
 		private PackRat<ListOfThings> _listOfThingsPackRat;
 		#endregion
@@ -26,7 +26,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			Debug.Assert(piedPiper != null);
 
 			_baseUri = baseUri;
-			_storyId = storyId;
+			_storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
 			_piedPiper = piedPiper;
 
 			_listOfThingsPackRat = _piedPiper.GetPackRat<ListOfThings>(StoriesSchemaId.ListOfThings);
@@ -42,8 +42,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
         public async Task RecordSomethingAsync(params Code[] things)
 		{
-			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
-			Uri uri = new Uri(_baseUri, $"v1/{storyIdRouteValue}/Scribe/RecordSomething");
+			Uri uri = new Uri(_baseUri, $"v1/{_storyIdHash}/Scribe/RecordSomething");
 
 			ListOfThings listOfThings = new ListOfThings()
 			{
