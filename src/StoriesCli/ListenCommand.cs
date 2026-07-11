@@ -62,10 +62,11 @@ namespace BigRedProf.Stories.StoriesCli
 				};
 			}
 			ApiClient apiClient = new ApiClient(options.BaseUri!, _piedPiper, _apiClientLogger, signalRLoggingBuilderCallback);
+			TextTrail storyId = TextTrailSerializer.ParseTextRepresentation(options.StoryId!);
 			_storyListener = apiClient.GetStoryListener(
 				1000,
 				TimeSpan.FromSeconds(5),
-				options.Story!,
+				storyId,
 				bookmark
 			);
 			_storyListener.SomethingHappenedAsync += StoryListener_SomethingHappenedAsync;

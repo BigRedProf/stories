@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
 using BigRedProf.Stories.Models;
@@ -37,8 +37,11 @@ namespace BigRedProf.Stories.StoriesCli
             {
                 connection.Open();
 
+                TextTrail storyId = TextTrailSerializer.ParseTextRepresentation(commandLineOptions.StoryId);
+                string storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
+
                 // Ensure tables are created
-                EnsureDatabaseSchema(connection, commandLineOptions.Story);
+                EnsureDatabaseSchema(connection, storyIdHash);
 
                 // Setup the story listener just like ListenCommand
                 _piedPiper = new PiedPiper();
@@ -47,11 +50,11 @@ namespace BigRedProf.Stories.StoriesCli
                 _piedPiper.RegisterPackRats(typeof(LogEntry).Assembly);
 
                 ApiClient apiClient = new ApiClient(options.BaseUri, _piedPiper, _apiClientLogger, null);
-                long nextOffset = GetNextOffset(options.Story, connection);
-                _storyListener = apiClient.GetStoryListener(1000, TimeSpan.FromSeconds(5), options.Story, nextOffset);
+                long nextOffset = GetNextOffset(storyIdHash, connection);
+                _storyListener = apiClient.GetStoryListener(1000, TimeSpan.FromSeconds(5), storyId, nextOffset);
                 _storyListener.SomethingHappenedAsync += (sender, e) =>
                 {
-                    SaveToDatabase(connection, e.Thing, options.Story);
+                    SaveToDatabase(connection, e.Thing, storyIdHash);
                     return Task.CompletedTask;
                 };
                 _storyListener.StartListening();
@@ -74,7 +77,7 @@ namespace BigRedProf.Stories.StoriesCli
             ExecuteNonQueryCommand(connection, "CreateLogEntryPropertyTable.sql");
             ExecuteNonQueryCommand(connection, "CreateGetLogEntriesWithPropertiesProc.sql");
 
-            // Check if a row with the given StoryId exists in the Bookmark table
+            // Check if a row with the given story ID exists in the Bookmark table
             string checkRowSql = "SELECT COUNT(*) FROM Bookmark WHERE StoryId = @StoryId";
             using (SqlCommand cmd = new SqlCommand(checkRowSql, connection))
             {
@@ -181,7 +184,7 @@ namespace BigRedProf.Stories.StoriesCli
                 }
                 else
                 {
-                    // Handle the scenario where the storyId doesn't have an associated offset.
+                    // Handle the scenario where the story ID doesn't have an associated offset.
                     // This could potentially throw an error, or you might decide on a default behavior.
                     throw new Exception($"No offset found for Story ID {storyId}.");
                 }

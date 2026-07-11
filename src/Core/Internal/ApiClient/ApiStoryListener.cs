@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,7 +27,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			long? tellLimit,
 			TimeSpan pollingFrequency,
 			Uri baseUri,
-			StoryId storyId,
+			TextTrail storyId,
 			long bookmark
 		)
 			: base(storyId)
@@ -87,7 +87,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			_logger.LogDebug("Enter ApiStoryListener.StartListeningAsync");
 
 			await _hubConnection.StartAsync();
-			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId.ToString());
+			await _hubConnection.InvokeAsync("StartListeningToStory", StoryId);
 		}
 
 		override public void StopListening()
@@ -113,7 +113,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_logger.LogDebug("Enter ApiStoryListener.StopListeningAsync");
 
-			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId.ToString());
+			await _hubConnection.InvokeAsync("StopListeningToStory", StoryId);
 			await _hubConnection.StopAsync();
 		}
 		#endregion

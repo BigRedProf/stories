@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Events;
 using BigRedProf.Stories.Memory;
 using BigRedProf.Stories.Models;
@@ -16,9 +16,9 @@ namespace BigRedProf.Stories.Api.Hubs
 		private readonly MemoryStoryManager _storyManager;
 		private readonly ILogger<StoryListenerManager> _logger;
 		private readonly IHubContext<StoryListenerHub> _hubContext;
-		private IDictionary<StoryId, MemoryStoryListener> _storyToStoryListenerMap;
-		private IDictionary<StoryId, HashSet<string>> _storyToClientsMap;
-		private IDictionary<string, HashSet<StoryId>> _clientToStoriesMap;
+		private IDictionary<TextTrail, MemoryStoryListener> _storyToStoryListenerMap;
+		private IDictionary<TextTrail, HashSet<string>> _storyToClientsMap;
+		private IDictionary<string, HashSet<TextTrail>> _clientToStoriesMap;
 		#endregion
 
 		#region constructors
@@ -37,14 +37,14 @@ namespace BigRedProf.Stories.Api.Hubs
 			_logger = logger;
 			_hubContext = hubContext;
 
-			_storyToStoryListenerMap = new Dictionary<StoryId, MemoryStoryListener>();
-			_storyToClientsMap = new Dictionary<StoryId, HashSet<string>>();
-			_clientToStoriesMap = new Dictionary<string, HashSet<StoryId>>();
+			_storyToStoryListenerMap = new Dictionary<TextTrail, MemoryStoryListener>(TextTrailSerializer.CreateEqualityComparer());
+			_storyToClientsMap = new Dictionary<TextTrail, HashSet<string>>(TextTrailSerializer.CreateEqualityComparer());
+			_clientToStoriesMap = new Dictionary<string, HashSet<TextTrail>>();
 		}
 		#endregion constructors
 
 		#region methods
-		public void StartListeningToStory(string clientId, string storyId)
+		public void StartListeningToStory(string clientId, TextTrail storyId)
 		{
 			lock(_startStopLock)
 			{
@@ -56,17 +56,17 @@ namespace BigRedProf.Stories.Api.Hubs
 				clientsSet.Add(clientId);
 
 				// associate this story with this client
-				HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
+				HashSet<TextTrail> storiesSet = GetStoriesSet(clientId);
 				storiesSet.Add(storyId);
 			}
 		}
 
-		public void StopListeningToStory(string clientId, string storyId)
+		public void StopListeningToStory(string clientId, TextTrail storyId)
 		{
 			lock(_startStopLock)
 			{
 				// dissociate this story from this client
-				HashSet<StoryId> storiesSet = GetStoriesSet(clientId);
+				HashSet<TextTrail> storiesSet = GetStoriesSet(clientId);
 				storiesSet.Remove(storyId);
 
 				// dissociate this client from this story
@@ -86,9 +86,9 @@ namespace BigRedProf.Stories.Api.Hubs
 				// if the client didn't already stop listening, make it stop listening now
 				if (_clientToStoriesMap.ContainsKey(clientId))
 				{
-					HashSet<StoryId> storyIds = _clientToStoriesMap[clientId];
-					foreach (StoryId storyId in storyIds)
-						StopListeningToStory(clientId, storyId.ToString());
+					HashSet<TextTrail> storyIds = new HashSet<TextTrail>(_clientToStoriesMap[clientId], TextTrailSerializer.CreateEqualityComparer());
+					foreach (TextTrail storyId in storyIds)
+						StopListeningToStory(clientId, storyId);
 				}
 			}
 		}
@@ -99,7 +99,7 @@ namespace BigRedProf.Stories.Api.Hubs
 		{
 			MemoryStoryListener memoryStoryListener = (MemoryStoryListener)sender!;
 			IHubClients hubClients = _hubContext.Clients;
-			IClientProxy clientProxy = hubClients.Group(memoryStoryListener.StoryId.ToString());
+			IClientProxy clientProxy = hubClients.Group(TextTrailSerializer.ToMultihashString(memoryStoryListener.StoryId));
 			byte[] thingAsByteArray = GetByteArrayFromStoryThing(e.Thing);
 			await clientProxy.SendAsync(
 				"SomethingHappened",
@@ -110,7 +110,7 @@ namespace BigRedProf.Stories.Api.Hubs
 		#endregion
 
 		#region private methods
-		private MemoryStoryListener CreateStoryListener(StoryId storyId)
+		private MemoryStoryListener CreateStoryListener(TextTrail storyId)
 		{
 			MemoryStoryListener? storyListener;
 			if (!_storyToStoryListenerMap.TryGetValue(storyId, out storyListener))
@@ -124,7 +124,7 @@ namespace BigRedProf.Stories.Api.Hubs
 			return storyListener;
 		}
 
-		private void DestroyStoryListener(StoryId storyId)
+		private void DestroyStoryListener(TextTrail storyId)
 		{
 			if (_storyToStoryListenerMap.TryGetValue(storyId, out MemoryStoryListener? storyListener))
 			{
@@ -134,7 +134,7 @@ namespace BigRedProf.Stories.Api.Hubs
 			}
 		}
 
-		private HashSet<string> GetClientsSet(StoryId storyId)
+		private HashSet<string> GetClientsSet(TextTrail storyId)
 		{
 			HashSet<string>? clientsMap;
 			if(!_storyToClientsMap.TryGetValue(storyId, out clientsMap))
@@ -146,12 +146,12 @@ namespace BigRedProf.Stories.Api.Hubs
 			return clientsMap;
 		}
 
-		private HashSet<StoryId> GetStoriesSet(string clientId)
+		private HashSet<TextTrail> GetStoriesSet(string clientId)
 		{
-			HashSet<StoryId>? storiesMap;
+			HashSet<TextTrail>? storiesMap;
 			if(!_clientToStoriesMap.TryGetValue(clientId, out storiesMap))
 			{
-				storiesMap = new HashSet<StoryId>();
+				storiesMap = new HashSet<TextTrail>(TextTrailSerializer.CreateEqualityComparer());
 				_clientToStoriesMap.Add(clientId, storiesMap);
 			}
 

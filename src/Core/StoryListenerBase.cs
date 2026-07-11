@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Events;
 using BigRedProf.Stories.Models;
 using System;
@@ -14,14 +14,14 @@ namespace BigRedProf.Stories
 		#endregion
 
 		#region constructors
-		protected StoryListenerBase(StoryId storyId)
+		protected StoryListenerBase(TextTrail storyId)
 		{
 			StoryId = storyId;
 		}
 		#endregion
 
 		#region properties
-		public StoryId StoryId
+		public TextTrail StoryId
 		{
 			get;
 			private set;

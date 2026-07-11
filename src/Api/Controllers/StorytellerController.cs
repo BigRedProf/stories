@@ -1,6 +1,5 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories;
-using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
 using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -30,24 +29,20 @@ public class StorytellerController : ControllerBase
 
 	#region web methods
 	[HttpGet]
-	[Route("v1/{story}/[controller]/[action]/{bookmark}")]
-	public bool HasSomethingForMe(string story, long bookmark)
+	[Route("v1/{storyId}/[controller]/[action]/{bookmark}")]
+	public ActionResult<bool> HasSomethingForMe(TextTrail storyId, long bookmark)
 	{
-		story = Helper.HackHackFixStoryId(story);
-
-		IStoryteller storyteller = _storyManager.GetStoryteller(story);
+		IStoryteller storyteller = _storyManager.GetStoryteller(storyId);
 		storyteller.SetBookmark(bookmark);
 		bool hasSomethingForMe = storyteller.HasSomethingForMe;
 
-		return hasSomethingForMe;
+		return Ok(hasSomethingForMe);
 	}
 
 	[HttpGet]
-	[Route("v1/{story}/[controller]/[action]/{bookmark}")]
-	public IActionResult TellMeSomething(string story, long bookmark, long? limit = null)
+	[Route("v1/{storyId}/[controller]/[action]/{bookmark}")]
+	public IActionResult TellMeSomething(TextTrail storyId, long bookmark, long? limit = null)
     {
-		story = Helper.HackHackFixStoryId(story);
-
 		if (limit.HasValue && limit.Value < 1)
 			return BadRequest("The 'limit' parameter must be at least 1.");
 
@@ -55,7 +50,7 @@ public class StorytellerController : ControllerBase
 			new List<StoryThing>((int)limit.Value) :
 			new List<StoryThing>();
 
-		IStoryteller storyteller = _storyManager.GetStoryteller(story);
+		IStoryteller storyteller = _storyManager.GetStoryteller(storyId);
 		storyteller.SetBookmark(bookmark);
 
 		bool hasReachedLimit = false;

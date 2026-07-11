@@ -16,7 +16,7 @@ namespace BigRedProf.Stories.StoriesCli
 		[Option('u', "baseUri", Required = false, HelpText = "The base URI of the stories service.")]
 		public Uri BaseUri { get; set; } = default!;
 
-		[Option('s', "story", Required = false, HelpText = "The story identifier.")]
-		public string Story { get; set; } = default!;
+		[Option('s', "storyId", Required = false, HelpText = "The story ID.")]
+		public string StoryId { get; set; } = default!;
 	}
 }

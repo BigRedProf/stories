@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Internal.ApiClient;
 using Microsoft.Extensions.Logging;
 using System;
@@ -34,15 +34,15 @@ namespace BigRedProf.Stories
 		#endregion
 
 		#region methods
-		public IScribe GetScribe(StoryId storyId)
+		public IScribe GetScribe(TextTrail storyId)
 		{
-			if (storyId == null) 
+			if (storyId == null)
 				throw new ArgumentNullException(nameof(storyId));
 
 			return new ApiScribe(_baseUri, storyId, _piedPiper);
 		}
 
-		public IStoryteller GetStoryteller(StoryId storyId, long bookmark, long? tellLimit)
+		public IStoryteller GetStoryteller(TextTrail storyId, long bookmark, long? tellLimit)
 		{
 			if (storyId == null)
 				throw new ArgumentNullException(nameof(storyId));
@@ -56,7 +56,7 @@ namespace BigRedProf.Stories
 		public IStoryListener GetStoryListener(
 			long? tellLimit,
 			TimeSpan pollingFrequency,
-			StoryId storyId,
+			TextTrail storyId,
 			long bookmark
 		)
 		{

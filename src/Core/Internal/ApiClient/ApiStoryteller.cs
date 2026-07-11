@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Memory;
 using BigRedProf.Stories.Models;
 using System;
@@ -10,7 +10,6 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
@@ -24,7 +23,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 		#region fields
 		private Uri _baseUri;
-		private StoryId _storyId;
+		private TextTrail _storyId;
 		private IPiedPiper _piedPiper;
 		private long _bookmark;
 		private readonly long? _tellLimit;
@@ -35,7 +34,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region constructors
-		public ApiStoryteller(Uri baseUri, StoryId storyId, IPiedPiper piedPiper, long bookmark, long? tellLimit)
+		public ApiStoryteller(Uri baseUri, TextTrail storyId, IPiedPiper piedPiper, long bookmark, long? tellLimit)
 		{
 			Debug.Assert(baseUri != null);
 			Debug.Assert(storyId != null);
@@ -79,11 +78,16 @@ namespace BigRedProf.Stories.Internal.ApiClient
 				return true;
 
 			HttpClient client = new HttpClient();
-            Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/HasSomethingForMe/{_bookmark}");
+			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
+            Uri uri = new Uri(_baseUri, $"v1/{storyIdRouteValue}/Storyteller/HasSomethingForMe/{_bookmark}");
 
-			bool hasSomethingForMe = await client.GetFromJsonAsync<bool>(uri);
+			using (HttpResponseMessage response = await client.GetAsync(uri))
+			{
+				response.EnsureSuccessStatusCode();
+				bool hasSomethingForMe = await response.Content.ReadFromJsonAsync<bool>();
 
-			return hasSomethingForMe;
+				return hasSomethingForMe;
+			}
         }
 
         public void SetBookmark(long bookmark)
@@ -114,10 +118,15 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			}
 
 			// If not, retrieve it from the stories service.
-			HttpClient client = new HttpClient();
 			Uri uri = GetTellMeSomethingUri(_bookmark);
+			HttpClient client = new HttpClient();
 
-			byte[] byteArray = await client.GetByteArrayAsync(uri);
+			byte[] byteArray;
+			using (HttpResponseMessage response = await client.GetAsync(uri))
+			{
+				response.EnsureSuccessStatusCode();
+				byteArray = await response.Content.ReadAsByteArrayAsync();
+			}
 
 			ListOfStoryThings listOfStoryThings = new ListOfStoryThings();
 			MemoryStream memoryStream = new MemoryStream(byteArray);
@@ -144,7 +153,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		private Uri GetTellMeSomethingUri(long bookmark)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append($"v1/{HttpUtility.UrlEncode(_storyId)}/Storyteller/TellMeSomething/{bookmark}");
+			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
+			stringBuilder.Append($"v1/{storyIdRouteValue}/Storyteller/TellMeSomething/{bookmark}");
 			if(_tellLimit.HasValue)
 				stringBuilder.Append($"?limit={_tellLimit.Value}");
 

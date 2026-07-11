@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Models;
 using System;
 using System.Diagnostics;
@@ -6,7 +6,6 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 
 namespace BigRedProf.Stories.Internal.ApiClient
 {
@@ -14,13 +13,13 @@ namespace BigRedProf.Stories.Internal.ApiClient
 	{
 		#region fields
 		private Uri _baseUri;
-		private StoryId _storyId;
+		private TextTrail _storyId;
 		private IPiedPiper _piedPiper;
 		private PackRat<ListOfThings> _listOfThingsPackRat;
 		#endregion
 
 		#region constructors
-		public ApiScribe(Uri baseUri, StoryId storyId, IPiedPiper piedPiper)
+		public ApiScribe(Uri baseUri, TextTrail storyId, IPiedPiper piedPiper)
 		{
 			Debug.Assert(baseUri != null);
 			Debug.Assert(storyId != null);
@@ -43,7 +42,8 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
         public async Task RecordSomethingAsync(params Code[] things)
 		{
-			Uri uri = new Uri(_baseUri, $"v1/{HttpUtility.UrlEncode(_storyId)}/Scribe/RecordSomething");
+			string storyIdRouteValue = TextTrailSerializer.ToRouteValue(_storyId);
+			Uri uri = new Uri(_baseUri, $"v1/{storyIdRouteValue}/Scribe/RecordSomething");
 
 			ListOfThings listOfThings = new ListOfThings()
 			{

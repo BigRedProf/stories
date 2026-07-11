@@ -24,7 +24,7 @@ BEGIN
                 SELECT le.*, '' + @columns + '' INTO ##LogEntriesWithProperties
                 FROM LogEntry le
                 LEFT JOIN (
-                    SELECT StoryId, Offset, '' + @columns + '' 
+                    SELECT StoryId, Offset, '' + @columns + ''
                     FROM (
                         SELECT StoryId, Offset, Name AS __Property__Name__, Value
                         FROM LogEntryProperty

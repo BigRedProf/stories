@@ -1,6 +1,5 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories;
-using BigRedProf.Stories.Api.Internal;
 using BigRedProf.Stories.Memory;
 using BigRedProf.Stories.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -30,11 +29,9 @@ public class ScribeController : ControllerBase
 
 	#region web methods
 	[HttpPost]
-	[Route("v1/{story}/[controller]/[action]")]
-	public IActionResult RecordSomething(string story)
+	[Route("v1/{storyId}/[controller]/[action]")]
+	public IActionResult RecordSomething(TextTrail storyId)
     {
-		story = Helper.HackHackFixStoryId(story);
-
 		ListOfThings listOfThings;
 		using (CodeReader codeReader = new CodeReader(Request.Body))
 		{
@@ -56,7 +53,7 @@ public class ScribeController : ControllerBase
 			}
 		}
 
-		IScribe scribe = _storyManager.GetScribe(story);
+		IScribe scribe = _storyManager.GetScribe(storyId);
 		scribe.RecordSomething(listOfThings.Things.ToArray());
 
 		return Ok();

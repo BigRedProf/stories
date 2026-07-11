@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -28,7 +28,7 @@ namespace BigRedProf.Stories.Logging
 			_loggers = new ConcurrentDictionary<string, StoryLogger>();
 
 			Uri baseStoryUrl = new Uri(config.CurrentValue.BaseStoryUrl);
-			StoryId storyId = config.CurrentValue.StoryId;
+			TextTrail storyId = TextTrailSerializer.ParseTextRepresentation(config.CurrentValue.StoryId);
 			ApiClient apiClient = new ApiClient(baseStoryUrl, piedPiper, apiClientLogger, null);
 			_scribe = apiClient.GetScribe(storyId);
 

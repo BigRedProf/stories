@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Models;
 using System;
 using System.Collections.ObjectModel;
@@ -15,7 +15,7 @@ namespace BigRedProf.Stories.Memory
 		#endregion
 
 		#region constructors
-		public MemoryStoryListener(StoryId storyId, ObservableCollection<StoryThing> things)
+		public MemoryStoryListener(TextTrail storyId, ObservableCollection<StoryThing> things)
 			: base(storyId)
 		{
 			_things = things;

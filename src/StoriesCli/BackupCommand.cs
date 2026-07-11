@@ -1,4 +1,4 @@
-﻿using BigRedProf.Data.Core;
+using BigRedProf.Data.Core;
 using BigRedProf.Stories.Models;
 using BigRedProf.Data.Tape;
 using Microsoft.Extensions.Logging;
@@ -35,7 +35,8 @@ namespace BigRedProf.Stories.StoriesCli
 			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
 
 			ApiClient apiClient = new ApiClient(options.BaseUri!, piedPiper, _apiClientLogger, null);
-			IStoryteller storyteller = apiClient.GetStoryteller(options.StoryId, 0, TellLimit);
+			TextTrail storyId = TextTrailSerializer.ParseTextRepresentation(options.StoryId);
+			IStoryteller storyteller = apiClient.GetStoryteller(storyId, 0, TellLimit);
 
 			DiskLibrary diskLibrary = new DiskLibrary(options.TapeRoot);
 			BackupWizard backupWizard = BackupWizard.OpenExisting(diskLibrary, options.SeriesId);

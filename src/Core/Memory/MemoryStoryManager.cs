@@ -1,4 +1,5 @@
-﻿using BigRedProf.Stories.Models;
+using BigRedProf.Data.Core;
+using BigRedProf.Stories.Models;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,55 +9,55 @@ namespace BigRedProf.Stories.Memory
 	public class MemoryStoryManager
 	{
 		#region fields
-		private IDictionary<StoryId, ObservableCollection<StoryThing>> _storyThingsDictionary;
-		private IDictionary<StoryId, MemoryScribe> _scribeDictionary;
+		private IDictionary<TextTrail, ObservableCollection<StoryThing>> _storyThingsDictionary;
+		private IDictionary<TextTrail, MemoryScribe> _scribeDictionary;
 		#endregion
 
 		#region constructors
 		public MemoryStoryManager()
 		{
-			_storyThingsDictionary = new ConcurrentDictionary<StoryId, ObservableCollection<StoryThing>>();
-			_scribeDictionary = new ConcurrentDictionary<StoryId, MemoryScribe>();
+			_storyThingsDictionary = new ConcurrentDictionary<TextTrail, ObservableCollection<StoryThing>>(TextTrailSerializer.CreateEqualityComparer());
+			_scribeDictionary = new ConcurrentDictionary<TextTrail, MemoryScribe>(TextTrailSerializer.CreateEqualityComparer());
 		}
 		#endregion
 
 		#region methods
-		public MemoryScribe GetScribe(StoryId id)
+		public MemoryScribe GetScribe(TextTrail storyId)
 		{
-			return GetOrCreateScribe(id);
+			return GetOrCreateScribe(storyId);
 		}
 
-		public MemoryStoryteller GetStoryteller(StoryId id)
+		public MemoryStoryteller GetStoryteller(TextTrail storyId)
 		{
-			return new MemoryStoryteller(GetOrCreateListOfThings(id));
+			return new MemoryStoryteller(GetOrCreateListOfThings(storyId));
 		}
 
-		public MemoryStoryListener GetStoryListener(StoryId id)
+		public MemoryStoryListener GetStoryListener(TextTrail storyId)
 		{
-			return new MemoryStoryListener(id, GetOrCreateListOfThings(id));
+			return new MemoryStoryListener(storyId, GetOrCreateListOfThings(storyId));
 		}
 		#endregion
 
 		#region private methods
-		private ObservableCollection<StoryThing> GetOrCreateListOfThings(StoryId id)
+		private ObservableCollection<StoryThing> GetOrCreateListOfThings(TextTrail storyId)
 		{
 			ObservableCollection<StoryThing>? things = null;
-			if(!_storyThingsDictionary.TryGetValue(id, out things))
+			if(!_storyThingsDictionary.TryGetValue(storyId, out things))
 			{
 				things = new ObservableCollection<StoryThing>();
-				_storyThingsDictionary.Add(id, things);
+				_storyThingsDictionary.Add(storyId, things);
 			}
 
 			return things;
 		}
 
-		private MemoryScribe GetOrCreateScribe(StoryId id)
+		private MemoryScribe GetOrCreateScribe(TextTrail storyId)
 		{
 			MemoryScribe? scribe = null;
-			if(!_scribeDictionary.TryGetValue(id, out scribe))
+			if(!_scribeDictionary.TryGetValue(storyId, out scribe))
 			{
-				scribe = new MemoryScribe(GetOrCreateListOfThings(id));
-				_scribeDictionary.Add(id, scribe);
+				scribe = new MemoryScribe(GetOrCreateListOfThings(storyId));
+				_scribeDictionary.Add(storyId, scribe);
 			}
 
 			return scribe;
