@@ -19,27 +19,30 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.403
+      # Task is the repository's orchestration layer, so CI is a thin wrapper
+      # around it rather than a second, drifting copy of the build steps.
+      - name: Setup Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Add NuGet Source
         run: dotnet nuget add source --username BigRedProf --password ${{ secrets.BIGREDPROF_GITHUB_PAT_PACKAGE_REGISTRY }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
         working-directory: src
-      - name: Restore
-        run: dotnet restore
-        working-directory: src
-      - name: Restore dotnet tools
-        run: dotnet tool restore
-        working-directory: src
-      - name: Build Debug
-        run: dotnet build --no-restore
-        working-directory: src
-      - name: Test Debug
-        run: dotnet test --no-build --verbosity normal
-        working-directory: src
-      - name: Build Release
-        run: dotnet build --no-restore -c Release
-        working-directory: src
-      - name: Test Release
-        run: dotnet test --no-build --verbosity normal -c Release
-        working-directory: src
+      # `task verify` is restore + build + test, and is the same command
+      # developers and agents run locally. It restores once and tests without
+      # rebuilding, so there is no separate restore step here.
+      - name: Verify (Debug)
+        run: task verify
+      # An ambient environment variable wins over the value in .env, so this
+      # runs the identical graph against Release.
+      - name: Verify (Release)
+        run: task verify
+        env:
+          BRP_DOTNET_CONFIGURATION: Release
+      # Packaging and publishing stay as explicit dotnet steps. `task pack`
+      # exists for local use and deliberately cannot push, so this workflow
+      # remains the only thing that can release a package.
       - name: Pack
         run: dotnet pack -c Release
         working-directory: src
