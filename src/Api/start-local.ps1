@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-.\stop-local.ps1
+# resolved from this script's own location, so it works from any directory
+& "$PSScriptRoot\stop-local.ps1"
 docker run -d --restart unless-stopped `
 	--name BigRedProf.Stories.Api `
 	--network mike-net `
