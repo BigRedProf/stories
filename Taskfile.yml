@@ -95,9 +95,13 @@ tasks:
 
   pack:
     desc: Build the BigRedProf.Stories.* NuGet packages locally (into artifacts/packages)
-    deps: [build]
+    # Depends on restore, NOT build. Packages are always Release, so depending on
+    # `build` would compile Debug first and then have `dotnet pack` compile
+    # Release anyway -- two builds for one artifact. `dotnet pack` builds what it
+    # needs.
+    deps: [restore]
     cmds:
-      - dotnet pack {{.TARGET}} -c Release --nologo -o artifacts/packages
+      - dotnet pack {{.TARGET}} -c Release --nologo --no-restore -o artifacts/packages
 
 # -----------------------------------------------------------------------------
 # PACKAGE PUBLISHING IS CI'S JOB, DELIBERATELY
