@@ -1,0 +1,117 @@
+# Stories repository task graph — the authoritative build definition.
+#
+#   Install Task:                       choco install go-task  (or winget install Task.Task)
+#   List tasks:                         task --list
+#   Everything required before merging: task verify
+#
+# Task IS the orchestration layer. The simple verbs are defined directly here so
+# the graph restores once, builds once, and tests without rebuilding. Only
+# genuinely complex, multi-step behavior (the container image, publishing,
+# diagnostics) lives in script/*.ps1, which Task invokes in its own process.
+# Run `task doctor` to check your toolchain.
+#
+# NOTE: YAML forbids tab indentation, so this file uses spaces. That is the one
+# deliberate exception to the repository's tabs-everywhere rule.
+version: '3'
+
+# Run each task at most once per invocation. Without this, Task's default
+# (run: always) would re-run shared prerequisites — e.g. `verify` calls build
+# and test, and test also depends on build, so restore+build would run twice.
+run: once
+
+# Layered environment for genuine per-developer PREFERENCES only (e.g.
+# configuration). Task's dotenv is first-file-wins, so the gitignored local
+# override is listed first. A missing .env.local is fine. NOTE: the build TARGET
+# is authoritative below in vars, NOT in .env — so every developer and agent
+# verifies the same thing.
+dotenv: ['.env.local', '.env']
+
+vars:
+  # Authoritative build target. Note the solution lives under src/, not at the
+  # repository root, so every path here is src-relative.
+  TARGET: 'src/stories.sln'
+
+  # pwsh invocation for the complex scripts. -ExecutionPolicy Bypass is
+  # process-scoped (it does not change machine policy) and keeps a fresh
+  # agent/CI shell from failing with "running scripts is disabled".
+  PWSH: 'pwsh -NoProfile -ExecutionPolicy Bypass -File'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds: [task --list]
+    silent: true
+
+  restore:
+    desc: Restore dotnet tools and dependencies for the whole target
+    cmds:
+      # The tool manifest lives in .config/ at the repository root.
+      - dotnet tool restore
+      - dotnet restore {{.TARGET}}
+
+  build:
+    desc: Build the target (fast inner loop)
+    deps: [restore]
+    cmds:
+      - dotnet build {{.TARGET}} -c ${BRP_DOTNET_CONFIGURATION:-Debug} --nologo --no-restore
+
+  test:
+    desc: Run unit tests against the target (no rebuild)
+    deps: [build]
+    cmds:
+      - dotnet test {{.TARGET}} -c ${BRP_DOTNET_CONFIGURATION:-Debug} --nologo --no-build --no-restore
+
+  verify:
+    desc: Everything required before merging (the canonical success criterion)
+    cmds:
+      - task: build
+      - task: test
+
+  clean:
+    desc: Remove build outputs and artifacts
+    cmds:
+      - dotnet clean {{.TARGET}} --nologo
+      - pwsh -NoProfile -Command "Remove-Item -Recurse -Force artifacts -ErrorAction SilentlyContinue"
+
+  doctor:
+    desc: Tool and version diagnostics (checks Task/.NET/Docker)
+    cmds: ['{{.PWSH}} script/doctor.ps1']
+
+  # ---------------------------------------------------------------------------
+  # SLOW / ON-DEMAND tasks — deliberately kept out of the fast inner loop.
+  # These do NOT use sentinel files: `docker build` always runs and lets
+  # BuildKit's cache decide what to rebuild.
+  # ---------------------------------------------------------------------------
+  image:
+    desc: Build the Api container image (SLOW). Docker/BuildKit decides what rebuilds.
+    cmds: ['{{.PWSH}} script/image.ps1']
+
+  publish:
+    desc: 'Tag and push the Api image to ghcr.io. Usage: task publish -- <tag>'
+    cmds: ['{{.PWSH}} script/publish.ps1 -Tag {{.CLI_ARGS}}']
+    preconditions:
+      - sh: '[ -n "{{.CLI_ARGS}}" ]'
+        msg: 'A tag is required. Usage: task publish -- <tag>'
+
+  pack:
+    desc: Build the BigRedProf.Stories.* NuGet packages locally (into artifacts/packages)
+    # Depends on restore, NOT build. Packages are always Release, so depending on
+    # `build` would compile Debug first and then have `dotnet pack` compile
+    # Release anyway -- two builds for one artifact. `dotnet pack` builds what it
+    # needs.
+    deps: [restore]
+    cmds:
+      - dotnet pack {{.TARGET}} -c Release --nologo --no-restore -o artifacts/packages
+
+# -----------------------------------------------------------------------------
+# PACKAGE PUBLISHING IS CI'S JOB, DELIBERATELY
+#
+# .github/workflows/dotnet.yml packs and pushes the four BigRedProf.Stories.*
+# packages on a push to main. `task pack` only builds them locally, so nothing
+# here can push a package by accident. The workflow calls `task verify` for the
+# build-and-test half, so CI and local agree on what "it builds" means.
+#
+# `task publish` is about the Api CONTAINER IMAGE, which is a different artifact
+# with a different destination (ghcr.io container registry, consumed by
+# digihouse's deployment).
+# -----------------------------------------------------------------------------

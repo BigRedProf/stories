@@ -88,19 +88,25 @@ ensure_bigredprof_github_nuget_source() {
 		>/dev/null
 }
 
-restore_dotnet_tools_if_present() {
+# Task (go-task) is this repository's orchestration layer, so the Codex
+# environment needs it for the same reason it needs the .NET SDK: `task verify`
+# is the build. Installed the same way as the SDK above -- fetch the official
+# installer, put the binary somewhere already on PATH.
+#
+# Solution/project discovery used to live here, and setup.sh/maintenance.sh
+# hand-rolled their own restore+build loops over the results. That is exactly
+# the duplicated orchestration Task replaces: the authoritative target is now
+# TARGET in Taskfile.yml, so these scripts call `task verify` instead.
+ensure_task() {
 	local prefix="$1"
 
-	if [ -f ".config/dotnet-tools.json" ]; then
-		echo "[${prefix}] Restoring local dotnet tools..."
-		dotnet tool restore
+	if command_exists task; then
+		echo "[${prefix}] Task already installed: $(task --version)"
+		return
 	fi
-}
 
-discover_solutions() {
-	find . -maxdepth 6 -name "*.sln" -print | sort
-}
-
-discover_projects() {
-	find . -maxdepth 8 -name "*.csproj" -print | sort
+	echo "[${prefix}] Installing Task (go-task)..."
+	curl -fsSL https://taskfile.dev/install.sh -o /tmp/task-install.sh
+	chmod +x /tmp/task-install.sh
+	/tmp/task-install.sh -d -b /usr/local/bin
 }

@@ -18,40 +18,16 @@ dotnet --info
 
 ensure_nuget_cache
 ensure_bigredprof_github_nuget_source "setup"
-restore_dotnet_tools_if_present "setup"
+ensure_task "setup"
 
-echo "[setup] Discovering solutions/projects..."
-
-mapfile -t solutions < <(discover_solutions)
-
-if [ "${#solutions[@]}" -gt 0 ]; then
-	echo "[setup] Found ${#solutions[@]} solution(s)"
-	for sln in "${solutions[@]}"; do
-		echo "[setup] dotnet restore ${sln}"
-		dotnet restore "${sln}"
-	done
-
-	for sln in "${solutions[@]}"; do
-		echo "[setup] dotnet build ${sln} (Release)"
-		dotnet build "${sln}" -c Release --no-restore
-	done
-else
-	mapfile -t projects < <(discover_projects)
-	if [ "${#projects[@]}" -eq 0 ]; then
-		echo "[setup] ERROR: No .sln or .csproj found"
-		exit 1
-	fi
-
-	echo "[setup] No solutions found; restoring/building ${#projects[@]} project(s)"
-	for csproj in "${projects[@]}"; do
-		echo "[setup] dotnet restore ${csproj}"
-		dotnet restore "${csproj}"
-	done
-
-	for csproj in "${projects[@]}"; do
-		echo "[setup] dotnet build ${csproj} (Release)"
-		dotnet build "${csproj}" -c Release --no-restore
-	done
-fi
+# Everything above is genuine BOOTSTRAP -- it makes dotnet and task exist, and
+# authenticates the private NuGet feed. Task cannot do any of it, because it is
+# what allows Task to run at all.
+#
+# The build itself is not bootstrap, so it is not duplicated here. `task verify`
+# is the same command developers and agents run, against the authoritative
+# target in Taskfile.yml, and it restores dotnet tools as part of its graph.
+echo "[setup] task verify"
+task verify
 
 echo "[setup] Complete"
