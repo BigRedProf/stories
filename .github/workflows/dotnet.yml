@@ -43,18 +43,29 @@ jobs:
       # Packaging and publishing stay as explicit dotnet steps. `task pack`
       # exists for local use and deliberately cannot push, so this workflow
       # remains the only thing that can release a package.
+      #
+      # Pack runs on pull requests too -- it publishes nothing, and knowing the
+      # packages still build is worth having before merge.
       - name: Pack
         run: dotnet pack -c Release
         working-directory: src
+      # The pushes, however, are guarded to `push` events (i.e. merges to main).
+      # Without the guard a pull request would publish, so bumping a version on
+      # a branch would release it before anyone reviewed the change.
+      # --skip-duplicate only hides that while the version happens to be unchanged.
       - name: Push BigRedProf.Stories.Core package
+        if: github.event_name == 'push'
         run: dotnet nuget push ./Core/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
       - name: Push BigRedProf.Stories.Logging package
+        if: github.event_name == 'push'
         run: dotnet nuget push ./Logging/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
       - name: Push BigRedProf.Stories.Logging.Models package
+        if: github.event_name == 'push'
         run: dotnet nuget push ./Logging.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
       - name: Push BigRedProf.Stories.Core.Models package
+        if: github.event_name == 'push'
         run: dotnet nuget push ./Core.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
         working-directory: src
