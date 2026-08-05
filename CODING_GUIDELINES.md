@@ -13,9 +13,32 @@ NOTE:
 
 ## Line Endings
 
-* Use **CRLF** line endings for Windows-oriented files, including C# and .NET project files, PowerShell scripts, and Windows command scripts.
-* Use **LF** line endings for Linux/Unix-oriented files, including shell scripts (`.sh`).
-* Never mix CRLF and LF line endings within the same file.
+Match the line ending to whatever **parses** the file, and pin it only when that
+parser actually cares. This is not about which operating system a file was
+authored on.
+
+Rules are enforced per-repository in `.gitattributes`, never by each developer's
+`core.autocrlf`, so they are identical for every contributor, every container,
+and CI.
+
+* **Default: `* text=auto`.** Normalized to LF in the repository, checked out
+  native. Correct for C#, project files, Markdown, JSON, and YAML — nothing that
+  reads them cares.
+* **`.sh` is always LF, on every machine.** A POSIX interpreter parses these
+  wherever they were authored, and a CRLF becomes part of the shebang, failing
+  with `bad interpreter: /bin/bash^M`. Writing a script on Windows does not make
+  it a Windows file when Linux is what executes it — container entrypoints and
+  scripts copied to Linux hosts are the common case.
+* **`.bat` and `.cmd` are always CRLF.** `cmd.exe` mishandles LF around labels
+  and `goto`.
+* **PowerShell is deliberately NOT pinned.** PowerShell 5.1 and 7 both read LF
+  scripts, including pwsh on Linux, so there is nothing to protect against.
+  Pinning it would only force CRLF onto contributors who do not want it.
+* **Never mix CRLF and LF line endings within the same file.**
+
+Note `.gitattributes` and `.editorconfig` are separate mechanisms:
+`.gitattributes` governs how git stores and checks out a file, `.editorconfig`
+governs what your editor writes. Both should agree with the rules above.
 
 ## Braces & Blocks
 

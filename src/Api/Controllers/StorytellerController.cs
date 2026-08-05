@@ -12,12 +12,12 @@ public class StorytellerController : ControllerBase
 	#region fields
 	private readonly IPiedPiper _piedPiper;
 	private readonly MemoryStoryManager _storyManager;
-	private readonly ILogger<ScribeController> _logger;
+	private readonly ILogger<StorytellerController> _logger;
 	private readonly PackRat<ListOfStoryThings> _listOfStoryThingsPackRat;
 	#endregion
 
 	#region constructors
-	public StorytellerController(IPiedPiper piedPiper, MemoryStoryManager storageManager, ILogger<ScribeController> logger)
+	public StorytellerController(IPiedPiper piedPiper, MemoryStoryManager storageManager, ILogger<StorytellerController> logger)
     {
 		_piedPiper = piedPiper;
 		_storyManager = storageManager;
@@ -32,6 +32,18 @@ public class StorytellerController : ControllerBase
 	[Route("v1/{storyIdHash}/[controller]/[action]/{bookmark}")]
 	public ActionResult<bool> HasSomethingForMe(string storyIdHash, long bookmark)
 	{
+		if (!TextTrailSerializer.IsValidStoryIdHash(storyIdHash))
+		{
+			_logger.LogWarning(
+				"Rejected HasSomethingForMe for malformed story ID hash: {storyIdHash}",
+				storyIdHash
+			);
+			return BadRequest(
+				"The story ID hash is not a multibase multihash string. Pass the hash of the " +
+				"story ID rather than the story ID itself."
+			);
+		}
+
 		TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(storyIdHash);
 		IStoryteller storyteller = _storyManager.GetStoryteller(internalStoryId);
 		storyteller.SetBookmark(bookmark);
@@ -44,6 +56,18 @@ public class StorytellerController : ControllerBase
 	[Route("v1/{storyIdHash}/[controller]/[action]/{bookmark}")]
 	public IActionResult TellMeSomething(string storyIdHash, long bookmark, long? limit = null)
     {
+		if (!TextTrailSerializer.IsValidStoryIdHash(storyIdHash))
+		{
+			_logger.LogWarning(
+				"Rejected TellMeSomething for malformed story ID hash: {storyIdHash}",
+				storyIdHash
+			);
+			return BadRequest(
+				"The story ID hash is not a multibase multihash string. Pass the hash of the " +
+				"story ID rather than the story ID itself."
+			);
+		}
+
 		if (limit.HasValue && limit.Value < 1)
 			return BadRequest("The 'limit' parameter must be at least 1.");
 
