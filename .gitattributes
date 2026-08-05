@@ -1,2 +1,21 @@
-# Enforce Unix-style line endings for shell scripts
+# Line endings are governed here rather than by each developer's core.autocrlf,
+# so the rules are identical for every contributor, every container, and CI.
+#
+# The principle: match the line ending to whatever PARSES the file, and pin it
+# only when that parser actually cares. See CODING_GUIDELINES.md.
+
+# Default: normalize to LF in the repository, check out native.
+* text=auto
+
+# Always LF. A POSIX interpreter parses these wherever they were authored, and a
+# CRLF becomes part of the shebang -- "bad interpreter: /bin/bash^M". Container
+# entrypoints and scripts copied to Linux hosts make this load-bearing.
 *.sh text eol=lf
+
+# Always CRLF. cmd.exe mishandles LF around labels and goto.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# NOT pinned, deliberately: *.ps1. PowerShell 5.1 and 7 both read LF scripts,
+# including pwsh on Linux, so there is nothing to protect against. text=auto
+# gives every developer native endings. Please do not "fix" this.
