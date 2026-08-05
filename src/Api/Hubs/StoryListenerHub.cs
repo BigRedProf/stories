@@ -22,6 +22,10 @@ namespace BigRedProf.Stories.Api.Hubs
 		#region methods
 		public async Task StartListeningToStory(string storyIdHash)
 		{
+			// Validate before joining the group, so a malformed hash never becomes a
+			// SignalR group name nor reaches the story listener manager.
+			ThrowIfStoryIdHashIsInvalid(storyIdHash, nameof(StartListeningToStory));
+
 			string clientId = Context.ConnectionId;
 
 			// add this client to the SignalR group for this story
@@ -33,6 +37,8 @@ namespace BigRedProf.Stories.Api.Hubs
 
 		public async Task StopListeningToStory(string storyIdHash)
 		{
+			ThrowIfStoryIdHashIsInvalid(storyIdHash, nameof(StopListeningToStory));
+
 			string clientId = Context.ConnectionId;
 
 			// remove this client from the SignalR group for this story
@@ -40,6 +46,24 @@ namespace BigRedProf.Stories.Api.Hubs
 
 			// inform the story listener manager
 			_storyListenerManager.StopListeningToStory(clientId, storyIdHash);
+		}
+		#endregion
+
+		#region private methods
+		private void ThrowIfStoryIdHashIsInvalid(string storyIdHash, string hubMethod)
+		{
+			if (TextTrailSerializer.IsValidStoryIdHash(storyIdHash))
+				return;
+
+			_logger.LogWarning(
+				"Rejected {hubMethod} for malformed story ID hash: {storyIdHash}",
+				hubMethod,
+				storyIdHash
+			);
+			throw new HubException(
+				"The story ID hash is not a multibase multihash string. Pass the hash of the " +
+				"story ID rather than the story ID itself."
+			);
 		}
 		#endregion
 

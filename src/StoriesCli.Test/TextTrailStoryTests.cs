@@ -68,6 +68,91 @@ namespace BigRedProf.Stories.StoriesCli.Test
 
 			Assert.Equal(new string[] { "internal", "story-id-hash", storyIdHash }, internalStoryId.Segments);
 		}
+
+		[Fact]
+		public void IsValidStoryIdHash_ShouldAcceptAHashProducedByToMultihashString()
+		{
+			TextTrail publicStoryId = new TextTrail("one", "two");
+			string storyIdHash = TextTrailSerializer.ToMultihashString(publicStoryId);
+
+			Assert.True(TextTrailSerializer.IsValidStoryIdHash(storyIdHash));
+		}
+
+		[Fact]
+		public void IsValidStoryIdHash_ShouldRejectARawStoryIdPath()
+		{
+			// This exact value was published by a version-skewed client, which silently
+			// created an orphan "island" story rather than failing.
+			Assert.False(
+				TextTrailSerializer.IsValidStoryIdHash("bigredprof/digihouse/rooms/profhouse/test-room")
+			);
+		}
+
+		[Fact]
+		public void IsValidStoryIdHash_ShouldRejectGarbage()
+		{
+			Assert.False(TextTrailSerializer.IsValidStoryIdHash("not-a-hash"));
+			Assert.False(TextTrailSerializer.IsValidStoryIdHash("zzzzzzzzzzzzzzzzz"));
+		}
+
+		[Fact]
+		public void IsValidStoryIdHash_ShouldRejectNullOrWhitespace()
+		{
+			Assert.False(TextTrailSerializer.IsValidStoryIdHash(null));
+			Assert.False(TextTrailSerializer.IsValidStoryIdHash(string.Empty));
+			Assert.False(TextTrailSerializer.IsValidStoryIdHash(" "));
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldAcceptAHashProducedByToMultihashString()
+		{
+			TextTrail publicStoryId = new TextTrail("one", "two");
+			string storyIdHash = TextTrailSerializer.ToMultihashString(publicStoryId);
+
+			TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(storyIdHash);
+
+			Assert.Equal(new string[] { "internal", "story-id-hash", storyIdHash }, internalStoryId.Segments);
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldThrowForARawStoryIdPath()
+		{
+			Assert.Throws<ArgumentException>(() =>
+			{
+				TextTrailSerializer.ToInternalStoryId("bigredprof/digihouse/rooms/profhouse/test-room");
+			});
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldThrowForGarbage()
+		{
+			Assert.Throws<ArgumentException>(() =>
+			{
+				TextTrailSerializer.ToInternalStoryId("not-a-hash");
+			});
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldStillThrowForBlankInput()
+		{
+			Assert.Throws<ArgumentException>(() =>
+			{
+				TextTrailSerializer.ToInternalStoryId(" ");
+			});
+		}
+
+		[Fact]
+		public void ToInternalStoryId_ShouldRoundTripFromTheTextTrailOverload()
+		{
+			// The TextTrail overload hashes and then calls the string overload, so the new
+			// validation must not reject the serializer's own output.
+			TextTrail publicStoryId = new TextTrail("bigredprof", "digihouse", "rooms", "profhouse", "test-room");
+
+			TextTrail internalStoryId = TextTrailSerializer.ToInternalStoryId(publicStoryId);
+
+			Assert.Equal("internal", internalStoryId.Segments[0]);
+			Assert.True(TextTrailSerializer.IsValidStoryIdHash(internalStoryId.Segments[2]));
+		}
 		#endregion
 
 		#region MemoryStoryManager tests

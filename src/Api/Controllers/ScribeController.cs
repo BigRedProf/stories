@@ -32,6 +32,18 @@ public class ScribeController : ControllerBase
 	[Route("v1/{storyIdHash}/[controller]/[action]")]
 	public IActionResult RecordSomething(string storyIdHash)
     {
+		if (!TextTrailSerializer.IsValidStoryIdHash(storyIdHash))
+		{
+			_logger.LogWarning(
+				"Rejected RecordSomething for malformed story ID hash: {storyIdHash}",
+				storyIdHash
+			);
+			return BadRequest(
+				"The story ID hash is not a multibase multihash string. Pass the hash of the " +
+				"story ID rather than the story ID itself."
+			);
+		}
+
 		ListOfThings listOfThings;
 		using (CodeReader codeReader = new CodeReader(Request.Body))
 		{
