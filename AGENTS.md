@@ -55,10 +55,10 @@ Stories specifics:
 - Unit tests are real here (unlike some sibling repos): `task test` runs
   `src/StoriesCli.Test`. It is still under `src/` rather than a top-level
   `tests/` directory, which is a known deviation from `REPO_CONVENTIONS.md`.
-- `task image` and `task publish` need `GITHUB_PAT_PACKAGE_REGISTRY` in the
-  environment (or `.env.local`). It is a secret and never goes in `.env`. The
-  Dockerfile consumes it as a **BuildKit secret**, not a build arg, so it never
-  appears in build output.
+- `task publish` needs `GITHUB_PAT_PACKAGE_REGISTRY` in the environment (or
+  `.env.local`) to sign in to **ghcr.io**. It is a secret and never goes in
+  `.env`. `task image` no longer needs it: the image restores from nuget.org,
+  where every BigRedProf package is public, via the committed `NuGet.Config`.
 - This repository publishes the `BigRedProf.Stories.*` NuGet packages that
   digihouse and others consume. CI does that on a push to `main`; `task pack`
   only builds them locally.

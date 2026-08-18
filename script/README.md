@@ -37,10 +37,10 @@ release, because a digihouse deployment is a five-image unit at one tag.
 - Paths are resolved from `Get-RepoRoot`, never hard-coded.
 - Environment comes from the `.env` files, which Task loads before invoking a
   script. Scripts do not load `.env` themselves.
-- Secrets (`GITHUB_PAT_PACKAGE_REGISTRY`) come from the machine environment or
-  `.env.local`, never from the committed `.env`. The Dockerfile takes the PAT as
-  a **BuildKit secret**, not a build arg — as an arg, BuildKit expanded it when
-  echoing the `RUN` instruction and printed the raw token into the build log.
+- Secrets (`GITHUB_PAT_PACKAGE_REGISTRY`, used by `publish` for ghcr.io) come
+  from the machine environment or `.env.local`, never from the committed `.env`.
+  The image build itself needs no secret: it restores from nuget.org through the
+  committed `NuGet.Config`.
 
 ## The .env files MUST be UTF-8
 

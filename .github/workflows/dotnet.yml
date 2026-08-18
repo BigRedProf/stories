@@ -2,10 +2,6 @@ name: .NET
 
 permissions:
   contents: read
-  # Still needed to RESTORE BigRedProf.Data.* from GitHub Packages. This drops to
-  # `contents: read` alone once the data packages are on nuget.org -- see the
-  # Add NuGet Source step below.
-  packages: read
   # Lets the job request the GitHub OIDC token that nuget.org trades for a
   # short-lived publishing key. See the NuGet login step below.
   id-token: write
@@ -44,16 +40,6 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      # TEMPORARY. This repository publishes to nuget.org (below) but still
-      # RESTORES BigRedProf.Data.* from GitHub Packages, whose feed needs
-      # credentials even for public packages. That is also why this repository
-      # does not yet commit the nuget.org-only NuGet.Config that `data` has --
-      # it would break restore here. Delete this step and `packages: read`
-      # above, and commit that NuGet.Config, once the data packages are on
-      # nuget.org (BigRedProf/data#32).
-      - name: Add NuGet Source
-        run: dotnet nuget add source --username BigRedProf --password ${{ secrets.BIGREDPROF_GITHUB_PAT_PACKAGE_REGISTRY }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
-        working-directory: src
       # `task verify` is restore + build + test, and is the same command
       # developers and agents run locally. It restores once and tests without
       # rebuilding, so there is no separate restore step here.
