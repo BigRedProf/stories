@@ -6,13 +6,11 @@
 
 		<Title>Stories CLI Models</Title>
 		<Description>The model classes for BigRedProf.Stories.StoriesCli.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
 		<Product>Stories CLI Models Library</Product>
-		<Version>0.7.1</Version>
 
+
+		<!-- Models for the tape CLI, which is not published as a package today. -->
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<Target Name="RunPackRatCompiler" BeforeTargets="Build">

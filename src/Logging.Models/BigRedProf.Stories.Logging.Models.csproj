@@ -6,12 +6,8 @@
 
 		<Title>Stories Logging Models</Title>
 		<Description>The model classes for BigRedProf.Stories.Logging.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
+		<PackageTags>bigredprof;stories;logging;models</PackageTags>
 		<Product>Stories Logging Models Library</Product>
-		<Version>0.7.1</Version>
 
 	</PropertyGroup>
 

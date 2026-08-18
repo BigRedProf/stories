@@ -6,17 +6,9 @@
 
 		<Title>Stories Library</Title>
 		<Description>Stories capture a series of things over time.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
+		<PackageTags>bigredprof;stories;event-sourcing;append-only;signalr</PackageTags>
 		<Product>Stories Library</Product>
-		<Version>0.7.1</Version>
 
-		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
-		<!--<IncludeSymbols>True</IncludeSymbols>-->
-		<!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
-		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -24,7 +16,6 @@
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.7" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
-		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
 		<PackageReference Include="System.Net.Http.Json" Version="7.0.1" />
 	</ItemGroup>
 

@@ -8,19 +8,11 @@
 	<PropertyGroup>
 		<Title>Stories Logging Library</Title>
 		<Description>Allows logs to be recorded in stories.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
+		<PackageTags>bigredprof;stories;logging</PackageTags>
 		<Product>Stories Library</Product>
-		<Version>0.7.1</Version>
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<!-- HACKHACK: just embed the .pdb file until the GitHub NuGet package manager supports snpukgs-->
-		<!--<IncludeSymbols>True</IncludeSymbols>-->
-		<!--<SymbolPackageFormat>snupkg</SymbolPackageFormat>-->
-		<DebugType>embedded</DebugType>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -2,11 +2,23 @@ name: .NET
 
 permissions:
   contents: read
-  packages: write
+  # Still needed to RESTORE BigRedProf.Data.* from GitHub Packages. This drops to
+  # `contents: read` alone once the data packages are on nuget.org -- see the
+  # Add NuGet Source step below.
+  packages: read
+  # Lets the job request the GitHub OIDC token that nuget.org trades for a
+  # short-lived publishing key. See the NuGet login step below.
+  id-token: write
 
+# A release is a TAG, not a merge. Merges to main build and test; only a v* tag
+# publishes. nuget.org versions are immutable and effectively permanent, so a
+# published version should mean "we meant this one" rather than "someone
+# merged". MinVer derives the package version from that same tag, so the gate
+# and the artifact cannot disagree.
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -14,7 +26,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # fetch-depth: 0 is REQUIRED, not tidiness. MinVer reads the version from
+      # git history, and the default shallow checkout has no tags -- every build
+      # would silently produce an alpha and every release would ship the wrong
+      # version.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -26,6 +44,13 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # TEMPORARY. This repository publishes to nuget.org (below) but still
+      # RESTORES BigRedProf.Data.* from GitHub Packages, whose feed needs
+      # credentials even for public packages. That is also why this repository
+      # does not yet commit the nuget.org-only NuGet.Config that `data` has --
+      # it would break restore here. Delete this step and `packages: read`
+      # above, and commit that NuGet.Config, once the data packages are on
+      # nuget.org (BigRedProf/data#32).
       - name: Add NuGet Source
         run: dotnet nuget add source --username BigRedProf --password ${{ secrets.BIGREDPROF_GITHUB_PAT_PACKAGE_REGISTRY }} --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
         working-directory: src
@@ -46,26 +71,28 @@ jobs:
       #
       # Pack runs on pull requests too -- it publishes nothing, and knowing the
       # packages still build is worth having before merge.
+      # Packed to one directory so the push below is a single glob rather than
+      # one step per package that has to be remembered when a fifth is added.
       - name: Pack
-        run: dotnet pack -c Release
+        run: dotnet pack -c Release -o ${{ github.workspace }}/artifacts/packages
         working-directory: src
-      # The pushes, however, are guarded to `push` events (i.e. merges to main).
-      # Without the guard a pull request would publish, so bumping a version on
-      # a branch would release it before anyone reviewed the change.
-      # --skip-duplicate only hides that while the version happens to be unchanged.
-      - name: Push BigRedProf.Stories.Core package
-        if: github.event_name == 'push'
-        run: dotnet nuget push ./Core/bin/Release/*.nupkg --source "github" --skip-duplicate
-        working-directory: src
-      - name: Push BigRedProf.Stories.Logging package
-        if: github.event_name == 'push'
-        run: dotnet nuget push ./Logging/bin/Release/*.nupkg --source "github" --skip-duplicate
-        working-directory: src
-      - name: Push BigRedProf.Stories.Logging.Models package
-        if: github.event_name == 'push'
-        run: dotnet nuget push ./Logging.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
-        working-directory: src
-      - name: Push BigRedProf.Stories.Core.Models package
-        if: github.event_name == 'push'
-        run: dotnet nuget push ./Core.Models/bin/Release/*.nupkg --source "github" --skip-duplicate
-        working-directory: src
+      # One push for every package and its symbols. `dotnet nuget push` sends a
+      # matching .snupkg alongside each .nupkg automatically, so symbols need no
+      # step of their own.
+      #
+      # --skip-duplicate is deliberately NOT used: with tag-derived versions a
+      # duplicate means the same tag is being released twice, and that should
+      # fail loudly rather than be quietly ignored.
+      # The temporary key is valid for one hour and each OIDC token buys exactly
+      # one key, so this sits immediately before the push rather than earlier in
+      # the job. It is gated on the tag too -- on a branch build there is
+      # nothing to publish and no policy would match.
+      - name: NuGet login (OIDC to short-lived key)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: NuGet/login@v1
+        id: nuget-login
+        with:
+          user: BigRedProf
+      - name: Push packages to nuget.org
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

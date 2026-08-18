@@ -10,13 +10,11 @@
 
 		<Title>Stories Api</Title>
 		<Description>Exposes stories via a web service.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
 		<Product>Stories Api</Product>
-		<Version>0.7.1</Version>
 
+
+		<!-- This is the Stories service; it ships as a container image, not a package. -->
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 	<ItemGroup>

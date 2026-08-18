@@ -6,12 +6,8 @@
 
 		<Title>Stories Library Models</Title>
 		<Description>The model classes for BigRedProf.Stories.</Description>
-		<Copyright>Big Red Professor</Copyright>
-		<PackageReleaseNotes>No Release Notes</PackageReleaseNotes>
-		<Authors>BigRedProf</Authors>
-		<Company>Big Red Professor</Company>
+		<PackageTags>bigredprof;stories;models</PackageTags>
 		<Product>Stories Models Library</Product>
-		<Version>0.7.1</Version>
 
 	</PropertyGroup>
 
