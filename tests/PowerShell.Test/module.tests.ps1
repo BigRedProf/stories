@@ -125,9 +125,14 @@ Test-That 'an empty story id is rejected' {
 	}
 }
 Test-That 'a missing model assembly is reported as such' {
+	# Built from $PSScriptRoot rather than written as a literal. A hard-coded
+	# 'C:\does\not\exist.dll' is not a missing FILE on Linux, it is a missing
+	# PSDrive, so the cmdlet fails with a drive error and never reaches the check
+	# this test is about. CI caught exactly that.
+	$missing = Join-Path $PSScriptRoot 'no-such-assembly.dll'
 	try
 	{
-		Get-Story 'bigredprof/nope' -BaseUri 'http://localhost:1' -ModelAssembly 'C:\does\not\exist.dll' -ErrorAction Stop | Out-Null
+		Get-Story 'bigredprof/nope' -BaseUri 'http://localhost:1' -ModelAssembly $missing -ErrorAction Stop | Out-Null
 		$false
 	}
 	catch
