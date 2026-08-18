@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	The default view for a thing read from a story.
+
+	Without this, PowerShell renders StoryThingInfo as a property list and the raw
+	Code prints as a wall of bits, which buries the two things a person reading a
+	story actually wants: the offset and what happened. The offset comes first
+	because it is the bookmark you quote when reporting what you saw.
+
+	This is DISPLAY only. The full object, raw Code included, is still what travels
+	down the pipeline; Select-Object and Where-Object see everything.
+-->
+<Configuration>
+	<ViewDefinitions>
+		<View>
+			<Name>BigRedProf.Stories.PowerShell.StoryThingInfo</Name>
+			<ViewSelectedBy>
+				<TypeName>BigRedProf.Stories.PowerShell.StoryThingInfo</TypeName>
+			</ViewSelectedBy>
+			<TableControl>
+				<TableHeaders>
+					<TableColumnHeader>
+						<Label>Offset</Label>
+						<Width>8</Width>
+						<Alignment>Right</Alignment>
+					</TableColumnHeader>
+					<TableColumnHeader>
+						<Label>Model</Label>
+					</TableColumnHeader>
+				</TableHeaders>
+				<TableRowEntries>
+					<TableRowEntry>
+						<TableColumnItems>
+							<TableColumnItem>
+								<PropertyName>Offset</PropertyName>
+							</TableColumnItem>
+							<TableColumnItem>
+								<!--
+									Falls back to the code's length rather than the code itself.
+									An undecoded thing is normal (no -ThingSchemaId, or a schema
+									this host does not know) and printing thousands of bits per
+									row would make the table useless.
+								-->
+								<ScriptBlock>
+									if ($null -eq $_.Model) { "(raw code, $($_.Thing.Length) bits)" }
+									else {
+										$text = $_.Model.ToString()
+										# A type that does not override ToString just returns its own
+										# full name, which is all namespace and no information. The
+										# short name is the useful half.
+										if ($text -eq $_.Model.GetType().FullName) { $_.Model.GetType().Name }
+										else { $text }
+									}
+								</ScriptBlock>
+							</TableColumnItem>
+						</TableColumnItems>
+					</TableRowEntry>
+				</TableRowEntries>
+			</TableControl>
+		</View>
+	</ViewDefinitions>
+</Configuration>

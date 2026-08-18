@@ -34,8 +34,34 @@
 		<PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
 	</ItemGroup>
 
+	<!--
+	The module has its OWN version line, independent of the four library packages
+	(stories#5). Two version lines in one repository means two tag prefixes: the
+	libraries release on `v*`, this module on `psmodule-v*`. Without the override it
+	would inherit `v` from Directory.Build.props, and every library release would
+	drag the module along, silently undoing the decision.
+	-->
+	<PropertyGroup>
+		<MinVerTagPrefix>psmodule-v</MinVerTagPrefix>
+		<MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\Core\BigRedProf.Stories.Core.csproj" />
 	</ItemGroup>
+
+	<!--
+	Writes the MinVer-computed version beside the assembly so the packaging script
+	can read it without reflection or FileVersionInfo. Both of those are awkward
+	across platforms, and CI stages this module on Linux; a plain text file reads
+	the same everywhere and cannot disagree with the binary it sits next to.
+	-->
+	<Target Name="WriteModuleVersion" AfterTargets="Build">
+		<WriteLinesToFile
+			File="$(OutDir)module-version.txt"
+			Lines="$(Version)"
+			Overwrite="true"
+			WriteOnlyWhenDifferent="true" />
+	</Target>
 
 </Project>

@@ -6,15 +6,22 @@ permissions:
   # short-lived publishing key. See the NuGet login step below.
   id-token: write
 
-# A release is a TAG, not a merge. Merges to main build and test; only a v* tag
+# A release is a TAG, not a merge. Merges to main build and test; only a tag
 # publishes. nuget.org versions are immutable and effectively permanent, so a
 # published version should mean "we meant this one" rather than "someone
-# merged". MinVer derives the package version from that same tag, so the gate
-# and the artifact cannot disagree.
+# merged". MinVer derives versions from these same tags, so the gate and the
+# artifact cannot disagree.
+#
+# TWO tag prefixes, because this repository ships two things on independent
+# version lines (stories#5):
+#   v*          the four BigRedProf.Stories.* library packages, to nuget.org
+#   psmodule-v* the BigRedProf.Stories PowerShell module, to the PS Gallery
+# Each publish step gates on its own prefix, so releasing one never drags the
+# other along.
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*" ]
+    tags: [ "v*", "psmodule-v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -81,4 +88,18 @@ jobs:
       # fail loudly rather than be quietly ignored.
       - name: Push packages to nuget.org
         if: startsWith(github.ref, 'refs/tags/v')
+
         run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      # The PowerShell module. Staged rather than packed: a module package puts
+      # its manifest and assemblies at the package root, which `dotnet pack`
+      # cannot produce, so this goes through Publish-PSResource instead.
+      #
+      # Unlike nuget.org, the PowerShell Gallery has no trusted-publishing
+      # equivalent, so this is the one long-lived key left in the release path.
+      # It is scoped to this package and expires; see stories#5.
+      - name: Publish the PowerShell module
+        if: startsWith(github.ref, 'refs/tags/psmodule-v')
+        shell: pwsh
+        run: ./script/powershell-module.ps1 -Configuration Release -Publish -ApiKey $env:PSGALLERY_API_KEY
+        env:
+          PSGALLERY_API_KEY: ${{ secrets.BIGREDPROF_PSG_API_KEY }}

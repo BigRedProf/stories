@@ -66,6 +66,23 @@ tasks:
     cmds:
       - task: build
       - task: test
+      - task: test:powershell
+
+  # The PowerShell module is TWO test surfaces away from `dotnet test`: its
+  # behaviour lives in a module manifest and a cmdlet surface, neither of which
+  # an xunit project can see. This runs the module's own checks, the way
+  # digihouse runs its kiosk renderer under node for the same reason.
+  test:powershell:
+    desc: Run the PowerShell module's tests (stages the module first)
+    deps: [module]
+    cmds:
+      - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/PowerShell.Test/module.tests.ps1
+
+  module:
+    desc: Stage the BigRedProf.Stories PowerShell module into artifacts/module
+    # Publishing is CI's job on a psmodule-v* tag; this only ever stages, so
+    # nothing local can release the module by accident.
+    cmds: ['{{.PWSH}} script/powershell-module.ps1 -Configuration ${BRP_DOTNET_CONFIGURATION:-Release}']
 
   clean:
     desc: Remove build outputs and artifacts
