@@ -22,7 +22,6 @@ namespace BigRedProf.Stories.StoriesCli
 			// Every verb below must appear here too, or its options class never gets parsed
 			// and the verb looks like it doesn't exist.
 			return CommandLine.Parser.Default.ParseArguments<
-					ListenOptions,
 					SyncLogsToSqlOptions,
 					BackupOptions,
 					RestoreOptions,
@@ -30,7 +29,6 @@ namespace BigRedProf.Stories.StoriesCli
 					InspectOptions
 				>(args)
 				.MapResult(
-					(ListenOptions o) => RunOptions(serviceProvider, o),
 					(SyncLogsToSqlOptions o) => RunOptions(serviceProvider, o),
 					(BackupOptions o) => RunOptions(serviceProvider, o),
 					(RestoreOptions o) => RunOptions(serviceProvider, o),
@@ -43,12 +41,7 @@ namespace BigRedProf.Stories.StoriesCli
 		static private int RunOptions(ServiceProvider serviceProvider, BaseCommandLineOptions options)
 		{
 			Command command;
-			if (options is ListenOptions)
-			{
-				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;
-				command = new ListenCommand(apiClientLogger);
-			}
-			else if (options is SyncLogsToSqlOptions)
+			if (options is SyncLogsToSqlOptions)
 			{
 				ILogger<SyncLogsToSqlCommand> logger = serviceProvider.GetService<ILogger<SyncLogsToSqlCommand>>()!;
 				ILogger<ApiClient> apiClientLogger = serviceProvider.GetService<ILogger<ApiClient>>()!;

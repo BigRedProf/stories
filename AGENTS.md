@@ -30,7 +30,8 @@ process for humans and agents alike.
 
 ```powershell
 task build      # fast inner loop (restore once, then build)
-task test       # unit tests, no rebuild
+task test       # .NET unit tests, no rebuild
+task test:powershell  # the PowerShell module's own tests
 task verify     # everything required before merging — the success criterion
 task clean
 task doctor     # toolchain/version diagnostics
@@ -38,30 +39,47 @@ task doctor     # toolchain/version diagnostics
 
 List everything with `task --list`.
 
-`verify` is the canonical success criterion. It is fast by design (build +
-unit tests). Slow, on-demand work is separate and intentionally excluded from
+`verify` is the canonical success criterion. It is fast by design (build, the
+.NET unit tests, and the PowerShell module's tests). Slow, on-demand work is separate and intentionally excluded from
 the inner loop:
 
 ```powershell
 task image             # build the Api container image (SLOW)
 task publish -- <tag>  # tag and push the Api image to ghcr.io
 task pack              # produce the NuGet packages locally
+task module            # stage the PowerShell module into artifacts/module
 ```
 
 Stories specifics:
 
 - The build **target** is `src/stories.sln`. Note the solution lives under
   `src/`, not at the repository root.
-- Unit tests are real here (unlike some sibling repos): `task test` runs
-  `src/StoriesCli.Test`. It is still under `src/` rather than a top-level
-  `tests/` directory, which is a known deviation from `REPO_CONVENTIONS.md`.
+- **There are two test suites, and `verify` runs both.** `task test` is
+  `dotnet test` over `src/StoriesCli.Test`. `task test:powershell` runs
+  `tests/PowerShell.Test`, because the module's behaviour lives in a manifest and
+  a cmdlet surface that `dotnet test` cannot see at all. New PowerShell tests go
+  under `tests/`; the .NET test project is still under `src/`, a known deviation
+  from `REPO_CONVENTIONS.md` tracked by #4.
+- **Two things ship from here, on independent version lines.** The four
+  `BigRedProf.Stories.*` NuGet packages release on a `v*` tag to nuget.org; the
+  `BigRedProf.Stories` PowerShell module releases on a `psmodule-v*` tag to the
+  PowerShell Gallery. The prefixes are what keep them independent, so releasing
+  one never drags the other along. Neither can be released locally: `task pack`
+  and `task module` only build.
+- **Reading a story from the command line is the module's job, not the CLI's.**
+  `Get-Story` and `Watch-Story` replaced the CLI's `listen` verb, which is gone.
+  The CLI keeps the tape verbs (`backup`, `restore`, `verify`, `inspect`).
 - `task publish` needs `GITHUB_PAT_PACKAGE_REGISTRY` in the environment (or
   `.env.local`) to sign in to **ghcr.io**. It is a secret and never goes in
   `.env`. `task image` no longer needs it: the image restores from nuget.org,
   where every BigRedProf package is public, via the committed `NuGet.Config`.
-- This repository publishes the `BigRedProf.Stories.*` NuGet packages that
-  digihouse and others consume. CI does that on a push to `main`; `task pack`
-  only builds them locally.
+- The module is a **binary** PowerShell module, which has one trap worth
+  knowing: PowerShell loads it into the default assembly load context, which
+  probes *pwsh's* directory rather than the module's. A model assembly passed to
+  `-ModelAssembly` therefore cannot find its own dependencies unless the module
+  installs a resolver, and the failure surfaces during pack rat registration
+  naming the *version* the model assembly was compiled against, which is a red
+  herring. See `StoryCmdletBase.InstallDependencyResolver`.
 
 ---
 
