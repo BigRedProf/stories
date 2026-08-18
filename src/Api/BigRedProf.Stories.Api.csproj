@@ -12,7 +12,6 @@
 		<Description>Exposes stories via a web service.</Description>
 		<Product>Stories Api</Product>
 
-
 		<!-- This is the Stories service; it ships as a container image, not a package. -->
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>

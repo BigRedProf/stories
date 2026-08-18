@@ -76,13 +76,6 @@ jobs:
       - name: Pack
         run: dotnet pack -c Release -o ${{ github.workspace }}/artifacts/packages
         working-directory: src
-      # One push for every package and its symbols. `dotnet nuget push` sends a
-      # matching .snupkg alongside each .nupkg automatically, so symbols need no
-      # step of their own.
-      #
-      # --skip-duplicate is deliberately NOT used: with tag-derived versions a
-      # duplicate means the same tag is being released twice, and that should
-      # fail loudly rather than be quietly ignored.
       # The temporary key is valid for one hour and each OIDC token buys exactly
       # one key, so this sits immediately before the push rather than earlier in
       # the job. It is gated on the tag too -- on a branch build there is
@@ -93,6 +86,13 @@ jobs:
         id: nuget-login
         with:
           user: BigRedProf
+      # One push for every package and its symbols. `dotnet nuget push` sends a
+      # matching .snupkg alongside each .nupkg automatically, so symbols need no
+      # step of their own.
+      #
+      # --skip-duplicate is deliberately NOT used: with tag-derived versions a
+      # duplicate means the same tag is being released twice, and that should
+      # fail loudly rather than be quietly ignored.
       - name: Push packages to nuget.org
         if: startsWith(github.ref, 'refs/tags/v')
         run: dotnet nuget push "artifacts/packages/*.nupkg" --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
