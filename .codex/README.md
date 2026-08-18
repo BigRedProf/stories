@@ -34,9 +34,10 @@ Runs when reusing a cached container.
 
 ## Required Secrets
 
-`GITHUB_PAT_PACKAGE_REGISTRY` must be set as a Codex environment secret. Without
-it the private BigRedProf packages cannot be restored and setup fails early with
-an explicit message.
+None. Every package this repository restores is public on nuget.org, so setup
+needs no credentials. This previously required `GITHUB_PAT_PACKAGE_REGISTRY` to
+reach GitHub Packages, whose NuGet feed demands authentication even for public
+packages.
 
 ---
 

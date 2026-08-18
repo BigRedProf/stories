@@ -8,14 +8,11 @@ ENV ASPNETCORE_URLS=http://+:80
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-# The PAT arrives as a BuildKit secret, not a build ARG. As an ARG, BuildKit
-# expanded it when echoing this RUN instruction, printing the raw token into the
-# build output and any captured CI log. Mounted as a secret it exists only as a
-# file inside this one RUN, never in the instruction text, the build log, or the
-# image. Callers supply it with --secret id=ghpat,env=GITHUB_PAT_PACKAGE_REGISTRY
-# (digihouse's script/image.ps1 builds this image as part of a release).
-RUN --mount=type=secret,id=ghpat \
-	dotnet nuget add source --username BigRedProf --password "$(cat /run/secrets/ghpat)" --store-password-in-clear-text --name github "https://nuget.pkg.github.com/BigRedProf/index.json"
+# Restore reads NuGet.Config from the build context: nuget.org only, and no
+# credentials, because every BigRedProf package this image needs is public
+# there now. This used to mount a PAT as a BuildKit secret to reach GitHub
+# Packages, whose feed requires auth even for public packages.
+COPY ["NuGet.Config", "./"]
 COPY [".config/dotnet-tools.json", ".config/"]
 RUN dotnet tool restore
 COPY ["src/Api/BigRedProf.Stories.Api.csproj", "src/Api/"]

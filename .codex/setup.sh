@@ -17,7 +17,6 @@ echo "[setup] dotnet --info"
 dotnet --info
 
 ensure_nuget_cache
-ensure_bigredprof_github_nuget_source "setup"
 ensure_task "setup"
 
 # Everything above is genuine BOOTSTRAP -- it makes dotnet and task exist, and

@@ -14,7 +14,6 @@ echo "[maintenance] global.json SDK version: ${SDK_VERSION}"
 ensure_dotnet_sdk "maintenance" "${SDK_VERSION}"
 
 ensure_nuget_cache
-ensure_bigredprof_github_nuget_source "maintenance"
 ensure_task "maintenance"
 
 # As in setup.sh: the lines above are bootstrap, the line below is the build.

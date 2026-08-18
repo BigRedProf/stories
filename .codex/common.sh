@@ -67,27 +67,6 @@ ensure_nuget_cache() {
 	mkdir -p "${NUGET_PACKAGES}"
 }
 
-ensure_bigredprof_github_nuget_source() {
-	local prefix="$1"
-
-	echo "[${prefix}] Registering BigRedProf NuGet registry on GitHub Packages..."
-
-	if [ -z "${GITHUB_PAT_PACKAGE_REGISTRY:-}" ]; then
-		echo "[${prefix}] ERROR: GITHUB_PAT_PACKAGE_REGISTRY is required to restore private BigRedProf packages."
-		echo "[${prefix}] Add it as a Codex environment secret."
-		exit 1
-	fi
-
-	dotnet nuget remove source "GitHub.BigRedProf" >/dev/null 2>&1 || true
-
-	dotnet nuget add source "https://nuget.pkg.github.com/BigRedProf/index.json" \
-		--name "GitHub.BigRedProf" \
-		--username "BigRedProf" \
-		--password "${GITHUB_PAT_PACKAGE_REGISTRY}" \
-		--store-password-in-clear-text \
-		>/dev/null
-}
-
 # Task (go-task) is this repository's orchestration layer, so the Codex
 # environment needs it for the same reason it needs the .NET SDK: `task verify`
 # is the build. Installed the same way as the SDK above -- fetch the official

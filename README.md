@@ -22,7 +22,9 @@ task doctor      # toolchain/version diagnostics
 Task loads the layered environment (`.env.local` then `.env`) on every
 invocation, so no shell setup is required — commands work in a fresh process for
 humans and agents alike. Put private overrides (such as
-`GITHUB_PAT_PACKAGE_REGISTRY`) in a gitignored `.env.local`.
+`GITHUB_PAT_PACKAGE_REGISTRY`, which `task publish` uses to sign in to ghcr.io)
+in a gitignored `.env.local`. Restoring packages needs no credentials -- they
+are public on nuget.org.
 
 Note the solution lives at `src/stories.sln`, not at the repository root.
 
