@@ -14,8 +14,11 @@ namespace BigRedProf.Stories.StoriesCli
 		[Option("modelAssemblies", Required = false, Separator = ',', HelpText = "The path to a model assembly.")]
 		public IEnumerable<string>? ModelAssemblies { get; set; }
 
-		[Option("thingFormat", Required = false, HelpText = "How to format things. Choices are: RawCode or ModelWithSchema.")]
+		[Option("thingFormat", Required = false, HelpText = "How to format things. Choices are: RawCode, ModelWithSchema, or Model.")]
 		public ThingFormat? ThingFormat { get; set; }
+
+		[Option("thingSchemaId", Required = false, HelpText = "The schema each thing is packed as. Required by --thingFormat Model.")]
+		public string? ThingSchemaId { get; set; }
 
 		[Option("modelFormat", Required = false, HelpText = "How to format models. Choices are: ToString or Reflection.")]
 		public ModelFormat? ModelFormat { get; set; }

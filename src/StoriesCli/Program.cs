@@ -19,7 +19,16 @@ namespace BigRedProf.Stories.StoriesCli
 				.BuildServiceProvider();
 
 			// Parse arguments for multiple option classes
-			return CommandLine.Parser.Default.ParseArguments<ListenOptions, SyncLogsToSqlOptions>(args)
+			// Every verb below must appear here too, or its options class never gets parsed
+			// and the verb looks like it doesn't exist.
+			return CommandLine.Parser.Default.ParseArguments<
+					ListenOptions,
+					SyncLogsToSqlOptions,
+					BackupOptions,
+					RestoreOptions,
+					VerifyOptions,
+					InspectOptions
+				>(args)
 				.MapResult(
 					(ListenOptions o) => RunOptions(serviceProvider, o),
 					(SyncLogsToSqlOptions o) => RunOptions(serviceProvider, o),
