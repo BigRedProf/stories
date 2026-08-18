@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<AssemblyName>BigRedProf.Stories.PowerShell</AssemblyName>
+		<RootNamespace>BigRedProf.Stories.PowerShell</RootNamespace>
+
+		<!--
+		SPIKE. Not published yet: the packaging question (PowerShell Gallery, and
+		what the module is actually called) is still open on stories#5. This exists
+		to answer the risk that issue flagged first: whether a binary module
+		carrying the SignalR dependency tree loads cleanly in pwsh 7 at all.
+		-->
+		<IsPackable>false</IsPackable>
+
+		<!--
+		Emits a .deps.json and lays out dependencies so the assembly can be loaded
+		as a PLUGIN rather than as an application. Without it, Import-Module resolves
+		only what the host already happens to have loaded, which is exactly how a
+		binary module ends up with a missing assembly error at first use rather than
+		at import.
+		-->
+		<EnableDynamicLoading>true</EnableDynamicLoading>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!--
+		A REFERENCE assembly for System.Management.Automation. PrivateAssets keeps
+		it out of the output: the PowerShell host supplies the real implementation,
+		and shipping our own copy is a reliable way to break a module.
+		-->
+		<PackageReference Include="PowerShellStandard.Library" Version="5.1.1" PrivateAssets="all" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Core\BigRedProf.Stories.Core.csproj" />
+	</ItemGroup>
+
+</Project>
