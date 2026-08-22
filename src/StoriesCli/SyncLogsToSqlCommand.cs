@@ -104,8 +104,8 @@ namespace BigRedProf.Stories.StoriesCli
                 return;
 
             // The datum says which schema to read it under, but not what type that is to us,
-            // so unpack it weakly and ask afterwards.
-            LogEntry? logEntry = _piedPiper!.UnpackModel(datum.Code, datum.SchemaId) as LogEntry;
+            // so unpack without naming a type and ask afterwards.
+            LogEntry? logEntry = datum.Unpack<object>(_piedPiper!) as LogEntry;
             if (logEntry != null)
             {
                 long offset = thing.Offset;
