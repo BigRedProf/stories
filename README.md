@@ -40,10 +40,17 @@ task pack               # build the NuGet packages locally
 
 ### Two different artifacts
 
-| Artifact                              | Built by              | Published by                      |
-| ------------------------------------- | --------------------- | --------------------------------- |
-| `BigRedProf.Stories.*` NuGet packages | `task pack` (locally) | CI, on a push to `main`           |
-| `bigredprofstoriesapi` image          | `task image`          | `task publish -- <tag>` (ghcr.io) |
+| Artifact                              | Built by              | Published by                            |
+| ------------------------------------- | --------------------- | --------------------------------------- |
+| `BigRedProf.Stories.*` NuGet packages | `task pack` (locally) | CI, on a `v*` tag (nuget.org)           |
+| `BigRedProf.Stories` PowerShell module| `task module`         | CI, on a `psmodule-v*` tag (PS Gallery) |
+| `bigredprofstoriesapi` image          | `task image`          | `task publish -- <tag>` (ghcr.io)       |
+
+A release is a tag, not a merge: merges to `main` build and test but publish
+nothing, because nuget.org versions are immutable and effectively permanent. The
+version comes from the tag via MinVer, so there is no version number to edit.
+The two tag prefixes are what keep the packages and the module on independent
+version lines.
 
 `task pack` deliberately cannot push — package publishing stays in
 `.github/workflows/dotnet.yml`, so nothing local can release a package by
