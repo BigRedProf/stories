@@ -67,16 +67,20 @@
 	and the artifact is wrong. MinVer makes the tag the single source of truth,
 	so the two cannot disagree.
 
-	MinVerMinimumMajorMinor keeps untagged builds ahead of the last version
-	published under the old every-merge regime (0.7.1), so an untagged build is
-	0.8.0-alpha.0.N rather than 0.0.0-alpha.0.N.
+	MinVerMinimumMajorMinor is a floor: when the version MinVer works out from
+	history falls below it, the floor wins. A pre-release build should advertise
+	the version it is heading for rather than a patch of the one already shipped,
+	so this tracks the NEXT release's major.minor and moves when that ships.
+
+	It also catches the shallow clone, which sees no tags at all and would
+	otherwise produce 0.0.0-alpha.0.N, sorting below every real release.
 
 	NOTE: MinVer reads git history, so CI must check out with fetch-depth: 0.
 	A shallow clone has no tags and every build silently becomes an alpha.
 	-->
 	<PropertyGroup>
 		<MinVerTagPrefix>v</MinVerTagPrefix>
-		<MinVerMinimumMajorMinor>0.8</MinVerMinimumMajorMinor>
+		<MinVerMinimumMajorMinor>0.9</MinVerMinimumMajorMinor>
 	</PropertyGroup>
 
 	<ItemGroup>
