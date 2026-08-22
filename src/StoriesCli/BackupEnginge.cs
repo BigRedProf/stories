@@ -30,7 +30,7 @@ namespace BigRedProf.Stories.StoriesCli
 				try
 				{
 					Code bookmarkCode = backupWizard.GetLatestCheckpoint();
-					bookmark = piedPiper.DecodeModel<long>(bookmarkCode, CoreSchema.Int64);
+					bookmark = piedPiper.UnpackModel<long>(bookmarkCode, CoreSchema.Int64);
 
 					logger.LogInformation("Resuming backup from offset {StartOffset}.", bookmark);
 				}
@@ -46,7 +46,7 @@ namespace BigRedProf.Stories.StoriesCli
 			{
 				StoryThing storyThing = storyteller.TellMeSomething();
 				// Write the Code frame (offset implied by order in series)
-				Code encodedThing = piedPiper.EncodeModel(storyThing.Thing, CoreSchema.Code);
+				Code encodedThing = piedPiper.PackModel(storyThing.Thing, CoreSchema.Code);
 				backupWizard.Append(encodedThing);
 
 				lastOffset = storyThing.Offset + 1; // next offset expected
@@ -56,7 +56,7 @@ namespace BigRedProf.Stories.StoriesCli
 				{
 					if (incrementalBackup == true)
 					{
-						Code lastOffsetCode = piedPiper.EncodeModel(lastOffset, CoreSchema.Int64);
+						Code lastOffsetCode = piedPiper.PackModel(lastOffset, CoreSchema.Int64);
 						backupWizard.SetLatestCheckpoint(lastOffsetCode);
 					}
 				}
@@ -64,7 +64,7 @@ namespace BigRedProf.Stories.StoriesCli
 
 			if (incrementalBackup)
 			{
-				Code lastOffsetCode = piedPiper.EncodeModel(lastOffset, CoreSchema.Int64);
+				Code lastOffsetCode = piedPiper.PackModel(lastOffset, CoreSchema.Int64);
 				backupWizard.SetLatestCheckpoint(lastOffsetCode);
 			}
 			else
