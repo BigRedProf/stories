@@ -99,11 +99,13 @@ namespace BigRedProf.Stories.StoriesCli
 
         private void SaveToDatabase(SqlConnection connection, StoryThing thing, string storyId)
         {
-            ModelWithSchema? modelWithSchema = _piedPiper?.DecodeModel<ModelWithSchema>(thing.Thing, CoreSchema.ModelWithSchema);
-            if (modelWithSchema == null)
+            Datum? datum = _piedPiper?.UnpackModel<Datum>(thing.Thing, CoreSchema.Datum);
+            if (datum == null)
                 return;
 
-            LogEntry? logEntry = modelWithSchema.Model as LogEntry;
+            // The datum says which schema to read it under, but not what type that is to us,
+            // so unpack without naming a type and ask afterwards.
+            LogEntry? logEntry = datum.Unpack<object>(_piedPiper!) as LogEntry;
             if (logEntry != null)
             {
                 long offset = thing.Offset;

@@ -45,7 +45,7 @@ namespace BigRedProf.Stories
 			if (string.IsNullOrWhiteSpace(storyIdHash))
 				isValid = false;
 			else
-				isValid = Multihash.TryParse(storyIdHash, out Multihash _);
+				isValid = Multihash.TryParse(storyIdHash, out Multihash? _);
 
 			return isValid;
 		}
