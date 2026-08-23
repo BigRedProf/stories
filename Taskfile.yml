@@ -61,6 +61,24 @@ tasks:
     cmds:
       - dotnet test {{.TARGET}} -c ${BRP_DOTNET_CONFIGURATION:-Debug} --nologo --no-build --no-restore
 
+  pack:local:
+    # Packs the real packages, in Release, into a folder feed the sibling repositories restore
+    # from -- instead of publishing a prerelease and waiting for nuget.org to index it. Every
+    # pack gets a unique version, because NuGet's global packages cache is keyed on id and
+    # version and would otherwise keep serving the copy it already unpacked.
+    desc: 'Pack the NuGet packages into the shared local feed, for testing without publishing'
+    cmds: ['{{.PWSH}} script/pack-local.ps1 {{.CLI_ARGS}}']
+
+  use:local:
+    # The other side: build against packages a sibling packed locally. `-- released` puts it
+    # back. Being on local packages shows up in git status on purpose, and `task release`
+    # refuses a dirty tree, so a local reference cannot reach a published version.
+    desc: 'Use locally packed BigRedProf packages. Usage: task use:local -- <version>|released'
+    cmds: ['{{.PWSH}} script/use-packages.ps1 -Version {{.CLI_ARGS}}']
+    preconditions:
+      - sh: '[ -n "{{.CLI_ARGS}}" ]'
+        msg: 'A version is required. Usage: task use:local -- <version>|released'
+
   verify:
     desc: Everything required before merging (the canonical success criterion)
     cmds:
