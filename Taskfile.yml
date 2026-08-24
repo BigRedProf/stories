@@ -121,7 +121,27 @@ tasks:
     desc: Build the Api container image (SLOW). Docker/BuildKit decides what rebuilds.
     cmds: ['{{.PWSH}} script/image.ps1']
 
+  release:
+    # Publishing stays CI's job -- nothing here pushes a package. What this pushes is the
+    # `v*` tag that makes CI publish, which is the step that is easy to get wrong and
+    # impossible to take back: nuget.org versions are immutable, so a tag on the wrong
+    # commit or a typo'd version is spent forever. Hence the checks and the confirmation
+    # rather than two commands to remember.
+    #
+    # NOT to be confused with `publish` below, which pushes the Api container image to
+    # ghcr.io. Container tags can be moved; nuget.org versions cannot, which is why only
+    # one of the two asks before acting.
+    #
+    # The PowerShell module is released by a psmodule-v* tag on its own version line and
+    # is not covered here.
+    desc: 'Release the library packages by tagging, which is what publishes to nuget.org. Usage: task release -- 0.10.0'
+    cmds: ['{{.PWSH}} script/release.ps1 -Version {{.CLI_ARGS}}']
+    preconditions:
+      - sh: '[ -n "{{.CLI_ARGS}}" ]'
+        msg: 'A version is required. Usage: task release -- 0.10.0'
+
   publish:
+    # Pushes a container image, not a package. See `release` above for nuget.org.
     desc: 'Tag and push the Api image to ghcr.io. Usage: task publish -- <tag>'
     cmds: ['{{.PWSH}} script/publish.ps1 -Tag {{.CLI_ARGS}}']
     preconditions:
