@@ -1,6 +1,6 @@
 ﻿using BigRedProf.Data.Core;
 
-namespace BigRedProf.Stories.Models
+namespace BigRedProf.Stories.Data
 {
 	[GeneratePackRat(StoriesSchemaId.StoryThing)]
 	public class StoryThing

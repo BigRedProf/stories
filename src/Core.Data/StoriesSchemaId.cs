@@ -1,4 +1,4 @@
-﻿namespace BigRedProf.Stories.Models
+﻿namespace BigRedProf.Stories.Data
 {
 	public class StoriesSchemaId
 	{

@@ -1,5 +1,5 @@
 ﻿using BigRedProf.Data.Core;
-using BigRedProf.Stories.Logging.Models;
+using BigRedProf.Stories.Logging.Data;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;

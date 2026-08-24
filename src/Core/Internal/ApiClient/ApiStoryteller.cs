@@ -1,6 +1,6 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Memory;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

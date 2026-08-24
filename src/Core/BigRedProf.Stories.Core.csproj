@@ -19,7 +19,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\Core.Models\BigRedProf.Stories.Core.Models.csproj" />
+		<ProjectReference Include="..\Core.Data\BigRedProf.Stories.Core.Data.csproj" />
 	</ItemGroup>
 
 </Project>

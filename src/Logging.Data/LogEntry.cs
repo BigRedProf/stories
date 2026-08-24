@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 
-namespace BigRedProf.Stories.Logging.Models
+namespace BigRedProf.Stories.Logging.Data
 {
     [GeneratePackRat(StoriesLoggingSchemaId.LogEntry)]
 	public class LogEntry

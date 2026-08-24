@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BigRedProf.Stories.Logging.Models
+namespace BigRedProf.Stories.Logging.Data
 {
 	public class StoriesLoggingSchemaId
 	{

@@ -1,5 +1,5 @@
 ﻿using BigRedProf.Stories.Events;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;

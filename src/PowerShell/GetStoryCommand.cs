@@ -1,6 +1,6 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Internal.ApiClient;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Management.Automation;
 

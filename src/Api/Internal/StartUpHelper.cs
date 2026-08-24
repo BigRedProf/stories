@@ -1,7 +1,7 @@
 ﻿using BigRedProf.Data.Core;
 using BigRedProf.Stories.Api.Hubs;
 using BigRedProf.Stories.Memory;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 

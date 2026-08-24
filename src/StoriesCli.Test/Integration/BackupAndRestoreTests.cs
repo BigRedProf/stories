@@ -1,7 +1,7 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Data.Tape;
 using BigRedProf.Stories.Memory;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using BigRedProf.Stories.StoriesCli.Test._TestHelpers;
 using Microsoft.Extensions.Logging.Abstractions;
 

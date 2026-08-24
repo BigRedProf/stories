@@ -1,5 +1,5 @@
 ﻿using BigRedProf.Data.Core;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using System;
 
 namespace BigRedProf.Stories.Events

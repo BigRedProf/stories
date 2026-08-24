@@ -1,8 +1,8 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Internal;
 using BigRedProf.Stories.Internal.ApiClient;
-using BigRedProf.Stories.Models;
-using BigRedProf.Stories.Logging.Models;
+using BigRedProf.Stories.Data;
+using BigRedProf.Stories.Logging.Data;
 using Microsoft.Extensions.Logging;
 using Microsoft.Data.SqlClient;
 using System.Threading;
