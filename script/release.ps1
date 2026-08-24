@@ -279,7 +279,25 @@ try
 	}
 	catch
 	{
-		# Leaving a local tag behind would make a retry fail for the wrong reason.
+		# A failed push does not mean the tag is absent. If origin accepted it and the
+		# connection dropped before git heard back, the tag exists and CI is already
+		# publishing -- and deleting the local tag while reporting a refusal would tell the
+		# operator that nothing happened at the exact moment something irreversible did.
+		#
+		# So ask origin before believing the exit code.
+		$pushedRef = @(git ls-remote --tags origin "refs/tags/$tag")
+		if ($pushedRef.Count -gt 0)
+		{
+			Write-Host ""
+			Write-Host "[release] The push reported failure, but $tag IS on origin."
+			Write-Host "[release] CI has very likely started, and nuget.org versions are permanent."
+			Write-Host "[release] The local tag is kept so it matches origin. Check the workflow"
+			Write-Host "[release] before doing anything else; do NOT retry this version blindly."
+			throw "Push reported failure but $tag exists on origin. Treat $version as released until the workflow says otherwise."
+		}
+
+		# Genuinely not pushed. Leaving a local tag behind would make a retry fail for the
+		# wrong reason.
 		git tag -d $tag | Out-Null
 		throw
 	}
