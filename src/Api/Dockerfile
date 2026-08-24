@@ -13,6 +13,14 @@ WORKDIR /src
 # there now. This used to mount a PAT as a BuildKit secret to reach GitHub
 # Packages, whose feed requires auth even for public packages.
 COPY ["NuGet.Config", "./"]
+
+# Central package management: the csprojs carry bare <PackageReference> elements
+# and every version lives in this file, so a restore without it resolves
+# unconstrained versions and warns rather than restoring what the build actually
+# uses. It belongs in the cacheable restore layer, before the csprojs, so that
+# layer caches the real dependency set instead of being redone on every source
+# change.
+COPY ["Directory.Packages.props", "./"]
 COPY [".config/dotnet-tools.json", ".config/"]
 RUN dotnet tool restore
 COPY ["src/Api/BigRedProf.Stories.Api.csproj", "src/Api/"]
