@@ -109,6 +109,27 @@ try
 		throw "Tag $tag already exists on origin. nuget.org versions are immutable, so this version is spent; pick the next one."
 	}
 
+	# An absent tag is not proof the version is free. A tag deleted from origin, or a fresh
+	# clone, leaves both checks above happy while the published package sits on nuget.org
+	# forever. CI would then fail on the push -- loudly, and after the tag exists -- so ask
+	# nuget.org directly while a refusal is still cheap.
+	#
+	# Best effort on purpose: if nuget.org cannot be reached, that is not a reason to block a
+	# release, and CI's push remains the backstop it already was.
+	$probeId = 'bigredprof.stories.core'
+	try
+	{
+		$index = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/$probeId/index.json" -TimeoutSec 15
+		if ($index.versions -contains $version)
+		{
+			throw "$probeId $version is already on nuget.org, even though no tag names it. Published versions are permanent; pick the next one."
+		}
+	}
+	catch [System.Net.WebException], [System.Net.Http.HttpRequestException]
+	{
+		Write-Host "[release] Could not reach nuget.org to check whether $version is taken; continuing."
+	}
+
 	# ---- does it actually build ---------------------------------------------------------
 	if ($SkipVerify)
 	{
@@ -121,8 +142,12 @@ try
 	}
 
 	# ---- confirm ------------------------------------------------------------------------
-	$subject = (git log -1 --pretty=%s).Trim()
-	$shortSha = (git rev-parse --short HEAD).Trim()
+	# Described from $localHead, not from HEAD. The tag below names $localHead, so reading HEAD
+	# here would show one commit and publish another if a checkout in another window moved it
+	# during verify -- confirming the wrong thing, which is the failure this script exists to
+	# prevent rather than to introduce.
+	$subject = (git log -1 --pretty=%s $localHead).Trim()
+	$shortSha = $localHead.Substring(0, 7)
 
 	Write-Step "Ready to release"
 	Write-Host "  tag:      $tag"
