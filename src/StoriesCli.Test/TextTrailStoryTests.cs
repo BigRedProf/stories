@@ -1,7 +1,7 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories;
 using BigRedProf.Stories.Memory;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using System;
 
 namespace BigRedProf.Stories.StoriesCli.Test

@@ -1,7 +1,7 @@
 ﻿using BigRedProf.Data.Core;
 using System.Collections.Generic;
 
-namespace BigRedProf.Stories.Models
+namespace BigRedProf.Stories.Data
 {
 	[GeneratePackRat(StoriesSchemaId.ListOfStoryThings)]
 	public class ListOfStoryThings

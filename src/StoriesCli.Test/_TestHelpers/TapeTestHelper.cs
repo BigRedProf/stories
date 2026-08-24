@@ -1,7 +1,7 @@
 ﻿using BigRedProf.Data.Core;
 using BigRedProf.Data.Tape;
 using BigRedProf.Data.Tape.Libraries;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 
 namespace BigRedProf.Stories.StoriesCli.Test._TestHelpers
 {

@@ -4,12 +4,12 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
 
-		<Title>Stories CLI Models</Title>
-		<Description>The model classes for BigRedProf.Stories.StoriesCli.</Description>
-		<Product>Stories CLI Models Library</Product>
+		<Title>Stories CLI Data</Title>
+		<Description>The schema declarations and durable vocabulary for BigRedProf.Stories.StoriesCli.</Description>
+		<Product>Stories CLI Data</Product>
 
 
-		<!-- Models for the tape CLI, which is not published as a package today. -->
+		<!-- Schema declarations for the tape CLI, which is not published as a package today. -->
 		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 

@@ -17,7 +17,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Logging.Models\BigRedProf.Stories.Logging.Models.csproj" />
+	  <ProjectReference Include="..\Logging.Data\BigRedProf.Stories.Logging.Data.csproj" />
 	  <ProjectReference Include="..\Core\BigRedProf.Stories.Core.csproj" />
 	</ItemGroup>
 

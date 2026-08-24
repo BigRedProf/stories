@@ -1,7 +1,7 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Events;
 using BigRedProf.Stories.Memory;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using Microsoft.AspNetCore.SignalR;
 
 namespace BigRedProf.Stories.Api.Hubs

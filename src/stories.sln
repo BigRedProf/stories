@@ -11,11 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesC
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging", "Logging\BigRedProf.Stories.Logging.csproj", "{43F9C3DB-D3F8-48FA-A5A4-CB8A339F8F32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Core.Models", "Core.Models\BigRedProf.Stories.Core.Models.csproj", "{F4A0093F-D4B0-4473-9ECC-FF3B6E72B718}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Core.Data", "Core.Data\BigRedProf.Stories.Core.Data.csproj", "{F4A0093F-D4B0-4473-9ECC-FF3B6E72B718}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Models", "StoriesCli.Models\BigRedProf.Stories.StoriesCli.Models.csproj", "{A31A90E0-A142-497E-95D4-47CFBF23837D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Data", "StoriesCli.Data\BigRedProf.Stories.StoriesCli.Data.csproj", "{A31A90E0-A142-497E-95D4-47CFBF23837D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging.Models", "Logging.Models\BigRedProf.Stories.Logging.Models.csproj", "{B8BA6605-498C-4983-9AA9-19B2C5BCA471}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.Logging.Data", "Logging.Data\BigRedProf.Stories.Logging.Data.csproj", "{B8BA6605-498C-4983-9AA9-19B2C5BCA471}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BigRedProf.Stories.StoriesCli.Test", "StoriesCli.Test\BigRedProf.Stories.StoriesCli.Test.csproj", "{154B2F3B-D06C-4B95-B8E7-4C719FF3A033}"
 EndProject

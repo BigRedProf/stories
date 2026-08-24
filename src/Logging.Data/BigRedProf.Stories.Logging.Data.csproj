@@ -4,10 +4,10 @@
 		<TargetFramework>netstandard2.1</TargetFramework>
 		<Nullable>enable</Nullable>
 
-		<Title>Stories Logging Models</Title>
-		<Description>The model classes for BigRedProf.Stories.Logging.</Description>
+		<Title>Stories Logging Data</Title>
+		<Description>The schema declarations and durable vocabulary for BigRedProf.Stories.Logging.</Description>
 		<PackageTags>bigredprof;stories;logging;models</PackageTags>
-		<Product>Stories Logging Models Library</Product>
+		<Product>Stories Logging Data</Product>
 
 	</PropertyGroup>
 

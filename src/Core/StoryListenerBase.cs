@@ -1,6 +1,6 @@
 using BigRedProf.Data.Core;
 using BigRedProf.Stories.Events;
-using BigRedProf.Stories.Models;
+using BigRedProf.Stories.Data;
 using System;
 using System.Threading.Tasks;
 
