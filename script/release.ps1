@@ -26,6 +26,10 @@
 .PARAMETER SkipVerify
 	Skip `task verify`. CI runs it too, so this only trades a local minute for a slower
 	discovery of the same failure -- after the tag exists.
+
+	It does NOT skip the Release pack. That check exists because verify runs Debug while CI
+	packs Release, so skipping it would remove the one guard covering the difference, which is
+	the opposite of what someone skipping the tests needs.
 #>
 
 [CmdletBinding()]
@@ -109,6 +113,29 @@ try
 		throw "Tag $tag already exists on origin. nuget.org versions are immutable, so this version is spent; pick the next one."
 	}
 
+	# MinVer takes the HIGHEST version tag on a commit, so a tag is not the only thing that
+	# decides what gets packed -- the other tags already on that commit do too. Tagging v0.10.5
+	# on a commit that already carries v0.11.0 publishes 0.11.0: the operator confirms one
+	# version and nuget.org receives another, which is the single failure this script exists to
+	# prevent. Verified rather than assumed, by tagging both on one commit and packing.
+	#
+	# Only a HIGHER tag matters. An equal one is caught above, and a lower one loses to this
+	# release, which is the normal case for every release after the first.
+	$requested = [System.Management.Automation.SemanticVersion] $version
+	foreach ($existingTag in @(git tag --points-at $localHead --list 'v*'))
+	{
+		$candidate = $null
+		if (-not [System.Management.Automation.SemanticVersion]::TryParse($existingTag.Substring(1), [ref] $candidate))
+		{
+			continue
+		}
+
+		if ($candidate -gt $requested)
+		{
+			throw "This commit already carries $existingTag, and MinVer packs the highest tag on a commit. Tagging $tag would publish $candidate, not $version. Release from a commit that does not already carry a higher version."
+		}
+	}
+
 	# An absent tag is not proof the version is free. A tag deleted from origin, or a fresh
 	# clone, leaves both checks above happy while the published package sits on nuget.org
 	# forever. CI would then fail on the push -- loudly, and after the tag exists -- so ask
@@ -163,16 +190,16 @@ try
 	{
 		Write-Step "Verifying before tagging (CI runs this too, but after the tag exists)"
 		Invoke-Checked -Command 'task' -Arguments @('verify')
-
-		# verify honours BRP_DOTNET_CONFIGURATION from .env, which is Debug, while CI packs
-		# Release. That difference has already produced a release-only failure once: the tool
-		# package could not be built from a clean checkout because a Release build step was
-		# missing, and nothing in a Debug verify could have said so. Packing here builds
-		# Release and produces the actual artifacts, so the thing CI will do is done once
-		# while a refusal still costs nothing.
-		Write-Step "Packing Release, because verify only ran $($env:BRP_DOTNET_CONFIGURATION ?? 'Debug')"
-		Invoke-Checked -Command 'task' -Arguments @('pack')
 	}
+
+	# Outside the switch on purpose. -SkipVerify says it skips the test suite, so it skips the
+	# test suite; it is not a way to skip everything expensive. verify honours
+	# BRP_DOTNET_CONFIGURATION from .env, which is Debug, while CI packs Release -- and that
+	# difference has already produced a release-only failure once, when the tool package could
+	# not be built from a clean checkout. That is precisely the failure a caller in a hurry
+	# would most like to be told about before the tag exists rather than after.
+	Write-Step "Packing Release, because verify only ever runs $($env:BRP_DOTNET_CONFIGURATION ?? 'Debug')"
+	Invoke-Checked -Command 'task' -Arguments @('pack')
 
 	# ---- confirm ------------------------------------------------------------------------
 	# Described from $localHead, not from HEAD. The tag below names $localHead, so reading HEAD
