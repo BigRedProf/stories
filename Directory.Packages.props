@@ -1,0 +1,96 @@
+<Project>
+
+	<!--
+	Package versions for every project in this repository, in one place.
+
+	Without this, a version lives in each csproj that references it, and a
+	cross-repository upgrade means finding all of them. Migrating the stack to
+	BigRedProf.Data 0.9 meant doing exactly that, five times, across four
+	repositories, and every pass was a chance to miss one.
+
+	The csprojs keep a bare <PackageReference Include="..." /> with no version.
+	MSBuild resolves it from the <PackageVersion> below. A csproj that needs a
+	different version says so explicitly with VersionOverride, which makes the
+	exception visible instead of making the rule invisible.
+	-->
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
+		<!--
+		Deliberately off. Transitive pinning promotes every transitive dependency
+		to a version this file controls, which turns an upgrade of one package
+		into a decision about its whole graph. Turn it on when there is a specific
+		dependency to pin, not pre-emptively.
+		-->
+		<CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+	</PropertyGroup>
+
+	<!--
+	The BigRedProf stack.
+
+	WARNING: these are not the only place this repository names a BigRedProf.Data
+	version. `.config/dotnet-tools.json` pins the `prc` pack rat compiler, and a
+	dotnet tool carries its own version in the manifest that nothing here
+	manages. The two can drift, and when they do the compiler generates pack rats
+	against a different build of the library that consumes them, which fails in a
+	way that looks like a code bug rather than a version mismatch.
+
+	Change these and the tool manifest together, always.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="BigRedProf.Data.Core" Version="0.9.0-rc.3" />
+		<PackageVersion Include="BigRedProf.Data.Tape" Version="0.9.0-rc.3" />
+	</ItemGroup>
+
+	<!--
+	Build and packaging.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="MinVer" Version="7.0.0" />
+		<PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.2" />
+	</ItemGroup>
+
+	<!--
+	The API and its clients. The SignalR packages move together with ASP.NET
+	Core and should stay on the same major as the target framework.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="7.0.4" />
+		<PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="7.0.5" />
+		<PackageVersion Include="Microsoft.AspNetCore.SignalR.Common" Version="7.0.7" />
+		<PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="7.0.7" />
+		<PackageVersion Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+		<PackageVersion Include="System.Net.Http.Json" Version="7.0.1" />
+	</ItemGroup>
+
+	<!--
+	Hosting, logging, and storage.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
+		<PackageVersion Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.1" />
+		<PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+	</ItemGroup>
+
+	<!--
+	Command line surfaces.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="CommandLineParser" Version="2.9.1" />
+		<PackageVersion Include="PowerShellStandard.Library" Version="5.1.1" />
+	</ItemGroup>
+
+	<!--
+	Testing.
+	-->
+	<ItemGroup>
+		<PackageVersion Include="coverlet.collector" Version="6.0.0" />
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+		<PackageVersion Include="xunit" Version="2.5.3" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="2.5.3" />
+	</ItemGroup>
+
+</Project>
