@@ -132,18 +132,25 @@ try
 
 	foreach ($packageId in $packageIds)
 	{
+		# The refusal is deliberately OUTSIDE the try. Every way of not getting an answer means
+		# continue -- a package never published 404s, an unreachable nuget.org throws, a slow
+		# one times out -- and the exception types differ between all three. Catching narrowly
+		# and throwing from inside meant an unconfirmable version refused the release instead
+		# of allowing it, which is the opposite of best effort: the first release of any new
+		# package id would have been blocked by its own 404.
+		$publishedVersions = $null
 		try
 		{
-			$index = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/$packageId/index.json" -TimeoutSec 15
-			if ($index.versions -contains $version)
-			{
-				throw "$packageId $version is already on nuget.org, even though no tag names it. Published versions are permanent; pick the next one."
-			}
+			$publishedVersions = (Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/$packageId/index.json" -TimeoutSec 15).versions
 		}
-		catch [System.Net.WebException], [System.Net.Http.HttpRequestException]
+		catch
 		{
-			# Never published, or nuget.org is unreachable. Neither is a reason to refuse: a
-			# package that does not exist yet 404s here, and CI's push remains the backstop.
+			$publishedVersions = $null
+		}
+
+		if ($null -ne $publishedVersions -and $publishedVersions -contains $version)
+		{
+			throw "$packageId $version is already on nuget.org, even though no tag names it. Published versions are permanent; pick the next one."
 		}
 	}
 
@@ -156,6 +163,15 @@ try
 	{
 		Write-Step "Verifying before tagging (CI runs this too, but after the tag exists)"
 		Invoke-Checked -Command 'task' -Arguments @('verify')
+
+		# verify honours BRP_DOTNET_CONFIGURATION from .env, which is Debug, while CI packs
+		# Release. That difference has already produced a release-only failure once: the tool
+		# package could not be built from a clean checkout because a Release build step was
+		# missing, and nothing in a Debug verify could have said so. Packing here builds
+		# Release and produces the actual artifacts, so the thing CI will do is done once
+		# while a refusal still costs nothing.
+		Write-Step "Packing Release, because verify only ran $($env:BRP_DOTNET_CONFIGURATION ?? 'Debug')"
+		Invoke-Checked -Command 'task' -Arguments @('pack')
 	}
 
 	# ---- confirm ------------------------------------------------------------------------
@@ -208,6 +224,21 @@ try
 	if (@(git tag --list $tag).Count -gt 0 -or @(git ls-remote --tags origin "refs/tags/$tag").Count -gt 0)
 	{
 		throw "Tag $tag appeared while this was running. Nothing was tagged."
+	}
+
+	# verify ran against the working tree, not against $localHead, and the tag names
+	# $localHead. If a checkout or an edit in another window moved the tree while verify was
+	# running or while the prompt waited, then what was tested and what is about to be
+	# published are two different things -- and only one of them was ever built.
+	$localHeadNow = (git rev-parse HEAD).Trim()
+	if ($localHeadNow -ne $localHead)
+	{
+		throw "HEAD moved to $($localHeadNow.Substring(0, 7)) while this was running, so verify tested something other than $($localHead.Substring(0, 7)). Nothing was tagged."
+	}
+
+	if (@(git status --porcelain).Count -gt 0)
+	{
+		throw "The working tree changed while this was running, so verify no longer describes it. Nothing was tagged."
 	}
 
 	# Tag the commit that passed the checks, by name, rather than whatever HEAD happens to be
