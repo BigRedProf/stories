@@ -78,6 +78,18 @@ try
 			Where-Object { $_.FullName -notmatch '\\(obj|bin|Library)\\' } |
 			ForEach-Object { $_.FullName }
 
+		# Under central package management the csprojs carry bare references and every
+		# version lives here, so this file is the only thing controlling which build of a
+		# BigRedProf package gets restored. Miss it and the switcher retargets the tool
+		# manifest while leaving the libraries behind -- which is precisely the
+		# compiler-against-a-different-library mismatch this whole workflow exists to
+		# prevent, arrived at by the tool meant to prevent it.
+		$centralVersions = Join-Path $repoRoot 'Directory.Packages.props'
+		if (Test-Path $centralVersions)
+		{
+			$files += $centralVersions
+		}
+
 		$manifest = Join-Path $repoRoot '.config/dotnet-tools.json'
 		if (Test-Path $manifest)
 		{
@@ -163,7 +175,10 @@ try
 
 		foreach ($package in $packages)
 		{
-			# csproj: <PackageReference Include="X" Version="1.2.3" />
+			# csproj:                  <PackageReference Include="X" Version="1.2.3" />
+			# Directory.Packages.props: <PackageVersion   Include="X" Version="1.2.3" />
+			# The pattern keys on the attributes rather than the element name, so it
+			# matches both.
 			$pattern = '(Include="' + [regex]::Escape($package) + '"\s+Version=")([^"]+)(")'
 			foreach ($match in [regex]::Matches($content, $pattern))
 			{
