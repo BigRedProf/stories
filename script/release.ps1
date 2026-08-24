@@ -116,18 +116,35 @@ try
 	#
 	# Best effort on purpose: if nuget.org cannot be reached, that is not a reason to block a
 	# release, and CI's push remains the backstop it already was.
-	$probeId = 'bigredprof.stories.core'
-	try
+	# Every shipped package, not a representative one. CI pushes them with a single glob and
+	# without --skip-duplicate, so a push that failed partway leaves some ids at this version
+	# and others absent; checking only one would wave that through and produce a second
+	# partial release.
+	#
+	# The ids are derived rather than listed, so adding a fifth package does not silently
+	# leave a hole here. This assumes the package id is the project file name, which holds
+	# in this repository because no project sets PackageId.
+	$packageIds = @(
+		Get-ChildItem -Path (Join-Path $repoRoot 'src') -Filter '*.csproj' -Recurse |
+			Where-Object { (Get-Content $_.FullName -Raw) -notmatch '<IsPackable>\s*false\s*</IsPackable>' } |
+			ForEach-Object { $_.BaseName.ToLowerInvariant() }
+	)
+
+	foreach ($packageId in $packageIds)
 	{
-		$index = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/$probeId/index.json" -TimeoutSec 15
-		if ($index.versions -contains $version)
+		try
 		{
-			throw "$probeId $version is already on nuget.org, even though no tag names it. Published versions are permanent; pick the next one."
+			$index = Invoke-RestMethod -Uri "https://api.nuget.org/v3-flatcontainer/$packageId/index.json" -TimeoutSec 15
+			if ($index.versions -contains $version)
+			{
+				throw "$packageId $version is already on nuget.org, even though no tag names it. Published versions are permanent; pick the next one."
+			}
 		}
-	}
-	catch [System.Net.WebException], [System.Net.Http.HttpRequestException]
-	{
-		Write-Host "[release] Could not reach nuget.org to check whether $version is taken; continuing."
+		catch [System.Net.WebException], [System.Net.Http.HttpRequestException]
+		{
+			# Never published, or nuget.org is unreachable. Neither is a reason to refuse: a
+			# package that does not exist yet 404s here, and CI's push remains the backstop.
+		}
 	}
 
 	# ---- does it actually build ---------------------------------------------------------
