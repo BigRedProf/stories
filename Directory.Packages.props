@@ -39,8 +39,8 @@
 	Change these and the tool manifest together, always.
 	-->
 	<ItemGroup>
-		<PackageVersion Include="BigRedProf.Data.Core" Version="0.10.0" />
-		<PackageVersion Include="BigRedProf.Data.Tape" Version="0.10.0" />
+		<PackageVersion Include="BigRedProf.Data.Core" Version="0.10.1" />
+		<PackageVersion Include="BigRedProf.Data.Tape" Version="0.10.1" />
 	</ItemGroup>
 
 	<!--
