@@ -22,4 +22,8 @@
 		<ProjectReference Include="..\Core.Data\BigRedProf.Stories.Core.Data.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="BigRedProf.Stories.Core.Test" />
+	</ItemGroup>
+
 </Project>
