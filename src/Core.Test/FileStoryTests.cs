@@ -236,6 +236,18 @@ namespace BigRedProf.Stories.Core.Test
 		}
 
 		[Fact]
+		public void OversizedLengthOnTheLastFrame_ShouldNotTruncateCommittedRecords()
+		{
+			AssertOversizedLengthIsNotTruncated(corruptLastFrame: true);
+		}
+
+		[Fact]
+		public void OversizedLengthOnAnEarlierFrame_ShouldNotTruncateCommittedRecords()
+		{
+			AssertOversizedLengthIsNotTruncated(corruptLastFrame: false);
+		}
+
+		[Fact]
 		public void CorruptEarlierFrame_ShouldThrowInsteadOfSkippingIt()
 		{
 			string directory = CreateCleanDirectory("corrupt-middle");
@@ -493,6 +505,66 @@ namespace BigRedProf.Stories.Core.Test
 		{
 			if (Directory.Exists(directory))
 				Directory.Delete(directory, true);
+		}
+
+		private static void AssertOversizedLengthIsNotTruncated(bool corruptLastFrame)
+		{
+			string directoryName = corruptLastFrame ? "oversized-last" : "oversized-earlier";
+			string directory = CreateCleanDirectory(directoryName);
+			try
+			{
+				TextTrail storyId = new TextTrail("catalog", "content");
+				using (FileStoryManager manager = new FileStoryManager(directory, CreatePiedPiper()))
+				{
+					manager.GetScribe(storyId).RecordSomething(FirstThing, SecondThing, ThirdThing);
+				}
+
+				string storyFile = GetOnlyStoryFile(directory);
+				byte[] original = File.ReadAllBytes(storyFile);
+				IList<int> lengthOffsets = FrameLengthOffsets(original);
+				Assert.True(lengthOffsets.Count >= 2);
+
+				int lengthOffset = corruptLastFrame ? lengthOffsets[lengthOffsets.Count - 1] : lengthOffsets[0];
+				byte[] corrupted = new byte[original.Length];
+				Buffer.BlockCopy(original, 0, corrupted, 0, original.Length);
+				uint oversizedLength = (uint)FileStoryLog.MaxPayloadLength + 1;
+				corrupted[lengthOffset] = (byte)oversizedLength;
+				corrupted[lengthOffset + 1] = (byte)(oversizedLength >> 8);
+				corrupted[lengthOffset + 2] = (byte)(oversizedLength >> 16);
+				corrupted[lengthOffset + 3] = (byte)(oversizedLength >> 24);
+				File.WriteAllBytes(storyFile, corrupted);
+
+				FileStoryteller storyteller = new FileStoryteller(directory, storyId, CreatePiedPiper());
+				Assert.Throws<InvalidDataException>(() => storyteller.TellMeSomething());
+				Assert.Throws<InvalidDataException>(() => new FileScribe(directory, storyId, CreatePiedPiper()));
+
+				Assert.Equal(corrupted, File.ReadAllBytes(storyFile));
+			}
+			finally
+			{
+				DeleteDirectory(directory);
+			}
+		}
+
+		private static IList<int> FrameLengthOffsets(byte[] storyFile)
+		{
+			List<int> offsets = new List<int>();
+			int position = FileStoryLog.HeaderLength;
+			while (position + 8 <= storyFile.Length)
+			{
+				uint payloadLength = BitConverter.ToUInt32(storyFile, position);
+				if (payloadLength == 0 || payloadLength > FileStoryLog.MaxPayloadLength)
+					break;
+
+				int frameLength = 4 + (int)payloadLength + 4;
+				if (position + frameLength > storyFile.Length)
+					break;
+
+				offsets.Add(position);
+				position += frameLength;
+			}
+
+			return offsets;
 		}
 
 		private static string GetOnlyStoryFile(string directory)

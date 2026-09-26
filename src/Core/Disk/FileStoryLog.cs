@@ -315,6 +315,17 @@ namespace BigRedProf.Stories.Disk
 				return null;
 
 			uint payloadLength = ReadUInt32(lengthBytes, 0);
+			// A writer never emits a payload this large. Check it before deciding the
+			// frame is incomplete: a length that also runs past the end of the file
+			// would otherwise look like a torn tail, and recovery would truncate
+			// every committed record after this word.
+			if (payloadLength > MaxPayloadLength)
+			{
+				throw new InvalidDataException(
+					$"'{filePath}' is corrupt at offset {frameStart}: the frame declares {payloadLength} payload bytes."
+				);
+			}
+
 			long frameLength = 4L + payloadLength + 4L;
 			// Not enough bytes left for the declared frame: a crash tore the tail.
 			// Stop here so every earlier frame is still returned.
@@ -330,13 +341,6 @@ namespace BigRedProf.Stories.Disk
 
 				throw new InvalidDataException(
 					$"'{filePath}' is corrupt at offset {frameStart}: the frame declares no payload."
-				);
-			}
-
-			if (payloadLength > MaxPayloadLength)
-			{
-				throw new InvalidDataException(
-					$"'{filePath}' is corrupt at offset {frameStart}: the frame declares {payloadLength} payload bytes."
 				);
 			}
 
