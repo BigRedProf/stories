@@ -11,15 +11,29 @@
 
 	</PropertyGroup>
 
-	<Target Name="RunPackRatCompiler" BeforeTargets="Build">
-		<Exec WorkingDirectory="$(ProjectDir)" Command="dotnet prc $(ProjectFileName) -o $(IntermediateOutputPath)" ContinueOnError="false" ConsoleToMSBuild="true">
+	<!--
+	The generated files do not exist when MSBuild evaluates this project, so a
+	Compile glob here is empty on a clean build: prc writes them, then the
+	compiler never sees them, and the assembly has no [AssemblyRegistrationHelper].
+	Add them from the target that generates them, before CoreCompile.
+	-->
+	<Target Name="RunPackRatCompiler" BeforeTargets="CoreCompile" Condition="'$(PackRatCompilerRunning)' != 'true'">
+		<!--
+		prc builds this project to read it. Without the guard, that inner build
+		runs this target and starts prc again.
+		-->
+		<Exec
+			WorkingDirectory="$(ProjectDir)"
+			Command="dotnet prc $(ProjectFileName) -o $(IntermediateOutputPath)"
+			EnvironmentVariables="PackRatCompilerRunning=true"
+			ContinueOnError="false"
+			ConsoleToMSBuild="true">
 			<Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
 		</Exec>
+		<ItemGroup>
+			<Compile Include="$(IntermediateOutputPath)*.g.cs" />
+		</ItemGroup>
 	</Target>
-
-	<ItemGroup>
-		<Compile Include="$(IntermediateOutputPath)\*.g.cs"></Compile>
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="BigRedProf.Data.Core" />
