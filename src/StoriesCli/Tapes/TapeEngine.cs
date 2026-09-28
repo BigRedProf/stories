@@ -50,13 +50,19 @@ namespace BigRedProf.Stories.StoriesCli.Tapes
 		/// Puts on tape everything <paramref name="source"/> holds that <paramref name="manifest"/>
 		/// does not, and records it in the manifest -- in memory; the caller commits it.
 		/// </summary>
+		/// <param name="floor">
+		/// The previous generation's manifest, when <paramref name="manifest"/> is a new one. A
+		/// new generation starts empty, so on its own it would accept a store that has just lost
+		/// its history and write that down as the latest -- and a restore then brings back
+		/// nothing. The floor is checked exactly as the manifest is.
+		/// </param>
 		/// <returns>How many stories grew, and by how many things in all.</returns>
 		/// <exception cref="TapeException">
 		/// A story holds less than is already on tape. The service has lost history -- restarted
 		/// without being restored, most likely -- and backing it up now would describe a store
 		/// that no longer matches its tapes. Nothing is recorded in the manifest.
 		/// </exception>
-		public async Task<BackupResult> BackupAsync(IStorySource source, TapeManifest manifest)
+		public async Task<BackupResult> BackupAsync(IStorySource source, TapeManifest manifest, TapeManifest? floor = null)
 		{
 			ArgumentNullException.ThrowIfNull(source);
 			ArgumentNullException.ThrowIfNull(manifest);
@@ -67,13 +73,16 @@ namespace BigRedProf.Stories.StoriesCli.Tapes
 
 			// Checked for every story before anything is written, so a store that has lost
 			// history is refused whole rather than half backed up.
-			foreach (KeyValuePair<string, StoryTapes> taped in manifest.Stories)
+			IEnumerable<KeyValuePair<string, StoryTapes>> taped = floor == null
+				? manifest.Stories
+				: manifest.Stories.Concat(floor.Stories);
+			foreach (KeyValuePair<string, StoryTapes> story in taped)
 			{
-				liveLengths.TryGetValue(taped.Key, out long liveLength);
-				if (liveLength < taped.Value.Length)
+				liveLengths.TryGetValue(story.Key, out long liveLength);
+				if (liveLength < story.Value.Length)
 				{
 					throw new TapeException(
-						$"Story {taped.Key} holds {liveLength} things but {taped.Value.Length} are on tape. " +
+						$"Story {story.Key} holds {liveLength} things but {story.Value.Length} are on tape. " +
 						"The service has lost history: restore it before backing up again.");
 				}
 			}

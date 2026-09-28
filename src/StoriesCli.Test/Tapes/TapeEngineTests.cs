@@ -102,6 +102,46 @@ public class TapeEngineTests
 
 	[Trait("Region", "TapeEngine methods")]
 	[Fact]
+	public async Task BackupAsync_ShouldRefuseAServiceThatLostHistoryJustBeforeANewWeek()
+	{
+		// The first backup of a week has an empty manifest to compare against. Without last
+		// week's as a floor, it would write the emptied store down as the latest generation --
+		// the one a restore uses.
+		MemoryStorySource source = new MemoryStorySource();
+		source.Record("app/ledger", Ledger);
+		TapeEngine engine = CreateEngine(new MemoryLibrary());
+		TapeManifest lastWeek = NewManifest();
+		await engine.BackupAsync(source, lastWeek);
+		MemoryStorySource emptied = new MemoryStorySource();
+		emptied.Record("app/roster", Roster);
+		TapeManifest thisWeek = new TapeManifest() { Generation = "2026-W40" };
+
+		await Assert.ThrowsAsync<TapeException>(() => engine.BackupAsync(emptied, thisWeek, lastWeek));
+
+		Assert.Empty(thisWeek.Stories);
+	}
+
+	[Trait("Region", "TapeEngine methods")]
+	[Fact]
+	public async Task BackupAsync_ShouldStartANewWeekWithAFullCopy()
+	{
+		MemoryStorySource source = new MemoryStorySource();
+		string ledger = source.Record("app/ledger", Ledger);
+		TapeEngine engine = CreateEngine(new MemoryLibrary());
+		TapeManifest lastWeek = NewManifest();
+		await engine.BackupAsync(source, lastWeek);
+		TapeManifest thisWeek = new TapeManifest() { Generation = "2026-W40" };
+
+		BackupResult result = await engine.BackupAsync(source, thisWeek, lastWeek);
+		MemoryStorySource restored = new MemoryStorySource();
+		await engine.RestoreAsync(thisWeek, restored);
+
+		Assert.Equal(Ledger.Length, result.ThingsWritten);
+		Assert.Equal(Ledger, restored.ReadAll(ledger));
+	}
+
+	[Trait("Region", "TapeEngine methods")]
+	[Fact]
 	public async Task RestoreAsync_ShouldRefuseATargetThatAlreadyHoldsStories()
 	{
 		MemoryStorySource source = new MemoryStorySource();
