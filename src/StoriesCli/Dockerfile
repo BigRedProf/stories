@@ -19,6 +19,12 @@ COPY [".config/dotnet-tools.json", ".config/"]
 RUN dotnet tool restore
 COPY . .
 WORKDIR "/src/src/StoriesCli"
+# Build, THEN publish -- as the Api image does, and for a reason: the model projects compile
+# their generated pack rats through a wildcard over obj/, which MSBuild expands before the pack
+# rat compiler has written anything. A lone publish is one pass, compiles no pack rats, and
+# produces a CLI that fails at start-up with "The assembly has no [AssemblyRegistrationHelper]
+# class". Found by digihouse's Memorial drill.
+RUN dotnet build "BigRedProf.Stories.StoriesCli.csproj" -c Release
 RUN dotnet publish "BigRedProf.Stories.StoriesCli.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
