@@ -71,6 +71,35 @@ public sealed class TapeShelfTests : IDisposable
 	}
 
 	[Trait("Region", "TapeShelf methods")]
+	[Theory]
+	[InlineData("..")]
+	[InlineData(".")]
+	[InlineData("../2026-W39")]
+	[InlineData("2026-W39/..")]
+	[InlineData("latest")]
+	[InlineData("2026-W00")]
+	[InlineData("2026-W54")]
+	public void LoadManifest_ShouldRefuseAnythingButAnIsoWeek(string generation)
+	{
+		// Anything else could put a manifest outside the shelf, where the default restore never
+		// looks -- or overwrite one that is not a generation's.
+		TapeShelf shelf = new TapeShelf(_root);
+
+		Assert.Throws<ArgumentException>(() => shelf.LoadManifest(generation));
+		Assert.Throws<ArgumentException>(() => shelf.OpenLibrary(generation));
+	}
+
+	[Trait("Region", "TapeShelf methods")]
+	[Fact]
+	public void FindLatestGeneration_ShouldIgnoreDirectoriesThatAreNotGenerations()
+	{
+		Directory.CreateDirectory(Path.Combine(_root, "zz-not-a-week"));
+		File.WriteAllText(Path.Combine(_root, "zz-not-a-week", "manifest.json"), "{}");
+
+		Assert.Null(new TapeShelf(_root).FindLatestGeneration());
+	}
+
+	[Trait("Region", "TapeShelf methods")]
 	[Fact]
 	public void FindLatestGeneration_ShouldBeNullWithNoTapes()
 	{

@@ -52,6 +52,12 @@ namespace BigRedProf.Stories.StoriesCli.Tapes
 
 			return string.Format(CultureInfo.InvariantCulture, "{0:D4}-W{1:D2}", year, week);
 		}
+
+		/// <summary>Whether <paramref name="name"/> is a generation name: an ISO week, like <c>2026-W39</c>.</summary>
+		public static bool IsGenerationName(string? name)
+		{
+			return name != null && System.Text.RegularExpressions.Regex.IsMatch(name, "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$");
+		}
 		#endregion
 
 		#region methods
@@ -63,6 +69,7 @@ namespace BigRedProf.Stories.StoriesCli.Tapes
 			{
 				// ISO week names sort in time order as plain strings.
 				latest = Directory.GetDirectories(_root)
+					.Where(directory => IsGenerationName(Path.GetFileName(directory)))
 					.Where(directory => File.Exists(Path.Combine(directory, ManifestFileName)))
 					.Select(directory => Path.GetFileName(directory))
 					.OrderBy(name => name, StringComparer.Ordinal)
@@ -119,8 +126,14 @@ namespace BigRedProf.Stories.StoriesCli.Tapes
 		#region private methods
 		private string GetGenerationPath(string generation)
 		{
-			if (string.IsNullOrWhiteSpace(generation) || generation.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
-				throw new ArgumentException($"'{generation}' is not a generation name.", nameof(generation));
+			// An ISO week and nothing else. "..", "." and anything with a separator would put the
+			// manifest outside the shelf, where the default restore never looks. Found by Codex.
+			if (!IsGenerationName(generation))
+			{
+				throw new ArgumentException(
+					$"'{generation}' is not a generation name; a generation is an ISO week, like 2026-W39.",
+					nameof(generation));
+			}
 
 			return Path.Combine(_root, generation);
 		}
