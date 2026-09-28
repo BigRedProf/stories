@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "bigredprof.data.packratcompiler": {
-      "version": "0.10.1",
+      "version": "0.10.2",
       "commands": [
         "prc"
       ],

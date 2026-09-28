@@ -19,14 +19,14 @@ namespace BigRedProf.Stories.Internal.ApiClient
 		#endregion
 
 		#region constructors
-		public ApiScribe(Uri baseUri, TextTrail storyId, IPiedPiper piedPiper)
+		public ApiScribe(Uri baseUri, string storyIdHash, IPiedPiper piedPiper)
 		{
 			Debug.Assert(baseUri != null);
-			Debug.Assert(storyId != null);
+			Debug.Assert(storyIdHash != null);
 			Debug.Assert(piedPiper != null);
 
 			_baseUri = baseUri;
-			_storyIdHash = TextTrailSerializer.ToMultihashString(storyId);
+			_storyIdHash = storyIdHash;
 			_piedPiper = piedPiper;
 
 			_listOfThingsPackRat = _piedPiper.GetPackRat<ListOfThings>(StoriesSchemaId.ListOfThings);

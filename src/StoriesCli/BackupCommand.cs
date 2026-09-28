@@ -30,6 +30,16 @@ namespace BigRedProf.Stories.StoriesCli
 		{
 			BackupOptions options = (BackupOptions)baseOpts;
 
+			// The checkpoint this reads was never applied: every "incremental" run appended the
+			// whole story again, so the tape grew a duplicate of everything. backup-all does
+			// incremental backups correctly, one immutable segment per run (digihouse#397).
+			if (options.IncrementalBackup == true)
+			{
+				Console.Error.WriteLine("'backup --incrementalBackup' duplicated whole stories. Use 'backup-all'.");
+
+				return 1;
+			}
+
 			IPiedPiper piedPiper = new PiedPiper();
 			piedPiper.RegisterCorePackRats();
 			piedPiper.RegisterPackRats(typeof(StoryThing).Assembly);
