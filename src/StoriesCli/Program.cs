@@ -26,7 +26,10 @@ namespace BigRedProf.Stories.StoriesCli
 					BackupOptions,
 					RestoreOptions,
 					VerifyOptions,
-					InspectOptions
+					InspectOptions,
+					BackupAllOptions,
+					RestoreAllOptions,
+					VerifyAllOptions
 				>(args)
 				.MapResult(
 					(SyncLogsToSqlOptions o) => RunOptions(serviceProvider, o),
@@ -34,6 +37,9 @@ namespace BigRedProf.Stories.StoriesCli
 					(RestoreOptions o) => RunOptions(serviceProvider, o),
 					(VerifyOptions o) => RunOptions(serviceProvider, o),
 					(InspectOptions o) => RunOptions(serviceProvider, o),
+					(BackupAllOptions o) => RunOptions(serviceProvider, o),
+					(RestoreAllOptions o) => RunOptions(serviceProvider, o),
+					(VerifyAllOptions o) => RunOptions(serviceProvider, o),
 					errors => HandleParseError(errors)
 				);
 		}
@@ -64,6 +70,18 @@ namespace BigRedProf.Stories.StoriesCli
 			else if (options is InspectOptions)
 			{
 				command = new InspectCommand();
+			}
+			else if (options is BackupAllOptions)
+			{
+				command = new BackupAllCommand(serviceProvider.GetService<ILogger<ApiClient>>()!);
+			}
+			else if (options is RestoreAllOptions)
+			{
+				command = new RestoreAllCommand(serviceProvider.GetService<ILogger<ApiClient>>()!);
+			}
+			else if (options is VerifyAllOptions)
+			{
+				command = new VerifyAllCommand(serviceProvider.GetService<ILogger<ApiClient>>()!);
 			}
 			else
 			{

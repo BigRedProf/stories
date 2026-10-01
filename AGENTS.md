@@ -68,7 +68,11 @@ Stories specifics:
   and `task module` only build.
 - **Reading a story from the command line is the module's job, not the CLI's.**
   `Get-Story` and `Watch-Story` replaced the CLI's `listen` verb, which is gone.
-  The CLI keeps the tape verbs (`backup`, `restore`, `verify`, `inspect`).
+  The CLI keeps the tape verbs. The ones to use are `backup-all`, `restore-all`
+  and `verify-all`, which back up every story the service holds as immutable
+  segments under a per-week manifest (`docs/tapes.md`). The older `backup` and
+  `verify` work on one series; `restore` and `backup --incrementalBackup` were
+  never right and now say so and point at the `-all` verbs.
 - `task publish` needs `GITHUB_PAT_PACKAGE_REGISTRY` in the environment (or
   `.env.local`) to sign in to **ghcr.io**. It is a secret and never goes in
   `.env`. `task image` no longer needs it: the image restores from nuget.org,

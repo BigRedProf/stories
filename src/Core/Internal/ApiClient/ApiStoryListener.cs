@@ -44,7 +44,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			_apiHelper = new ApiHelper(logger, piedPiper);
 
-			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, storyId, piedPiper, Bookmark, tellLimit);
+			IStoryteller catchUpStoryteller = new ApiStoryteller(baseUri, _storyIdHash, piedPiper, Bookmark, tellLimit);
 			_storyThingSequencer = new StoryThingSequencer(logger, catchUpStoryteller, bookmark, pollingFrequency);
 			_storyThingSequencer.SomethingHappenedAsync += StoryThingSequencer_SomethingHappenedAsync;
 

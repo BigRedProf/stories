@@ -4,6 +4,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 
 namespace BigRedProf.Stories.Memory
 {
@@ -36,6 +37,27 @@ namespace BigRedProf.Stories.Memory
 		public MemoryStoryListener GetStoryListener(TextTrail storyId)
 		{
 			return new MemoryStoryListener(storyId, GetOrCreateListOfThings(storyId));
+		}
+
+		/// <summary>
+		/// Every story holding at least one thing, with how many it holds.
+		/// </summary>
+		/// <remarks>
+		/// A story that has only ever been read is left out: asking about a story makes an empty
+		/// one, and an empty story has nothing to keep. Keys are returned exactly as they were
+		/// given -- for the Api, that is the internal trail wrapping a story ID hash.
+		/// </remarks>
+		public IReadOnlyList<KeyValuePair<TextTrail, long>> GetStoryLengths()
+		{
+			List<KeyValuePair<TextTrail, long>> lengths = new List<KeyValuePair<TextTrail, long>>();
+			foreach (KeyValuePair<TextTrail, ObservableCollection<StoryThing>> story in _storyThingsDictionary.ToArray())
+			{
+				int length = story.Value.Count;
+				if (length > 0)
+					lengths.Add(new KeyValuePair<TextTrail, long>(story.Key, length));
+			}
+
+			return lengths;
 		}
 		#endregion
 
