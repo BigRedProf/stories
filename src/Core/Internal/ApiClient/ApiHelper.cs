@@ -33,7 +33,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			try
 			{
 				MemoryStream memoryStream = new MemoryStream(byteArray);
-				using (CodeReader reader = new CodeReader(memoryStream))
+				using (StreamBitReader reader = new StreamBitReader(memoryStream))
 				{
 					_logger.LogDebug("Calling UnpackModel");
 					thing = _storyThingPackRat.UnpackModel(reader);
