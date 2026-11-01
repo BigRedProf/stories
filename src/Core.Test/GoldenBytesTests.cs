@@ -464,7 +464,7 @@ namespace BigRedProf.Stories.Core.Test
 		private static byte[] WriteWire<T>(PackRat<T> packRat, T model)
 		{
 			MemoryStream stream = new MemoryStream();
-			using (CodeWriter writer = new CodeWriter(stream))
+			using (StreamBitWriter writer = new StreamBitWriter(stream))
 			{
 				packRat.PackModel(writer, model);
 			}
@@ -474,7 +474,7 @@ namespace BigRedProf.Stories.Core.Test
 
 		private static T ReadWire<T>(PackRat<T> packRat, byte[] bytes)
 		{
-			using (CodeReader reader = new CodeReader(new MemoryStream(bytes)))
+			using (StreamBitReader reader = new StreamBitReader(new MemoryStream(bytes)))
 			{
 				return packRat.UnpackModel(reader);
 			}

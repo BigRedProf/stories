@@ -155,7 +155,7 @@ namespace BigRedProf.Stories.PowerShell
 			{
 				// The weakly typed path, because the schema is named at run time and no
 				// generated pack rat is a PackRat<object>.
-				using (CodeReader reader = new CodeReader(new MemoryStream(thing.Thing.ToByteArray())))
+				using (StreamBitReader reader = new StreamBitReader(new MemoryStream(thing.Thing.ToByteArray())))
 				{
 					return piedPiper.UnpackModel(reader, ThingSchemaId!);
 				}

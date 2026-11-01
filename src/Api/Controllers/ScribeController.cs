@@ -45,7 +45,7 @@ public class ScribeController : ControllerBase
 		}
 
 		ListOfThings listOfThings;
-		using (CodeReader codeReader = new CodeReader(Request.Body))
+		using (StreamBitReader codeReader = new StreamBitReader(Request.Body))
 		{
 			try
 			{

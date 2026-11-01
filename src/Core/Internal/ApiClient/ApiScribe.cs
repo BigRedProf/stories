@@ -50,7 +50,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 			};
 
 			MemoryStream memoryStream = new MemoryStream();
-			using(CodeWriter writer = new CodeWriter(memoryStream)) 
+			using(StreamBitWriter writer = new StreamBitWriter(memoryStream)) 
 			{
 				_listOfThingsPackRat.PackModel(writer, listOfThings);
 			}

@@ -465,7 +465,7 @@ namespace BigRedProf.Stories.Golden
 		private static byte[] WriteWire<T>(PackRat<T> packRat, T model)
 		{
 			MemoryStream stream = new MemoryStream();
-			using (CodeWriter writer = new CodeWriter(stream))
+			using (StreamBitWriter writer = new StreamBitWriter(stream))
 			{
 				packRat.PackModel(writer, model);
 			}
@@ -476,7 +476,7 @@ namespace BigRedProf.Stories.Golden
 		private static void RequireSameBytes(string label, Code packed, byte[] wire)
 		{
 			if (!BytesEqual(packed.ToByteArray(), wire))
-				throw new InvalidOperationException(label + " CodeWriter bytes differ from the packed code.");
+				throw new InvalidOperationException(label + " writer bytes differ from the packed code.");
 		}
 
 		private static bool SameLogEntry(LogEntry expected, LogEntry actual)
