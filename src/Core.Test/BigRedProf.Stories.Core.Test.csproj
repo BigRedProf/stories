@@ -18,6 +18,11 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Core\BigRedProf.Stories.Core.csproj" />
+		<ProjectReference Include="..\Logging.Data\BigRedProf.Stories.Logging.Data.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\Golden\golden.txt" Link="Golden\golden.txt" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>
