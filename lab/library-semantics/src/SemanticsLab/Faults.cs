@@ -15,6 +15,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		public const string AfterFrameBeforePublish = "after-frame-before-publish";
 		public const string AfterJournalBeforePointer = "after-journal-before-pointer";
 		public const string DuringCheckpointIndex = "during-checkpoint-index";
+		public const string DuringContentCopy = "during-content-copy";
 		public const string AfterManifestBeforePointer = "after-manifest-before-pointer";
 		public const string AfterDirectoryFsync = "after-directory-fsync";
 		public const string AfterPublishBeforeAck = "after-publish-before-ack";

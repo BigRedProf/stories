@@ -525,7 +525,12 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					string room = Texts(destination, Digihouse.RoomStoryId("parlor"));
 					Assert.DoesNotContain("move|parlor|chair|1|1", room);
 					Assert.DoesNotContain("move|parlor|chair|2|2", room);
-					Assert.Contains("move-summary|parlor|chair", room);
+					Assert.Contains("move-summary|parlor|chair|2|2|2", room);
+					Assert.Equal("2,2", Digihouse.Read(destination, destination.CurrentEditionId).Positions["parlor/chair"]);
+					RestoreResult again = Preserver.Restore(backup, oldEdition, destination, options);
+					Assert.True(again.Restored);
+					Assert.False(again.Refused);
+					Assert.Equal("2,2", Digihouse.Read(destination, destination.CurrentEditionId).Positions["parlor/chair"]);
 				}
 			}
 			finally
@@ -533,6 +538,123 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 				LabPaths.Delete(sourcePath);
 				LabPaths.Delete(backupPath);
 				LabPaths.Delete(destinationPath);
+			}
+		}
+
+		[Fact]
+		public void Restore_ReleaseThenCompaction_RetryDoesNotNeedTheOldGeneration()
+		{
+			string sourcePath = LabPaths.Create(nameof(Restore_ReleaseThenCompaction_RetryDoesNotNeedTheOldGeneration));
+			string backupPath = LabPaths.Create(nameof(Restore_ReleaseThenCompaction_RetryDoesNotNeedTheOldGeneration) + "-backup");
+			string destinationPath = LabPaths.Create(nameof(Restore_ReleaseThenCompaction_RetryDoesNotNeedTheOldGeneration) + "-dest");
+			try
+			{
+				string oldEdition;
+				string newEdition;
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				using (Library destination = Library.Create(destinationPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", new Code("1100110"), null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 1, 1, 1, null).Status);
+					oldEdition = source.CurrentEditionId;
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					Assert.Equal(AppendStatus.Committed, Digihouse.ReleasePhoto(source, "chair", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 2, 2, 2, null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.CompactMoves(source, "parlor", null).Status);
+					newEdition = source.CurrentEditionId;
+					RestoreOptions options = new RestoreOptions();
+					options.PreventResurrection = true;
+					options.NewerEvidence = source;
+					options.NewerEditionId = newEdition;
+					RestoreResult first = Preserver.Restore(backup, oldEdition, destination, options);
+					Assert.True(first.Restored);
+					Assert.True(first.ErasuresApplied);
+					RestoreResult second = Preserver.Restore(backup, oldEdition, destination, options);
+					Assert.True(second.Restored);
+					Assert.False(second.Refused);
+					DigihouseState state = Digihouse.Read(destination, destination.CurrentEditionId);
+					Assert.StartsWith("erased:", state.Photos["chair"]);
+					Assert.Equal("1,1", state.Positions["parlor/chair"]);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+				LabPaths.Delete(destinationPath);
+			}
+		}
+
+		[Fact]
+		public void Preserve_IdenticalBlob_IsNotRewritten()
+		{
+			string sourcePath = LabPaths.Create(nameof(Preserve_IdenticalBlob_IsNotRewritten));
+			string backupPath = LabPaths.Create(nameof(Preserve_IdenticalBlob_IsNotRewritten) + "-backup");
+			try
+			{
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", new Code("1100110"), null).Status);
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					string photoId = Digihouse.Read(backup, backup.CurrentEditionId).Photos["chair"];
+					string photoPath = backup.ContentFilePath(photoId);
+					byte[] original = File.ReadAllBytes(photoPath);
+					if (!OperatingSystem.IsWindows())
+						File.SetUnixFileMode(photoPath, UnixFileMode.UserRead);
+
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "lamp", "bea", null).Status);
+					PreserveResult copied = Preserver.Preserve(source, backup, null, null);
+					Assert.True(copied.Published);
+					Assert.Equal(original, File.ReadAllBytes(photoPath));
+					Assert.Equal("bea", Digihouse.Read(backup, backup.CurrentEditionId).Owners["lamp"]);
+					if (!OperatingSystem.IsWindows())
+						File.SetUnixFileMode(photoPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+			}
+		}
+
+		[Fact]
+		public void Preserve_InterruptedContentCopy_LeavesThePublishedBlob()
+		{
+			string sourcePath = LabPaths.Create(nameof(Preserve_InterruptedContentCopy_LeavesThePublishedBlob));
+			string backupPath = LabPaths.Create(nameof(Preserve_InterruptedContentCopy_LeavesThePublishedBlob) + "-backup");
+			try
+			{
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", new Code("1100110"), null).Status);
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					string firstId = Digihouse.Read(backup, backup.CurrentEditionId).Photos["chair"];
+					byte[] original = File.ReadAllBytes(backup.ContentFilePath(firstId));
+					string published = backup.CurrentEditionId;
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "lamp", "bea", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "lamp", new Code("1010101"), null).Status);
+					FaultInjector faults = new FaultInjector();
+					faults.ArmedPoint = FaultPoint.DuringContentCopy;
+					Assert.Throws<CrashInjectedException>(() => Preserver.Preserve(source, backup, faults, null));
+					Assert.Equal(published, backup.CurrentEditionId);
+					Assert.Equal(original, File.ReadAllBytes(backup.ContentFilePath(firstId)));
+					Assert.Equal(CheckResult.Pass, backup.Verify(published, null).Integrity);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
 			}
 		}
 

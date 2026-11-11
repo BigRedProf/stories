@@ -231,9 +231,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 						);
 					}
 
-					Directory.CreateDirectory(Path.GetDirectoryName(to)!);
-					File.Copy(from, to, true);
-					bytes += new FileInfo(to).Length;
+					bytes += CopyContent(from, to, entry.Hash, faults);
 				}
 
 				destination.PublishImported(manifest.Text, faults);
@@ -317,9 +315,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 					string from = LibraryLayout.ContentFile(source.Root, entry.ContentId);
 					string to = LibraryLayout.ContentFile(destination.Root, entry.ContentId);
-					Directory.CreateDirectory(Path.GetDirectoryName(to)!);
-					File.Copy(from, to, true);
-					bytes += new FileInfo(to).Length;
+					bytes += CopyContent(from, to, entry.Hash, null);
 				}
 
 				destination.PublishImported(manifest.Text, null);
@@ -555,6 +551,69 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 		}
 
+		private static long CopyContent(string from, string to, string expectedHash, FaultInjector? faults)
+		{
+			byte[] sourceBytes = File.ReadAllBytes(from);
+			if (Hashing.Sha256(sourceBytes) != expectedHash)
+				throw new InvalidDataException("Content " + expectedHash + " does not match the edition.");
+
+			if (File.Exists(to))
+			{
+				byte[] existing = File.ReadAllBytes(to);
+				if (existing.Length == sourceBytes.Length && BytesEqual(existing, sourceBytes, existing.Length))
+					return 0;
+			}
+
+			Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+			string temporary = to + ".new";
+			using (FileStream stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None))
+			{
+				if (faults != null && faults.ArmedPoint == FaultPoint.DuringContentCopy)
+				{
+					int partial = Math.Max(1, sourceBytes.Length / 2);
+					stream.Write(sourceBytes, 0, partial);
+					stream.Flush(true);
+					faults.Hit(FaultPoint.DuringContentCopy);
+				}
+
+				stream.Write(sourceBytes, 0, sourceBytes.Length);
+				stream.Flush(true);
+			}
+
+			File.Move(temporary, to, true);
+			return sourceBytes.Length;
+		}
+
+		private static string? SummaryForPresentMoves(Library destination, string storyId, long start, long end)
+		{
+			IReadOnlyList<StoredRecord> records = destination.ReadCommitted(storyId);
+			StoredRecord? last = null;
+			int count = 0;
+			for (int i = 0; i < records.Count; i++)
+			{
+				if (records[i].Offset < start || records[i].Offset >= end)
+					continue;
+
+				string text = LabCode.ToText(records[i].Body);
+				if (!text.StartsWith("move|", StringComparison.Ordinal))
+					continue;
+
+				count++;
+				if (last == null || records[i].Offset > last.Offset)
+					last = records[i];
+			}
+
+			if (last == null)
+				return null;
+
+			string[] parts = LabCode.ToText(last.Body).Split('|');
+			if (parts.Length < 5)
+				return null;
+
+			return "move-summary|" + parts[1] + "|" + parts[2] + "|" + count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+				+ "|" + parts[3] + "|" + parts[4];
+		}
+
 		private static bool BytesEqual(byte[] left, byte[] right, int count)
 		{
 			for (int i = 0; i < count; i++)
@@ -600,11 +659,15 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				if (!seen.Add(cursor) || cursor == "-" || cursor.Length == 0)
 					return false;
 
-				EditionView view = destination.ReadEdition(cursor);
-				if (!keys.Contains(view.CommitKey))
+				string manifestPath = LibraryLayout.Manifest(destination.Root, cursor);
+				if (!File.Exists(manifestPath))
 					return false;
 
-				cursor = view.ParentId;
+				ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(manifestPath));
+				if (!keys.Contains(manifest.CommitKey))
+					return false;
+
+				cursor = manifest.ParentId;
 			}
 
 			return true;
@@ -681,6 +744,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					string[] parts = record.EffectArgument.Split('|');
 					long start = long.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
 					long end = long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+					long originalEnd = end;
 					long high = destination.HighWater(record.StoryId);
 					if (end > high)
 						end = high;
@@ -688,11 +752,24 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					if (end <= start)
 						continue;
 
+					string summaryText = LabCode.ToText(summary.Body);
+					if (originalEnd != end)
+					{
+						string? rebuilt = SummaryForPresentMoves(destination, record.StoryId, start, end);
+						if (rebuilt == null)
+						{
+							replay.Failure = "The compaction summary covers moves this edition does not have.";
+							return replay;
+						}
+
+						summaryText = rebuilt;
+					}
+
 					AppendResult result = destination.CompactSand(
 						record.StoryId,
 						start,
 						end,
-						LabCode.ToText(summary.Body),
+						summaryText,
 						LabCode.ToText(record.Body),
 						record.IdempotencyKey,
 						destination.CurrentEditionId,

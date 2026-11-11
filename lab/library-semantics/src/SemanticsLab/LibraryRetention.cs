@@ -68,6 +68,30 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				try
 				{
 					RequireAlive();
+					List<StoredRecord> already = ReadAllPublished();
+					for (int i = 0; i < already.Count; i++)
+					{
+						if (already[i].IdempotencyKey != idempotencyKey || already[i].Effect != EffectKind.CompactSand)
+							continue;
+
+						if (LabCode.ToText(already[i].Body) == certificateText)
+						{
+							return new AppendResult(
+								AppendStatus.AlreadyCommitted,
+								ReadPointer(),
+								"Compaction already published.",
+								0
+							);
+						}
+
+						return new AppendResult(
+							AppendStatus.IdempotencyConflict,
+							ReadPointer(),
+							"The compaction key was used for a different body.",
+							0
+						);
+					}
+
 					string currentId = ReadPointer();
 					if (expectedEditionId != currentId)
 					{
