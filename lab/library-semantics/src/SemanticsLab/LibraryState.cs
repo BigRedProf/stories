@@ -210,6 +210,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				if (story.Encoding == "shipped-v1")
 					continue;
 
+				_storyExaminations++;
 				string path = LibraryLayout.Generation(_root, story.StoryId, story.Generation);
 				if (!File.Exists(path))
 					continue;
@@ -389,6 +390,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			if (published != null && published.Encoding == "shipped-v1")
 				return published;
 
+			_storyExaminations++;
 			if (published != null
 				&& published.Generation == generation
 				&& File.Exists(path)

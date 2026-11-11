@@ -73,19 +73,38 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			if (prefix == null || prefix.RecordCount == 0)
 				return Array.Empty<StoredRecord>();
 
-			if (prefix.Encoding == "shipped-v1")
-				throw new InvalidDataException("'" + storyId + "' is a shipped story file. This head reader is the lab frame.");
+			return ReadPrefix(root, prefix);
+		}
 
-			string path = LibraryLayout.Generation(root, storyId, prefix.Generation);
+		/// <summary>
+		/// Read one story at a prefix already taken from one edition. This does
+		/// not reread the current pointer, so a later publication cannot change
+		/// the length.
+		/// </summary>
+		public static IReadOnlyList<StoredRecord> ReadPrefix(string root, StoryPrefix prefix)
+		{
+			if (string.IsNullOrWhiteSpace(root))
+				throw new ArgumentException("A library path is required.", nameof(root));
+
+			if (prefix == null)
+				throw new ArgumentNullException(nameof(prefix));
+
+			if (prefix.RecordCount == 0)
+				return Array.Empty<StoredRecord>();
+
+			if (prefix.Encoding == "shipped-v1")
+				throw new InvalidDataException("'" + prefix.StoryId + "' is a shipped story file. This head reader is the lab frame.");
+
+			string path = LibraryLayout.Generation(root, prefix.StoryId, prefix.Generation);
 			LogImage image = StoryLog.ReadThrough(path, prefix.FileBytes);
 			if (image.TornTail || image.ValidLength != prefix.FileBytes)
-				throw new InvalidDataException("The published prefix of '" + storyId + "' is not a clean frame sequence.");
+				throw new InvalidDataException("The published prefix of '" + prefix.StoryId + "' is not a clean frame sequence.");
 
 			if (image.Committed.Count != prefix.RecordCount)
-				throw new InvalidDataException("The published prefix of '" + storyId + "' does not have the published record count.");
+				throw new InvalidDataException("The published prefix of '" + prefix.StoryId + "' does not have the published record count.");
 
 			for (int i = 0; i < image.Committed.Count; i++)
-				image.Committed[i].StoryId = storyId;
+				image.Committed[i].StoryId = prefix.StoryId;
 
 			return image.Committed;
 		}
@@ -132,6 +151,14 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		#endregion
 
 		#region methods
+		public double ElapsedMilliseconds
+		{
+			get
+			{
+				return _watch.Elapsed.TotalMilliseconds;
+			}
+		}
+
 		public IReadOnlyList<HeardRecord> Snapshot()
 		{
 			lock (_gate)
@@ -221,7 +248,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				if (story.Encoding == "shipped-v1" || story.RecordCount == 0)
 					continue;
 
-				IReadOnlyList<StoredRecord> records = PublishedHead.ReadStory(_root, story.StoryId);
+				IReadOnlyList<StoredRecord> records = PublishedHead.ReadPrefix(_root, story);
 				for (int r = 0; r < records.Count; r++)
 				{
 					StoredRecord record = records[r];

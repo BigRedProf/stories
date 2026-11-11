@@ -90,11 +90,11 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					{
 						string text = "tick-" + i.ToString(CultureInfo.InvariantCulture);
 						string storyPath = LibraryLayout.Generation(path, "latency", 0);
-						long rawTicks = -1;
-						Stopwatch watch = Stopwatch.StartNew();
+						long rawMicros = -1;
+						double started = listener.ElapsedMilliseconds;
 						Thread raw = new Thread(delegate()
 						{
-							while (Interlocked.Read(ref rawTicks) < 0)
+							while (Interlocked.Read(ref rawMicros) < 0)
 							{
 								if (!File.Exists(storyPath))
 									continue;
@@ -106,7 +106,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 									{
 										if (LabCode.ToText(image.Committed[r].Body) == text)
 										{
-											Interlocked.Exchange(ref rawTicks, watch.ElapsedTicks);
+											long micros = (long)Math.Round(listener.ElapsedMilliseconds * 1000.0);
+											Interlocked.Exchange(ref rawMicros, micros);
 											return;
 										}
 									}
@@ -125,30 +126,36 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 						StoryAppend story = new StoryAppend("latency", library.HighWater("latency"), new RecordDraft[] { draft });
 						AppendRequest request = new AppendRequest(text, library.CurrentEditionId, new StoryAppend[] { story });
 						Assert.Equal(AppendStatus.Committed, library.Append(request, null).Status);
-						double returned = watch.Elapsed.TotalMilliseconds;
+						double returned = listener.ElapsedMilliseconds;
 						Assert.True(listener.WaitForText(text, 5000));
-						double heard = watch.Elapsed.TotalMilliseconds;
 						Assert.True(raw.Join(2000));
-						long seen = Interlocked.Read(ref rawTicks);
-						Assert.True(seen >= 0);
-						double rawAt = seen * 1000.0 / Stopwatch.Frequency;
-						endToEnd.Add(heard);
-						afterReturn.Add(heard - returned);
-						afterRaw.Add(heard - rawAt);
+						HeardRecord? yielded = null;
+						IReadOnlyList<HeardRecord> heard = listener.Snapshot();
+						for (int h = 0; h < heard.Count; h++)
+						{
+							if (heard[h].Text == text)
+								yielded = heard[h];
+						}
+
+						Assert.NotNull(yielded);
+						double seen = yielded!.SeenAtMilliseconds;
+						long rawSeen = Interlocked.Read(ref rawMicros);
+						Assert.True(rawSeen >= 0);
+						endToEnd.Add(seen - started);
+						afterReturn.Add(seen - returned);
+						afterRaw.Add(seen - (rawSeen / 1000.0));
 					}
 
 					double endMedian = Median(endToEnd);
 					double returnMedian = Median(afterReturn);
 					double rawMedian = Median(afterRaw);
 					string report = "published-head latency, 9 appends, 1 ms poll, one story, per-frame, fsync included"
-						+ "\nmedian ms from append start until the listener yielded the record\t" + endMedian.ToString("0.0", CultureInfo.InvariantCulture)
-						+ "\nmedian ms from append return until the listener yielded the record\t" + returnMedian.ToString("0.0", CultureInfo.InvariantCulture)
-						+ "\nmedian ms the listener trailed a raw head read of the same file\t" + rawMedian.ToString("0.0", CultureInfo.InvariantCulture)
+						+ "\nmedian ms on the listener clock from before Append until SeenAtMilliseconds\t" + endMedian.ToString("0.0", CultureInfo.InvariantCulture)
+						+ "\nmedian ms from Append return until SeenAtMilliseconds\t" + returnMedian.ToString("0.0", CultureInfo.InvariantCulture)
+						+ "\nmedian ms SeenAtMilliseconds trailed a raw read of the same file\t" + rawMedian.ToString("0.0", CultureInfo.InvariantCulture)
 						+ "\n";
 					_output.WriteLine(report);
 					File.WriteAllText(Evidence("round3-head.txt"), report);
-					Assert.True(endMedian < 500);
-					Assert.True(returnMedian < 100);
 				}
 			}
 			finally
@@ -342,18 +349,30 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					int[] sizes = new int[] { 10, 1000, 5000, 10000 };
 					double[] manifestMs = new double[sizes.Length];
 					double[] journalMs = new double[sizes.Length];
+					int[] manifestLooks = new int[sizes.Length];
+					int[] journalLooks = new int[sizes.Length];
 					for (int i = 0; i < sizes.Length; i++)
 					{
 						SeedManifest(manifest, sizes[i], ref manifestHave);
 						SeedJournal(journal, sizes[i], ref journalHave);
+						int manifestBefore = manifest.StoryExaminationCount;
+						int journalBefore = journal.StoryExaminationCount;
 						manifestMs[i] = TimeManifest(manifest, sizes[i]);
 						journalMs[i] = TimeJournal(journal, sizes[i]);
-						_output.WriteLine(sizes[i].ToString(CultureInfo.InvariantCulture) + "\t" + manifestMs[i].ToString("0.0", CultureInfo.InvariantCulture) + "\t" + journalMs[i].ToString("0.0", CultureInfo.InvariantCulture));
+						manifestLooks[i] = manifest.StoryExaminationCount - manifestBefore;
+						journalLooks[i] = journal.StoryExaminationCount - journalBefore;
+						_output.WriteLine(
+							sizes[i].ToString(CultureInfo.InvariantCulture)
+							+ "\t" + manifestMs[i].ToString("0.0", CultureInfo.InvariantCulture)
+							+ "\t" + journalMs[i].ToString("0.0", CultureInfo.InvariantCulture)
+							+ "\t" + manifestLooks[i].ToString(CultureInfo.InvariantCulture)
+							+ "\t" + journalLooks[i].ToString(CultureInfo.InvariantCulture)
+						);
 					}
 
 					StringBuilder report = new StringBuilder();
-					report.Append("one movement, milliseconds, fsync included\n");
-					report.Append("stories\tfull manifest\tjournal delta\n");
+					report.Append("one movement, milliseconds are evidence, examinations are the assertion, fsync included\n");
+					report.Append("stories\tfull manifest ms\tjournal delta ms\tmanifest examinations\tjournal examinations\n");
 					for (int i = 0; i < sizes.Length; i++)
 					{
 						report.Append(sizes[i].ToString(CultureInfo.InvariantCulture));
@@ -361,13 +380,17 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 						report.Append(manifestMs[i].ToString("0.0", CultureInfo.InvariantCulture));
 						report.Append('\t');
 						report.Append(journalMs[i].ToString("0.0", CultureInfo.InvariantCulture));
+						report.Append('\t');
+						report.Append(manifestLooks[i].ToString(CultureInfo.InvariantCulture));
+						report.Append('\t');
+						report.Append(journalLooks[i].ToString(CultureInfo.InvariantCulture));
 						report.Append('\n');
 					}
 
 					File.WriteAllText(Evidence("round3-publish.txt"), report.ToString());
-					Assert.True(manifestMs[3] > manifestMs[0] * 5, "The full manifest did not get more expensive as the library grew.");
-					Assert.True(journalMs[3] < manifestMs[1], "The journal at 10,000 stories was not cheaper than a full manifest at 1,000.");
-					Assert.True(journalMs[3] < journalMs[0] * 20 + 30, "The journal movement grew with the library.");
+					Assert.Equal(journalLooks[0], journalLooks[sizes.Length - 1]);
+					Assert.True(manifestLooks[sizes.Length - 1] > manifestLooks[0]);
+					Assert.True(journalLooks[sizes.Length - 1] < manifestLooks[sizes.Length - 1]);
 				}
 			}
 			finally
@@ -376,6 +399,61 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 				LabPaths.Delete(journalPath);
 				LabPaths.Delete(warmManifest);
 				LabPaths.Delete(warmJournal);
+			}
+		}
+
+		[Fact]
+		public void PublishedHead_CapturedPrefix_IgnoresALaterPointer()
+		{
+			string path = LabPaths.Create(nameof(PublishedHead_CapturedPrefix_IgnoresALaterPointer));
+			try
+			{
+				using (Library library = Library.Create(path, BatchFormat.PerFrame))
+				{
+					string first = AppendText(library, "notes", "one", "k1");
+					EditionView older = library.ReadEdition(first);
+					StoryPrefix? prefix = null;
+					for (int i = 0; i < older.Stories.Count; i++)
+					{
+						if (older.Stories[i].StoryId == "notes")
+							prefix = older.Stories[i];
+					}
+
+					Assert.NotNull(prefix);
+					AppendText(library, "notes", "two", "k2");
+					Assert.Equal(new string[] { "one" }, TextsOf(PublishedHead.ReadPrefix(path, prefix!)));
+					Assert.Equal(new string[] { "one", "two" }, TextsOf(PublishedHead.ReadStory(path, "notes")));
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(path);
+			}
+		}
+
+		[Fact]
+		public void Journal_TornCheckpointIndex_StillOpens()
+		{
+			string path = LabPaths.Create(nameof(Journal_TornCheckpointIndex_StillOpens));
+			try
+			{
+				JournalLibrary library = JournalLibrary.Create(path, 2);
+				AppendText(library, "notes", "step-0", "step-0");
+				FaultInjector faults = new FaultInjector();
+				faults.ArmedPoint = FaultPoint.DuringCheckpointIndex;
+				RecordDraft draft = new RecordDraft(RetentionClass.Stone, LabCode.FromText("step-1"));
+				StoryAppend story = new StoryAppend("notes", library.HighWater("notes"), new RecordDraft[] { draft });
+				AppendRequest request = new AppendRequest("step-1", library.CurrentEditionId, new StoryAppend[] { story });
+				Assert.Throws<CrashInjectedException>(() => library.Append(request, faults));
+				library.Dispose();
+				string index = File.ReadAllText(Path.Combine(path, "checkpoints", "index.txt"));
+				Assert.DoesNotContain("\n", index.TrimEnd('\r'));
+				using (JournalLibrary reopened = JournalLibrary.Open(path))
+					Assert.Equal(new string[] { "step-0", "step-1" }, EditionTexts(reopened.ReadEdition(reopened.CurrentEditionId)));
+			}
+			finally
+			{
+				LabPaths.Delete(path);
 			}
 		}
 

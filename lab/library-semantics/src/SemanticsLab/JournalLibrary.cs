@@ -28,6 +28,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		private readonly int _checkpointEvery;
 		private readonly object _gate;
 		private View _view;
+		private int _storyExaminations;
 		private bool _disposed;
 		private bool _dead;
 		#endregion
@@ -50,6 +51,18 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					RequireAlive();
 					return _view.Id;
 				}
+			}
+		}
+
+		/// <summary>
+		/// Story files examined while appending. One movement examines the
+		/// stories in that movement, not the whole library.
+		/// </summary>
+		public int StoryExaminationCount
+		{
+			get
+			{
+				return _storyExaminations;
 			}
 		}
 		#endregion
@@ -290,13 +303,14 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			JournalFrame frame = JournalLog.Parse(payload, end);
 			Apply(_view, frame);
 			if (_view.CommitCount % _checkpointEvery == 0)
-				WriteCheckpoint(_view);
+				WriteCheckpoint(_view, faults);
 
 			return new AppendResult(AppendStatus.Committed, editionId, "Published.", frames);
 		}
 
 		private TailKind InspectTail(StoryAppend story, string key, string bodyHash)
 		{
+			_storyExaminations++;
 			string path = StoryPath(story.StoryId);
 			if (!File.Exists(path))
 				return TailKind.Empty;
@@ -378,6 +392,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 		private StoryPrefix Describe(string storyId)
 		{
+			_storyExaminations++;
 			string path = StoryPath(storyId);
 			LogImage image = StoryLog.Trim(path, BatchFormat.PerFrame);
 			StoryPrefix prefix = new StoryPrefix();
@@ -489,7 +504,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			throw new InvalidDataException("Edition '" + editionId + "' is not in the journal.");
 		}
 
-		private void WriteCheckpoint(View view)
+		private void WriteCheckpoint(View view, FaultInjector? faults)
 		{
 			string directory = Path.Combine(_root, "checkpoints");
 			Directory.CreateDirectory(directory);
@@ -510,12 +525,41 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			string index = CheckpointIndexPath(_root);
-			using (FileStream stream = new FileStream(index, FileMode.Append, FileAccess.Write, FileShare.Read))
+			string line = view.JournalEnd.ToString(CultureInfo.InvariantCulture) + "\t" + view.Id + "\n";
+			if (faults != null && faults.ArmedPoint == FaultPoint.DuringCheckpointIndex)
 			{
-				byte[] line = Encoding.UTF8.GetBytes(view.JournalEnd.ToString(CultureInfo.InvariantCulture) + "\t" + view.Id + "\n");
-				stream.Write(line, 0, line.Length);
+				using (FileStream stream = new FileStream(index, FileMode.Append, FileAccess.Write, FileShare.Read))
+				{
+					byte[] torn = Encoding.UTF8.GetBytes(line);
+					int partial = Math.Max(1, torn.Length / 2);
+					stream.Write(torn, 0, partial);
+					stream.Flush(true);
+				}
+
+				faults.Hit(FaultPoint.DuringCheckpointIndex);
+			}
+
+			List<CheckpointRef> existing = ReadCheckpointIndex();
+			StringBuilder rebuilt = new StringBuilder();
+			for (int i = 0; i < existing.Count; i++)
+			{
+				rebuilt.Append(existing[i].End.ToString(CultureInfo.InvariantCulture));
+				rebuilt.Append('\t');
+				rebuilt.Append(existing[i].Id);
+				rebuilt.Append('\n');
+			}
+
+			rebuilt.Append(line);
+			string tempIndex = index + ".new";
+			using (FileStream stream = new FileStream(tempIndex, FileMode.Create, FileAccess.Write, FileShare.None))
+			{
+				byte[] data = Encoding.UTF8.GetBytes(rebuilt.ToString());
+				stream.Write(data, 0, data.Length);
 				stream.Flush(true);
 			}
+
+			File.Move(tempIndex, index, true);
+			PosixSync.FsyncDirectory(directory);
 		}
 
 		private View? LatestCheckpoint(long fileLength)
@@ -547,13 +591,24 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				if (lines[i].Length == 0)
 					continue;
 
-				string[] parts = lines[i].Split('\t');
-				if (parts.Length != 2)
-					throw new InvalidDataException("Checkpoint index is corrupt.");
+				bool last = i == lines.Length - 1;
+				if (!TryParseCheckpointLine(lines[i], out CheckpointRef reference))
+				{
+					if (last)
+						continue;
 
-				CheckpointRef reference = new CheckpointRef();
-				reference.End = long.Parse(parts[0], CultureInfo.InvariantCulture);
-				reference.Id = parts[1];
+					throw new InvalidDataException("Checkpoint index is corrupt.");
+				}
+
+				string snapshot = Path.Combine(_root, "checkpoints", reference.Id + ".txt");
+				if (!File.Exists(snapshot))
+				{
+					if (last)
+						continue;
+
+					throw new InvalidDataException("Checkpoint '" + reference.Id + "' is missing.");
+				}
+
 				refs.Add(reference);
 			}
 
@@ -715,6 +770,32 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		#endregion
 
 		#region private functions
+		private static bool TryParseCheckpointLine(string line, out CheckpointRef reference)
+		{
+			reference = new CheckpointRef();
+			string[] parts = line.Split('\t');
+			if (parts.Length != 2)
+				return false;
+
+			if (!long.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out long end))
+				return false;
+
+			if (parts[1].Length != 64)
+				return false;
+
+			for (int i = 0; i < parts[1].Length; i++)
+			{
+				char character = parts[1][i];
+				bool hex = (character >= '0' && character <= '9') || (character >= 'a' && character <= 'f');
+				if (!hex)
+					return false;
+			}
+
+			reference.End = end;
+			reference.Id = parts[1];
+			return true;
+		}
+
 		private static int ReadCheckpointEvery(string path)
 		{
 			string text = File.ReadAllText(LibraryLayout.Description(path));

@@ -67,6 +67,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		private readonly BatchFormat _format;
 		private readonly Dictionary<string, StoryPrefix> _forcedPrefixes;
 		private int _directorySyncs;
+		private int _storyExaminations;
 		private bool _disposed;
 		private bool _dead;
 		#endregion
@@ -104,6 +105,18 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			get
 			{
 				return _directorySyncs;
+			}
+		}
+
+		/// <summary>
+		/// Story files examined while appending. A full manifest examines every
+		/// story. This count is the deterministic stand-in for that cost.
+		/// </summary>
+		public int StoryExaminationCount
+		{
+			get
+			{
+				return _storyExaminations;
 			}
 		}
 

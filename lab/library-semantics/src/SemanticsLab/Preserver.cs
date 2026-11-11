@@ -394,6 +394,19 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			PreserveResult copied = CopyEdition(backup, edition, destination);
 			if (copied.AlreadyPreserved)
 			{
+				if (options.PreventResurrection)
+				{
+					int count = ApplyErasures(options.NewerEvidence!, options.NewerEditionId!, destination);
+					return new RestoreResult(
+						true,
+						false,
+						true,
+						editionId,
+						"The destination already had edition " + editionId + ". Applied " + count.ToString()
+							+ " later certificate batches. Nothing was copied again."
+					);
+				}
+
 				return new RestoreResult(true, false, false, editionId, copied.Detail);
 			}
 
