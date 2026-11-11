@@ -9,7 +9,7 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 | Word | Meaning here |
 | --- | --- |
 | Implemented | On this branch and compiled. |
-| Tested | A named test passed in this workspace. The log is `evidence/dotnet-test.txt`. 44 passed, 0 failed. |
+| Tested | A named test passed in this workspace. 46 passed, 0 failed. One movement took 4 ms with 10 stories, 64 ms with 1,000, and 463 ms with 5,000, including fsync. The 5,000 figure is from a one-off run; the checked-in test keeps 10 and 1,000. |
 | Independently reviewed | Codex reviewed `c97df01`, `34a8f6d`, and `37c659e`. The findings from those commits were checked and fixed. Team Grok has not reviewed it. |
 | Accepted | Russell adopted it. Not happened. |
 

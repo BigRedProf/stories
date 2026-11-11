@@ -14,11 +14,11 @@ Default in the lab: `Preserver` copies an edition into another library. `TapeSer
 
 ## 2. Do we add a length-prefixed batch frame, or only the edition pointer?
 
-Recommendation: do not add the frame for v1. Edition readers plus the existing per-frame flush already hide a partial batch. Expected offset (#22) is the concurrency check inside the lock. The length-prefixed frame is the right tool only if a raw story-head reader must not see a prefix. That reader exists today (`FileStoryteller`). If v1 readers are edition-pinned, leave the frame alone.
+Recommendation: do not add the frame until Russell answers whether v1 readers are story heads or editions. That is the same question as D8 on #29. Today's `FileStoryteller`, `Watch-Story`, and the live listeners read heads. For those readers, a pointer does not hide a flushed prefix. A length-prefixed frame hides a torn prefix and does not hide a flushed batch that the pointer has not published yet. The change that hides both from a head reader is to stop that reader at the published length.
 
-Consequence: no shipped format change for batches. Story heads remain able to see flushed records the edition has not published. Callers that need a raw-file atomic batch do not have one.
+Consequence: no shipped format change while that question is open. If the answer is "heads stay, and they must not hear a record that is later replaced," the storyteller has to learn the published cutoff. The frame alone does not do that job.
 
-Default in the lab: both formats still run. New durability tests use per-frame for the edition-pointer claim and length-prefixed for the raw-file claim.
+Default in the lab: both formats still run. Edition readers are the consistent read. Head reads are available and can see unpublished frames.
 
 ## 3. Does restoring an old backup bring deleted sand back?
 

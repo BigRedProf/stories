@@ -214,6 +214,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				if (!File.Exists(path))
 					continue;
 
+				if (new FileInfo(path).Length == story.FileBytes)
+					continue;
+
 				LogImage image = StoryLog.Read(path);
 				if (image.Committed.Count < story.RecordCount)
 					throw new InvalidDataException("Story '" + story.StoryId + "' lost published records.");
@@ -376,16 +379,24 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 		}
 
-		private StoryPrefix DescribeStory(string storyId, int generation)
+		private StoryPrefix DescribeStory(string storyId, int generation, ParsedManifest previous)
 		{
 			if (_forcedPrefixes.ContainsKey(storyId))
 				return _forcedPrefixes[storyId];
 
-			StoryPrefix? published = FindPrefix(ReadManifest(ReadPointer()), storyId);
+			string path = LibraryLayout.Generation(_root, storyId, generation);
+			StoryPrefix? published = FindPrefix(previous, storyId);
 			if (published != null && published.Encoding == "shipped-v1")
 				return published;
 
-			string path = LibraryLayout.Generation(_root, storyId, generation);
+			if (published != null
+				&& published.Generation == generation
+				&& File.Exists(path)
+				&& new FileInfo(path).Length == published.FileBytes)
+			{
+				return published;
+			}
+
 			if (!File.Exists(path))
 				StoryLog.CreateEmpty(path, _format);
 

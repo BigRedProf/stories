@@ -8,7 +8,7 @@ Executable investigation for Stories #25, #26, and #27. The projects under `src/
 | `DECISION.md` | Recommendation, evidence, and the open challenges for Team Grok. Not accepted. |
 | `DECISIONS_NEEDED.md` | Calls for Russell, each with a default the lab already uses. |
 | `CHECKPOINT.md` | Resume point. |
-| `evidence/dotnet-test.txt` | The latest run. 44 passed. |
+| `evidence/dotnet-test.txt` | The latest detailed log, plus the cross-review note at the top. |
 
 ## Run
 

@@ -737,7 +737,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			foreach (string storyId in storyIds.OrderBy(item => item, StringComparer.Ordinal))
 			{
 				int generation = GenerationFor(storyId, previous, generationOverrides);
-				StoryPrefix prefix = DescribeStory(storyId, generation);
+				StoryPrefix prefix = DescribeStory(storyId, generation, previous);
 				prefixes.Add(prefix);
 				if (prefix.Encoding != "shipped-v1")
 					all.AddRange(ReadCommittedFrom(storyId, generation, prefix.RecordCount));
@@ -754,7 +754,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 				storyIds.Add(declared);
 				int generation = GenerationFor(declared, previous, generationOverrides);
-				StoryPrefix prefix = DescribeStory(declared, generation);
+				StoryPrefix prefix = DescribeStory(declared, generation, previous);
 				prefixes.Add(prefix);
 			}
 
