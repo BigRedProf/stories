@@ -13,6 +13,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			if (command == "kill-append")
 				return KillAppend(args);
 
+			if (command == "kill-journal")
+				return KillJournal(args);
+
 			if (command == "hold-lock")
 				return HoldLock(args);
 
@@ -40,7 +43,20 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			BatchFormat format = Library.ParseFormat(args[2]);
 			string point = args[3];
 			int records = int.Parse(args[4]);
-			bool tear = args.Length > 5 && args[5] == "--tear";
+			bool tear = false;
+			bool flushTorn = false;
+			for (int i = 5; i < args.Length; i++)
+			{
+				if (args[i] == "--tear")
+					tear = true;
+
+				if (args[i] == "--tear-flushed")
+				{
+					tear = true;
+					flushTorn = true;
+				}
+			}
+
 			Library library = File.Exists(Path.Combine(root, "library.txt"))
 				? Library.Open(root)
 				: Library.Create(root, format);
@@ -48,6 +64,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			faults.ArmedPoint = point;
 			faults.KillProcess = true;
 			faults.TearWrite = tear;
+			faults.FlushTorn = flushTorn;
 			RecordDraft[] drafts = new RecordDraft[records];
 			for (int i = 0; i < records; i++)
 				drafts[i] = new RecordDraft(RetentionClass.Stone, LabCode.FromText("record-" + i.ToString()));
@@ -60,6 +77,35 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			);
 			library.Append(request, faults);
 			library.Dispose();
+			return 0;
+		}
+
+		private static int KillJournal(string[] args)
+		{
+			if (args.Length < 4)
+				return Usage();
+
+			string root = args[1];
+			string point = args[2];
+			int records = int.Parse(args[3]);
+			using (JournalLibrary library = JournalLibrary.Open(root))
+			{
+				FaultInjector faults = new FaultInjector();
+				faults.ArmedPoint = point;
+				faults.KillProcess = true;
+				RecordDraft[] drafts = new RecordDraft[records];
+				for (int i = 0; i < records; i++)
+					drafts[i] = new RecordDraft(RetentionClass.Stone, LabCode.FromText("record-" + i.ToString()));
+
+				StoryAppend story = new StoryAppend("durability", library.HighWater("durability"), drafts);
+				AppendRequest request = new AppendRequest(
+					"durability-batch",
+					library.CurrentEditionId,
+					new StoryAppend[] { story }
+				);
+				library.Append(request, faults);
+			}
+
 			return 0;
 		}
 
@@ -192,7 +238,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 
 		private static int Usage()
 		{
-			Console.Error.WriteLine("kill-append <root> <format> <point> <records> [--tear]");
+			Console.Error.WriteLine("kill-append <root> <format> <point> <records> [--tear|--tear-flushed]");
+			Console.Error.WriteLine("kill-journal <root> <point> <records>");
 			Console.Error.WriteLine("hold-lock <root> <readyFile>");
 			Console.Error.WriteLine("race-append <root> <expectedEdition> <key> <body> <resultFile> <goFile>");
 			Console.Error.WriteLine("hold-open <root> <heldFile> <releaseFile> <resultFile> <expectedEdition> <key> <body>");

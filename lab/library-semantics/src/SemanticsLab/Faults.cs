@@ -13,6 +13,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		public const string DuringFrameWrite = "during-frame-write";
 		public const string AfterDataBeforeMarker = "after-data-before-marker";
 		public const string AfterFrameBeforePublish = "after-frame-before-publish";
+		public const string AfterJournalBeforePointer = "after-journal-before-pointer";
 		public const string AfterManifestBeforePointer = "after-manifest-before-pointer";
 		public const string AfterDirectoryFsync = "after-directory-fsync";
 		public const string AfterPublishBeforeAck = "after-publish-before-ack";
@@ -43,6 +44,16 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		}
 
 		public bool TearWrite
+		{
+			get;
+			set;
+		}
+
+		/// <summary>
+		/// With <see cref="TearWrite"/> and <see cref="KillProcess"/>, fsync the
+		/// partial frame before the process is killed so the torn bytes survive.
+		/// </summary>
+		public bool FlushTorn
 		{
 			get;
 			set;

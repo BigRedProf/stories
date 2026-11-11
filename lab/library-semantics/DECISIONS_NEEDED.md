@@ -14,11 +14,11 @@ Default in the lab: `Preserver` copies an edition into another library. `TapeSer
 
 ## 2. Do we add a length-prefixed batch frame, or only the edition pointer?
 
-Recommendation: do not add the frame until Russell answers whether v1 readers are story heads or editions. That is the same question as D8 on #29. Today's `FileStoryteller`, `Watch-Story`, and the live listeners read heads. For those readers, a pointer does not hide a flushed prefix. A length-prefixed frame hides a torn prefix and does not hide a flushed batch that the pointer has not published yet. The change that hides both from a head reader is to stop that reader at the published length.
+Recommendation: do not add the frame. Head readers stay, and they stop at the published length. That is D8 below. A length-prefixed frame hides a torn batch from a raw reader. It does not hide a flushed batch the pointer has not published, and a raw listener can still hear a record the next writer replaces.
 
-Consequence: no shipped format change while that question is open. If the answer is "heads stay, and they must not hear a record that is later replaced," the storyteller has to learn the published cutoff. The frame alone does not do that job.
+Consequence: `FileStoryteller` and the live listeners learn the published length. A record becomes visible when the edition pointer is durable. On one story in this lab that was a median of 3.5 ms from the start of the append, 2.7 ms after a raw read could already see the frame. No shipped story format changes.
 
-Default in the lab: both formats still run. Edition readers are the consistent read. Head reads are available and can see unpublished frames.
+Default in the lab: `PublishedHead` and `PublishedListener`. Both formats still run. The length-prefixed frame remains a comparison, not the default.
 
 ## 3. Does restoring an old backup bring deleted sand back?
 
@@ -51,3 +51,21 @@ Recommendation: on the append, beside the code, checked by the library. A blind 
 Consequence: callers must send a stable key. The library stores it. Compaction must copy superseded keys onto the certificate or a retried move is appended again.
 
 Default: `AppendRequest.IdempotencyKey` is required.
+
+## 7. Does every append rewrite a manifest of the whole library?
+
+Recommendation: no. Publish one journal frame for the stories that changed, fsync it, then move the edition pointer and fsync that directory. The edition id is the hash of the parent id plus that delta. A checkpoint every N commits is a cached map so a reader does not replay from the first commit. Keep the full manifest in the lab as the comparison.
+
+Consequence: one movement stays near the fsync floor as the library grows. In this run, 10,000 stories cost 3.8 ms on the journal and 1,601.1 ms on the full manifest, fsync included. A reader of an old id still sees that point in time and not later commits. `Preserver` does not yet copy a journal library. The manifest library remains the one the backup tests use.
+
+Default: `JournalLibrary`, checkpoint every 1,000 commits unless a test says otherwise. The manifest `Library` is unchanged.
+
+## 8. Do v1 readers read story heads or editions? (D8)
+
+This is the same question as D8 on #29. Round 3 does not wait on it.
+
+Recommendation: head readers stay. `FileStoryteller`, `Watch-Story`, and Digihouse's live listeners read heads today, and a live room needs each movement to show up. They stop at the last published length, so a flushed batch the next writer replaces is never delivered. Edition reads stay the way to name a point in time across stories. Callers do not have to switch to edition-only reads for v1.
+
+Consequence: a listener does not see a record until the pointer is durable. That is the publish time plus one poll: a few milliseconds on the journal, and the full manifest rewrite if publication still rewrites every story. A raw head that ignores the published length still hears phantoms. The length-prefixed frame does not close that hole.
+
+Default: `PublishedHead` and `PublishedListener`. Reversible by reading the story file without the cutoff. Nothing here is accepted.

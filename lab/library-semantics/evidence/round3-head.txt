@@ -1,0 +1,4 @@
+published-head latency, 9 appends, 1 ms poll, one story, per-frame, fsync included
+median ms from append start until the listener yielded the record	3.5
+median ms from append return until the listener yielded the record	1.1
+median ms the listener trailed a raw head read of the same file	2.7

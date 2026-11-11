@@ -66,7 +66,25 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 			using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
 			{
-				return ReadStream(stream, path);
+				return ReadStream(stream, path, stream.Length);
+			}
+		}
+
+		/// <summary>
+		/// Read only the published prefix. Bytes past <paramref name="publishedBytes"/>
+		/// are not records, even when they are a complete flushed frame.
+		/// </summary>
+		public static LogImage ReadThrough(string path, long publishedBytes)
+		{
+			if (publishedBytes < HeaderLength)
+				throw new ArgumentOutOfRangeException(nameof(publishedBytes));
+
+			using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			{
+				if (stream.Length < publishedBytes)
+					throw new InvalidDataException("'" + path + "' is shorter than its published length.");
+
+				return ReadStream(stream, path, publishedBytes);
 			}
 		}
 
@@ -84,7 +102,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 			using (FileStream stream = OpenWrite(path, FileMode.Open))
 			{
-				LogImage image = ReadStream(stream, path);
+				LogImage image = ReadStream(stream, path, stream.Length);
 				if (image.Format != format)
 					throw new InvalidDataException("The story file format does not match the library.");
 
@@ -110,7 +128,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					for (int i = 0; i < records.Count; i++)
 					{
 						byte[] payload = RecordCodec.EncodeOne(2, key, bodyHash, records[i], i, records.Count);
-						WriteFrame(stream, payload, faults, tearWholeFrame: false);
+						bool tearLast = faults != null && faults.TearWrite && i == records.Count - 1;
+						WriteFrame(stream, payload, faults, tearWholeFrame: tearLast);
 						frames++;
 						if (faults != null)
 							faults.Hit(FaultPoint.AfterRecord(i));
@@ -155,7 +174,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		{
 			using (FileStream stream = OpenWrite(path, FileMode.Open))
 			{
-				LogImage image = ReadStream(stream, path);
+				LogImage image = ReadStream(stream, path, stream.Length);
 				if (image.Format != format)
 					throw new InvalidDataException("The story file format does not match the library.");
 
@@ -242,10 +261,13 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			return new string(chars);
 		}
 
-		private static LogImage ReadStream(Stream stream, string path)
+		private static LogImage ReadStream(Stream stream, string path, long limit)
 		{
 			if (stream.Length < HeaderLength)
 				throw new InvalidDataException("'" + path + "' does not have a lab header.");
+
+			if (limit < HeaderLength || limit > stream.Length)
+				throw new ArgumentOutOfRangeException(nameof(limit));
 
 			stream.Position = 0;
 			byte[] header = new byte[HeaderLength];
@@ -257,13 +279,13 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			List<RecordCodec.DecodedFrame> frames = new List<RecordCodec.DecodedFrame>();
 			long valid = HeaderLength;
 			bool torn = false;
-			while (stream.Position < stream.Length)
+			while (stream.Position < limit)
 			{
 				long start = stream.Position;
-				byte[]? payload = TryReadFrame(stream, stream.Length, path, start);
+				byte[]? payload = TryReadFrame(stream, limit, path, start);
 				if (payload == null)
 				{
-					torn = start < stream.Length;
+					torn = start < limit;
 					break;
 				}
 
@@ -436,10 +458,14 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			bool tear = tearWholeFrame && faults != null && faults.TearWrite;
 			if (tear && faults != null && faults.KillProcess)
 			{
-				// Leave the bytes in the FileStream buffer. A killed process does not
-				// flush that buffer. A thrown exception would, inside Dispose.
+				// Leave the bytes in the FileStream buffer unless the caller asked
+				// for them to reach the kernel. A killed process does not flush
+				// that buffer. A thrown exception would, inside Dispose.
 				int partial = Math.Max(1, frame.Length / 2);
 				stream.Write(frame, 0, partial);
+				if (faults.FlushTorn)
+					stream.Flush(true);
+
 				System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
 
