@@ -1,0 +1,81 @@
+# Lab test run
+
+Command, from lab/library-semantics:
+
+dotnet test src/SemanticsLab.Tests/BigRedProf.Stories.LibrarySemanticsLab.Tests.csproj --nologo --verbosity quiet --logger "console;verbosity=detailed"
+
+Result: 29 passed, 0 failed, 0 skipped.
+Randomized seed: 20261110.
+
+Test run for /agent/repos/stories/lab/library-semantics/src/SemanticsLab.Tests/bin/Debug/net8.0/BigRedProf.Stories.LibrarySemanticsLab.Tests.dll (.NETCoreApp,Version=v8.0)
+A total of 1 test files matched the specified pattern.
+/agent/repos/stories/lab/library-semantics/src/SemanticsLab.Tests/bin/Debug/net8.0/BigRedProf.Stories.LibrarySemanticsLab.Tests.dll
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.34)
+[xUnit.net 00:00:00.07]   Discovering: BigRedProf.Stories.LibrarySemanticsLab.Tests
+[xUnit.net 00:00:00.10]   Discovered:  BigRedProf.Stories.LibrarySemanticsLab.Tests
+[xUnit.net 00:00:00.10]   Starting:    BigRedProf.Stories.LibrarySemanticsLab.Tests
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.OccupiedUnrelatedLibrary_IsRefused [27 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashBeforeMarker_HidesBytesANaiveReaderWouldKeep [27 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.InterruptedPreserve_DoesNotBecomeTheCurrentEdition [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.Codes_KeepBitLengthThroughARoundTrip [13 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.LostPreserveAck_SecondCallDoesNotCopyAgain [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TimeoutAfterCommit_IsNotARollback [8 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FlippedStoryByte_FailsIntegrityAndIsNotReportedAsAGap [6 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LengthPrefixed_TornWrite_DropsTheWholeBatch [10 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.MissingBlob_DoesNotPublishACompleteBackup [10 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TwoWriters_SameExpectedEdition_OnlyOneCommits [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.PerFrame_CrashAfterFirstRecord_IsVisibleOnTheStoryHeadOnly [10 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.TapeCopy_CanTearAcrossStoriesAndOmitsContent [22 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashAfterFramesBeforePublish_RetriesWithoutDuplicating [11 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_RetryWithThePreCommitEdition_DoesNotDuplicate [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.SecondOpen_IsRejectedWhileTheWriterLockIsHeld [1 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.SkippingTheOffsetCheck_LetsBothWritersLand [8 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_DifferentBody_Conflicts [4 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RandomizedInvariantTests.FixedSeed_KeepsStoneAndEditionInvariants [156 ms]
+  Standard Output Messages:
+ seed=20261110
+ step 0 roll 2
+ step 1 roll 1
+ step 2 roll 2 crash during-frame-write
+ step 3 roll 1
+ step 4 roll 4
+ step 5 roll 4 crash during-frame-write
+ step 6 roll 5
+ step 7 roll 1
+ step 8 roll 4 crash after-publish-before-ack
+ step 9 roll 3 crash after-manifest-before-pointer
+ step 10 roll 1
+ step 11 roll 2
+ step 12 roll 2
+ step 13 roll 0 crash after-manifest-before-pointer
+ step 14 roll 3 crash after-manifest-before-pointer
+ step 15 roll 2
+ step 16 roll 0
+ step 17 roll 3 crash after-manifest-before-pointer
+ step 18 roll 3 crash after-publish-before-ack
+ step 19 roll 1
+ step 20 roll 0
+ step 21 roll 2 crash during-frame-write
+ step 22 roll 5
+ step 23 roll 4
+ final edition b23d232ea5e2caf7a04fc7cae4b4f9f3a8bb5d766bd8c2311da5a9ed52953f77
+
+
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.RestoreOlderThanDeletion_BringsSandBack_UnlessCertificatesAreSupplied [80 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.UnpinnedBackup_FailsWhenCompactionWinsTheRace [39 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Promote_BlocksRelease_AndStoneCompactionIsRejected [19 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.GapWithoutCertificate_FailsRetention_WhileAFlippedByteFailsIntegrity [11 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FieldNotes_UsesTheSameBackupContract [28 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.PinnedBackup_KeepsBytesThatCompactionRemoves [48 ms]
+[xUnit.net 00:00:00.61]   Finished:    BigRedProf.Stories.LibrarySemanticsLab.Tests
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.IncrementalPreserve_CopiesOnlyTheNewSuffix [14 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.StoneHistory_SurvivesSandDeletionAndCompaction [46 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Lifecycle_SurvivesBackupCompactionAndSourceLoss [76 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.EmptyStory_IsPreserved [16 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.SharedSandClaim_DoesNotDropBytesAnotherClaimNeeds [15 ms]
+
+Test Run Successful.
+Total tests: 29
+     Passed: 29
+ Total time: 0.9572 Seconds
+VSTEST_ARTIFACTS_DIRECTORY environment variable was not found, falling back to a user-private temporary directory. This is most likely caused by an outdated Microsoft.NET.Test.Sdk package reference in the test project.

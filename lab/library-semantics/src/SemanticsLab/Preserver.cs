@@ -1,0 +1,468 @@
+namespace BigRedProf.Stories.LibrarySemanticsLab
+{
+	public sealed class PreserveResult
+	{
+		#region constructors
+		public PreserveResult(bool published, bool alreadyPreserved, bool failed, string editionId, long bytesCopied, string detail)
+		{
+			Published = published;
+			AlreadyPreserved = alreadyPreserved;
+			Failed = failed;
+			EditionId = editionId ?? "";
+			BytesCopied = bytesCopied;
+			Detail = detail ?? "";
+		}
+		#endregion
+
+		#region properties
+		public bool Published
+		{
+			get;
+		}
+
+		public bool AlreadyPreserved
+		{
+			get;
+		}
+
+		public bool Failed
+		{
+			get;
+		}
+
+		public string EditionId
+		{
+			get;
+		}
+
+		public long BytesCopied
+		{
+			get;
+		}
+
+		public string Detail
+		{
+			get;
+		}
+		#endregion
+	}
+
+	public sealed class RestoreOptions
+	{
+		#region properties
+		public bool PreventResurrection
+		{
+			get;
+			set;
+		}
+
+		public Library? NewerEvidence
+		{
+			get;
+			set;
+		}
+
+		public string? NewerEditionId
+		{
+			get;
+			set;
+		}
+		#endregion
+	}
+
+	public sealed class RestoreResult
+	{
+		#region constructors
+		public RestoreResult(bool restored, bool refused, bool erasuresApplied, string editionId, string detail)
+		{
+			Restored = restored;
+			Refused = refused;
+			ErasuresApplied = erasuresApplied;
+			EditionId = editionId ?? "";
+			Detail = detail ?? "";
+		}
+		#endregion
+
+		#region properties
+		public bool Restored
+		{
+			get;
+		}
+
+		public bool Refused
+		{
+			get;
+		}
+
+		public bool ErasuresApplied
+		{
+			get;
+		}
+
+		public string EditionId
+		{
+			get;
+		}
+
+		public string Detail
+		{
+			get;
+		}
+		#endregion
+	}
+
+	public static class Preserver
+	{
+		#region functions
+		public static PreserveResult Preserve(Library source, Library destination, FaultInjector? faults, EditionPin? pin)
+		{
+			if (source == null)
+				throw new ArgumentNullException(nameof(source));
+
+			if (destination == null)
+				throw new ArgumentNullException(nameof(destination));
+
+			if (source.Format != destination.Format)
+			{
+				return new PreserveResult(false, false, true, "", 0, "Refused. The libraries use different story framings.");
+			}
+
+			string editionId = pin == null ? source.CurrentEditionId : pin.EditionId;
+			if (destination.CurrentEditionId == editionId)
+			{
+				return new PreserveResult(
+					true,
+					true,
+					false,
+					editionId,
+					0,
+					"The destination already has this edition. A lost acknowledgement must not copy it again."
+				);
+			}
+
+			string emptyId = ManifestText.EmptyId();
+			if (destination.CurrentEditionId != emptyId && !SourceHasAncestor(source, editionId, destination.CurrentEditionId))
+			{
+				return new PreserveResult(
+					false,
+					false,
+					true,
+					editionId,
+					0,
+					"Refused. The destination is at " + destination.CurrentEditionId + ", which is not an ancestor of " + editionId + "."
+				);
+			}
+
+			if (pin == null)
+			{
+				string stamp = source.ByteStamp(editionId);
+				if (faults != null)
+					faults.Hit(FaultPoint.AfterManifestCaptured);
+
+				if (source.ByteStamp(editionId) != stamp)
+				{
+					return new PreserveResult(
+						false,
+						false,
+						true,
+						editionId,
+						0,
+						"Failed. The source edition changed before the copy. Nothing was published."
+					);
+				}
+			}
+			else if (faults != null)
+			{
+				faults.Hit(FaultPoint.AfterManifestCaptured);
+			}
+
+			string origin = pin == null ? source.Root : pin.Directory;
+			string manifestPath = Path.Combine(origin, "editions", editionId + ".txt");
+			if (!File.Exists(manifestPath))
+			{
+				return new PreserveResult(false, false, true, editionId, 0, "Failed. The edition manifest is not in the source.");
+			}
+
+			ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(manifestPath));
+			long bytes = 0;
+			try
+			{
+				for (int i = 0; i < manifest.Stories.Count; i++)
+				{
+					StoryPrefix story = manifest.Stories[i];
+					string from = LibraryLayout.Generation(origin, story.StoryId, story.Generation);
+					string to = LibraryLayout.Generation(destination.Root, story.StoryId, story.Generation);
+					bytes += CopyStory(from, to, story.FileBytes);
+				}
+
+				for (int i = 0; i < manifest.Content.Count; i++)
+				{
+					ContentEntry entry = manifest.Content[i];
+					string to = LibraryLayout.ContentFile(destination.Root, entry.ContentId);
+					if (entry.Disposition != "required")
+					{
+						if (File.Exists(to))
+							File.Delete(to);
+
+						continue;
+					}
+
+					string from = LibraryLayout.ContentFile(origin, entry.ContentId);
+					if (!File.Exists(from))
+					{
+						return new PreserveResult(
+							false,
+							false,
+							true,
+							editionId,
+							bytes,
+							"Failed. Required content " + entry.ContentId + " is missing. The backup was not published."
+						);
+					}
+
+					Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+					File.Copy(from, to, true);
+					bytes += new FileInfo(to).Length;
+				}
+
+				destination.PublishImported(manifest.Text, faults);
+			}
+			catch (CrashInjectedException)
+			{
+				throw;
+			}
+			catch (Exception exception)
+			{
+				return new PreserveResult(
+					false,
+					false,
+					true,
+					editionId,
+					bytes,
+					"Failed. " + exception.Message + " The backup was not published."
+				);
+			}
+
+			return new PreserveResult(true, false, false, editionId, bytes, "Published edition " + editionId + ".");
+		}
+
+		public static RestoreResult Restore(Library backup, string editionId, Library destination, RestoreOptions options)
+		{
+			if (backup == null)
+				throw new ArgumentNullException(nameof(backup));
+
+			if (destination == null)
+				throw new ArgumentNullException(nameof(destination));
+
+			if (options == null)
+				throw new ArgumentNullException(nameof(options));
+
+			if (string.IsNullOrWhiteSpace(editionId))
+				throw new ArgumentException("An edition id is required.", nameof(editionId));
+
+			if (options.PreventResurrection && (options.NewerEvidence == null || string.IsNullOrWhiteSpace(options.NewerEditionId)))
+			{
+				return new RestoreResult(
+					false,
+					true,
+					false,
+					"",
+					"Refused. Preventing resurrection needs a newer edition's certificates. None were supplied. A missing blob is not a deletion."
+				);
+			}
+
+			string emptyId = ManifestText.EmptyId();
+			if (destination.CurrentEditionId != emptyId && destination.CurrentEditionId != editionId)
+			{
+				return new RestoreResult(
+					false,
+					true,
+					false,
+					"",
+					"Refused. The destination is at " + destination.CurrentEditionId + ", which is not empty."
+				);
+			}
+
+			PreserveResult copied = Preserve(backup, destination, null, null);
+			if (copied.Failed || !copied.Published)
+				return new RestoreResult(false, true, false, editionId, copied.Detail);
+
+			string detail = "Restored edition " + editionId
+				+ ". Sand that this edition contains is present again. Newer removal evidence was not supplied, so this restore cannot keep later deletions deleted.";
+			bool applied = false;
+			if (options.PreventResurrection)
+			{
+				int count = ApplyErasures(options.NewerEvidence!, options.NewerEditionId!, destination);
+				applied = true;
+				detail = "Restored edition " + editionId + ", then applied " + count.ToString()
+					+ " later certificate batches. Business events that exist only in the newer edition were not copied. This is not a roll-forward.";
+			}
+
+			return new RestoreResult(true, false, applied, destination.CurrentEditionId, detail);
+		}
+		#endregion
+
+		#region private functions
+		private static bool SourceHasAncestor(Library source, string editionId, string candidate)
+		{
+			string cursor = editionId;
+			HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+			while (cursor != "-" && cursor.Length > 0 && seen.Add(cursor))
+			{
+				if (cursor == candidate)
+					return true;
+
+				string path = LibraryLayout.Manifest(source.Root, cursor);
+				if (!File.Exists(path))
+					return false;
+
+				ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(path));
+				cursor = manifest.ParentId;
+			}
+
+			return false;
+		}
+
+		private static long CopyStory(string from, string to, long count)
+		{
+			Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+			byte[] sourceBytes = ReadPrefix(from, count);
+			if (!File.Exists(to))
+			{
+				WriteAll(to, sourceBytes);
+				return sourceBytes.Length;
+			}
+
+			byte[] existing = File.ReadAllBytes(to);
+			if (existing.Length == sourceBytes.Length && BytesEqual(existing, sourceBytes, existing.Length))
+				return 0;
+
+			if (existing.Length < sourceBytes.Length && BytesEqual(existing, sourceBytes, existing.Length))
+			{
+				using (FileStream stream = new FileStream(to, FileMode.Append, FileAccess.Write, FileShare.None))
+				{
+					stream.Write(sourceBytes, existing.Length, sourceBytes.Length - existing.Length);
+					stream.Flush(true);
+				}
+
+				return sourceBytes.Length - existing.Length;
+			}
+
+			WriteAll(to, sourceBytes);
+			return sourceBytes.Length;
+		}
+
+		private static byte[] ReadPrefix(string path, long count)
+		{
+			using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			{
+				if (stream.Length < count)
+					throw new InvalidDataException("'" + path + "' is shorter than the edition.");
+
+				byte[] data = new byte[count];
+				int offset = 0;
+				while (offset < data.Length)
+				{
+					int read = stream.Read(data, offset, data.Length - offset);
+					if (read == 0)
+						throw new EndOfStreamException("The story ended inside the edition prefix.");
+
+					offset += read;
+				}
+
+				return data;
+			}
+		}
+
+		private static void WriteAll(string path, byte[] data)
+		{
+			using (FileStream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+			{
+				stream.Write(data, 0, data.Length);
+				stream.Flush(true);
+			}
+		}
+
+		private static bool BytesEqual(byte[] left, byte[] right, int count)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				if (left[i] != right[i])
+					return false;
+			}
+
+			return true;
+		}
+
+		private static int ApplyErasures(Library newer, string newerEditionId, Library destination)
+		{
+			EditionView evidence = newer.ReadEdition(newerEditionId);
+			int applied = 0;
+			List<StoredRecord> ordered = evidence.Records.OrderBy(item => item.StoryId, StringComparer.Ordinal).ThenBy(item => item.Offset).ToList();
+			HashSet<string> done = new HashSet<string>(StringComparer.Ordinal);
+			for (int i = 0; i < ordered.Count; i++)
+			{
+				StoredRecord record = ordered[i];
+				if (record.Effect == EffectKind.ReleaseClaim)
+				{
+					string[] parts = record.EffectArgument.Split('|');
+					AppendResult result = destination.ReleaseClaim(
+						parts[0],
+						long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture),
+						LabCode.ToText(record.Body),
+						record.IdempotencyKey,
+						destination.CurrentEditionId,
+						null
+					);
+					if (result.Status == AppendStatus.Committed)
+						applied++;
+				}
+
+				if (record.Effect == EffectKind.PromoteClaim)
+				{
+					string[] parts = record.EffectArgument.Split('|');
+					AppendResult result = destination.PromoteClaim(
+						parts[0],
+						long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture),
+						LabCode.ToText(record.Body),
+						record.IdempotencyKey,
+						destination.CurrentEditionId,
+						null
+					);
+					if (result.Status == AppendStatus.Committed)
+						applied++;
+				}
+
+				if (record.Effect == EffectKind.CompactSand && done.Add(record.IdempotencyKey))
+				{
+					StoredRecord? summary = null;
+					for (int s = 0; s < ordered.Count; s++)
+					{
+						if (ordered[s].IdempotencyKey == record.IdempotencyKey && ordered[s].Effect == EffectKind.MovementSummary)
+							summary = ordered[s];
+					}
+
+					if (summary == null)
+						continue;
+
+					string[] parts = record.EffectArgument.Split('|');
+					AppendResult result = destination.CompactSand(
+						record.StoryId,
+						long.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
+						long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture),
+						LabCode.ToText(summary.Body),
+						LabCode.ToText(record.Body),
+						record.IdempotencyKey,
+						destination.CurrentEditionId,
+						null
+					);
+					if (result.Status == AppendStatus.Committed)
+						applied++;
+				}
+			}
+
+			return applied;
+		}
+		#endregion
+	}
+}
