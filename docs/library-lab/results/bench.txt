@@ -1,0 +1,13 @@
+workload / design                             ops per sec  usec per op  notes
+fsync probe (64 bytes + fsync)                       6119          163  
+purchase  A  today: per-thing append                 1479          676  4 fsyncs, NOT atomic
+purchase  C  library commit                          1256          796  4 fsyncs, atomic + isolated
+purchase  D  journal then apply                      1515          660  4 fsyncs, atomic durability only
+purchase  S  SQLite transaction                      3896          257  provider ACID baseline
+movement  A  today: per-thing append                 7431          135  1 fsync
+movement  B  story append                            7979          125  1 fsync
+movement  C  forced through commit log               2950          339  2 fsyncs
+movement  S  SQLite transaction                      7075          141  
+burst-50  A  today: per-thing append                  122         8175  50 fsyncs
+burst-50  B  one atomic batch                        4273          234  1 fsync
+reopen + recover library (2300 commits, 6000 moves)           45        22017  full scan

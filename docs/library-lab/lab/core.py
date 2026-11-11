@@ -649,6 +649,10 @@ class Library:
             st = self._story(sid)
             return st.head(), st.chain_at(st.head())
 
+    def chain_at(self, sid, pos):
+        with self.lock:
+            return self._story(sid).chain_at(pos)
+
     def base(self, sid):
         with self.lock:
             st = self._story(sid)
@@ -783,10 +787,20 @@ class Library:
 
     def reclaim(self):
         """Physically apply the retention ledger. Idempotent. Does nothing while
-        any edition is pinned. Returns {'deferred': bool, 'payloads': n, 'blobs': n}."""
+        any edition is pinned, and nothing on media that refuses rewriting; both
+        leave the data 'retired, pending reclamation', which verify() reports.
+        Returns {'deferred': bool, 'payloads': n, 'blobs': n}."""
         with self.lock:
             if self.pins:
                 return {"deferred": True, "payloads": 0, "blobs": 0}
+            try:
+                return self._reclaim()
+            except Refused as ex:
+                self.stories.clear()             # forget half-applied in-memory changes
+                return {"deferred": True, "payloads": 0, "blobs": 0, "blocked": str(ex)}
+
+    def _reclaim(self):
+        if True:
             dirty, payloads, blobs = set(), 0, 0
             for r in self.evidence():
                 if r["k"] == "ContentReleased" or r["story"] not in self.policy:

@@ -12,7 +12,7 @@ from .core import (CATALOG, CONTENT, RETENTION, SAND, STONE, SYSTEM, Conflict, L
                    Refused, edition_id)
 
 
-def _copy(src, dst, manifest, on_step=None, chunk=64):
+def _copy(src, dst, manifest, on_step=None, chunk=64, may_lead=()):
     """Bring dst up to `manifest` from src. Returns (problems, stats); a problem
     is (kind, text) with kind 'moved' (the source changed under us; retry at a
     newer edition) or 'damage' (the source cannot supply what the edition names)."""
@@ -32,15 +32,24 @@ def _copy(src, dst, manifest, on_step=None, chunk=64):
                                  "%s: source now starts at %d and this edition's ledger does not authorize that" % (sid, sbase)))
                 continue
             dhead = sbase
-        removed, compacted = dst.authorized()
-        src_removed, src_compacted = src.authorized()
-        entries = src.read(sid, dhead, pos)
-        if len(entries) != max(0, pos - dhead):
-            problems.append(("damage", "%s: source holds fewer entries than the edition names" % sid))
+        if dhead > pos and sid not in may_lead:
+            problems.append(("damage", "%s: the source holds %d entries but %d are already preserved; "
+                             "the source has lost history" % (sid, pos, dhead)))
             continue
+        if src.chain_at(sid, min(dhead, pos)) != dst.chain_at(sid, min(dhead, pos)):
+            # One hash comparison proves (or refutes) that dst holds a prefix of src.
+            problems.append(("damage", "%s: source and destination histories diverge before position %d" % (sid, dhead)))
+            continue
+        removed, compacted = dst.authorized()
         stop = False
-        for i in range(0, len(entries), chunk):
-            part = entries[i:i + chunk]
+        for lo in range(dhead, pos, chunk):
+            part = src.read(sid, lo, min(lo + chunk, pos))      # read at copy time, as a real copier would
+            if len(part) != min(lo + chunk, pos) - lo:
+                gone = src.base(sid)[0] > lo
+                problems.append(("moved" if gone else "damage", "%s: source no longer holds position %d" % (sid, lo)))
+                stop = True
+                break
+            src_removed, src_compacted = src.authorized()
             for e in part:
                 if e.payload is not None:
                     continue
@@ -158,7 +167,7 @@ def restore(backup, fs, root, library_id, witness=None, fold=None):
     for source in (backup, witness):
         if source is not None:
             push_ledger(source, target)
-    problems, stats = _copy(backup, target, rec["manifest"])
+    problems, stats = _copy(backup, target, rec["manifest"], may_lead=(RETENTION,))
     ledger_at_backup = rec_head = dict((s, p) for s, p, _ in rec["manifest"])[RETENTION]
     ledger_now, _ = target.head(RETENTION)
     reclaimed = target.reclaim()

@@ -44,16 +44,18 @@ class JournalLibrary:
 
     def recover(self):
         for _, _, body in read_frames(self.fs.read(self.root + "/journal") or b"", "journal"):
-            self._apply(json.loads(body.decode()))
+            self._apply(json.loads(body.decode()), recovering=True)
 
-    def _apply(self, rec):
+    def _apply(self, rec, recovering=False):
         for sid in sorted(rec["writes"]):
             first, items = rec["writes"][sid]
-            data = self.fs.read(self._story(sid)) or b""
-            valid = max([end for _, end, _ in read_frames(data, sid)] or [0])
-            if valid < len(data):                  # trim a torn tail before appending after it
-                self.fs.truncate(self._story(sid), valid)
-            have = len(self.read(sid))
+            have = first
+            if recovering:
+                data = self.fs.read(self._story(sid)) or b""
+                valid = max([end for _, end, _ in read_frames(data, sid)] or [0])
+                if valid < len(data):              # trim a torn tail before appending after it
+                    self.fs.truncate(self._story(sid), valid)
+                have = len(self.read(sid))
             for i, hexed in enumerate(items):
                 if first + i >= have:
                     self.fs.append(self._story(sid), frame(bytes.fromhex(hexed)))
@@ -64,7 +66,7 @@ class JournalLibrary:
                 self.hook("applied " + sid)
 
     def commit(self, writes):
-        rec = {"writes": {sid: [len(self.read(sid)), [p.hex() for p in items]] for sid, items in writes.items()}}
+        rec = {"writes": {sid: [self.heads.get(sid, 0), [p.hex() for p in items]] for sid, items in writes.items()}}
         self.fs.append(self.root + "/journal", frame(json.dumps(rec, sort_keys=True).encode()))
         self.fs.fsync(self.root + "/journal")     # <- commit point (durable)
         self._apply(rec)                          # visible story by story
@@ -134,6 +136,8 @@ class ObjectFS:
 
     def replace(self, path, data):
         old = self.index.get(path, [])
+        if old and self.worm:
+            raise Refused("write-once media: objects cannot be replaced")
         self.index[path] = [self._put(path, data)]
         self.pending.pop(path, None)
         self._drop(old)
@@ -145,7 +149,8 @@ class ObjectFS:
         self.pending[path] = (self.pending.get(path, b""))[:n - len(durable)]
 
     def remove(self, path):
-        self._drop(self.index.pop(path, []))
+        self._drop(self.index.get(path, []))
+        self.index.pop(path, None)
         self.pending.pop(path, None)
 
     def read(self, path):
