@@ -17,8 +17,8 @@ Last updated 2026-11-11.
 | --- | --- | --- | --- | --- |
 | Requirements and alternatives note | yes | n/a | no | no |
 | Atomic append designs A, B, C, D, S | yes | yes (18 tests) | no | no |
-| Library-to-Library backup, verify, restore | yes | yes (14 tests) | no | no |
-| Stone/sand, compaction, races, stale restore | yes | yes (14 tests) | no | no |
+| Library-to-Library backup, verify, restore | yes | yes (13 tests) | no | no |
+| Stone/sand, compaction, races, stale restore | yes | yes (15 tests) | no | no |
 | Second application (scoreboard) | yes | yes (1 test) | no | no |
 | Timings | yes | recorded once | no | no |
 | Decision memo | draft | n/a | no | no |
