@@ -29,9 +29,8 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 - Branch: `cursor/library-semantics-lab-e4a6`. The suggested name `cj/library-semantics-lab` was not used; this agent has to use the `cursor/` prefix and the `-e4a6` suffix.
 - Base: `origin/main` at `1a0647f7c648d3e08f5a4afca041c49b68752a0e`.
 - Requirements commit: `ac053029504cd7a0c494f60d7c55cc482191f9db`.
-- Lab, tests, evidence, and this memo: the commit that adds `lab/library-semantics/src`. Run `git log -1 --oneline` on this branch after pulling. The follow-up line below is filled once that commit exists.
-
-Lab commit: `PENDING`.
+- Lab, tests, evidence, and decision memo: `c2e6d465f709b645e74036dba5d47e3188114f92`.
+- The branch head is the commit that records this line. After pull, `git rev-parse HEAD`.
 
 ## Commands
 
