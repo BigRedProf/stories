@@ -104,6 +104,12 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				builder.Append(story.FileBytes.ToString(CultureInfo.InvariantCulture));
 				builder.Append('\t');
 				builder.Append(story.FileHash);
+				if (story.Encoding == "shipped-v1")
+				{
+					builder.Append('\t');
+					builder.Append(story.Encoding);
+				}
+
 				builder.Append('\n');
 			}
 
@@ -150,7 +156,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					parsed.CommitKey = parts[1];
 				else if (parts[0] == "body" && parts.Length == 2)
 					parsed.BodyHash = parts[1];
-				else if (parts[0] == "story" && parts.Length == 7)
+				else if (parts[0] == "story" && (parts.Length == 7 || parts.Length == 8))
 				{
 					StoryPrefix story = new StoryPrefix();
 					story.StoryId = parts[1];
@@ -159,6 +165,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					story.HighWater = long.Parse(parts[4], CultureInfo.InvariantCulture);
 					story.FileBytes = long.Parse(parts[5], CultureInfo.InvariantCulture);
 					story.FileHash = parts[6];
+					if (parts.Length == 8)
+						story.Encoding = parts[7];
+
 					parsed.Stories.Add(story);
 				}
 				else if (parts[0] == "content" && parts.Length == 5)

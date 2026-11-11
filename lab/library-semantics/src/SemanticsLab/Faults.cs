@@ -14,6 +14,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		public const string AfterDataBeforeMarker = "after-data-before-marker";
 		public const string AfterFrameBeforePublish = "after-frame-before-publish";
 		public const string AfterManifestBeforePointer = "after-manifest-before-pointer";
+		public const string AfterDirectoryFsync = "after-directory-fsync";
 		public const string AfterPublishBeforeAck = "after-publish-before-ack";
 		public const string AfterManifestCaptured = "after-manifest-captured";
 		public const string BeforeDestinationPointer = "before-destination-pointer";
@@ -47,6 +48,16 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			set;
 		}
 
+		/// <summary>
+		/// SIGKILL this process instead of throwing. Dispose and finally do not run.
+		/// That is a process crash. It is not a power loss.
+		/// </summary>
+		public bool KillProcess
+		{
+			get;
+			set;
+		}
+
 		public Action<string>? Before
 		{
 			get;
@@ -60,8 +71,13 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			if (Before != null)
 				Before(point);
 
-			if (ArmedPoint == point)
-				throw new CrashInjectedException(point);
+			if (ArmedPoint != point)
+				return;
+
+			if (KillProcess)
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+
+			throw new CrashInjectedException(point);
 		}
 		#endregion
 	}

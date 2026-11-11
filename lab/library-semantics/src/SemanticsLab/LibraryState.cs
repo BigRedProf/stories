@@ -23,6 +23,23 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				throw new ObjectDisposedException(nameof(Library));
 		}
 
+		private string FindEditionForKey(string key, string bodyHash, string fallback)
+		{
+			string directory = Path.Combine(_root, "editions");
+			if (!Directory.Exists(directory))
+				return fallback;
+
+			string[] files = Directory.GetFiles(directory, "*.txt");
+			for (int i = 0; i < files.Length; i++)
+			{
+				ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(files[i]));
+				if (manifest.CommitKey == key && manifest.BodyHash == bodyHash)
+					return manifest.Id;
+			}
+
+			return fallback;
+		}
+
 		private string ReadPointer()
 		{
 			string text = File.ReadAllText(LibraryLayout.Pointer(_root)).Trim();
@@ -44,6 +61,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			File.Move(tempPath, finalPath, true);
+			PosixSync.FsyncDirectory(_root);
+			_directorySyncs++;
 		}
 
 		private void WriteManifest(ParsedManifest manifest)
@@ -68,6 +87,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			File.Move(tempPath, path, true);
+			PosixSync.FsyncDirectory(Path.GetDirectoryName(path)!);
+			_directorySyncs++;
 		}
 
 		private ParsedManifest ReadManifest(string editionId)
@@ -85,6 +106,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			for (int i = 0; i < manifest.Stories.Count; i++)
 			{
 				StoryPrefix story = manifest.Stories[i];
+				if (story.Encoding == "shipped-v1")
+					continue;
+
 				string path = LibraryLayout.Generation(_root, story.StoryId, story.Generation);
 				if (!File.Exists(path))
 					continue;
@@ -255,6 +279,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 						throw new InvalidDataException("Story '" + story.StoryId + "' does not match edition " + editionId + ".");
 				}
 
+				if (story.Encoding == "shipped-v1")
+					continue;
+
 				records.AddRange(ReadCommittedFrom(story.StoryId, story.Generation, story.RecordCount));
 			}
 
@@ -345,6 +372,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 		private StoryPrefix DescribeStory(string storyId, int generation)
 		{
+			if (_forcedPrefixes.ContainsKey(storyId))
+				return _forcedPrefixes[storyId];
+
 			string path = LibraryLayout.Generation(_root, storyId, generation);
 			if (!File.Exists(path))
 				StoryLog.CreateEmpty(path, _format);

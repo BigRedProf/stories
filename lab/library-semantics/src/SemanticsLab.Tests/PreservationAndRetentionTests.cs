@@ -40,9 +40,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 				using (Library backup = Library.Open(backupPath))
 				using (Library restored = Library.Create(restoredPath, BatchFormat.LengthPrefixed))
 				{
-					RestoreResult restore = Preserver.Restore(backup, edition, restored, new RestoreOptions());
+					RestoreResult restore = Preserver.Restore(backup, edition, restored, AcceptSand());
 					Assert.True(restore.Restored);
-					Assert.Contains("cannot keep later deletions", restore.Detail);
+					Assert.Contains("accepted resurrection", restore.Detail);
 					Assert.Equal(edition, restored.CurrentEditionId);
 					Assert.Equal(rendered, Digihouse.Read(restored, restored.CurrentEditionId).Render());
 					VerificationReport report = restored.Verify(
@@ -156,16 +156,59 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					Digihouse.Move(source, "parlor", "chair", 8, 9, 2, null);
 					EditionPin pin = source.Pin();
 					string pinned = pin.EditionId;
-					Digihouse.CompactMoves(source, "parlor", null);
-					Digihouse.ReleasePhoto(source, "chair", null);
-					Assert.NotEqual(pinned, source.CurrentEditionId);
-					Assert.False(File.Exists(source.ContentFilePath(Library.ContentIdFor(photo))));
-					PreserveResult preserved = Preserver.Preserve(source, backup, null, pin);
+					FaultInjector faults = new FaultInjector();
+					faults.Before = delegate(string point)
+					{
+						if (point.StartsWith("after-story-copied:", StringComparison.Ordinal))
+						{
+							Digihouse.CompactMoves(source, "parlor", null);
+							Digihouse.ReleasePhoto(source, "chair", null);
+						}
+					};
+					PreserveResult preserved = Preserver.Preserve(source, backup, faults, pin);
 					Assert.True(preserved.Published);
 					Assert.Equal(pinned, backup.CurrentEditionId);
+					Assert.NotEqual(pinned, source.CurrentEditionId);
+					Assert.False(File.Exists(source.ContentFilePath(Library.ContentIdFor(photo))));
 					Assert.True(File.Exists(backup.ContentFilePath(Library.ContentIdFor(photo))));
 					Assert.Equal("8,9", Digihouse.Read(backup, pinned).Positions["parlor/chair"]);
 					Assert.Equal(CheckResult.Pass, backup.Verify(pinned, null).Integrity);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+			}
+		}
+
+		[Fact]
+		public void InterruptedIncrementalPreserve_KeepsThePreviousBlobs()
+		{
+			string sourcePath = LabPaths.Create(nameof(InterruptedIncrementalPreserve_KeepsThePreviousBlobs));
+			string backupPath = LabPaths.Create(nameof(InterruptedIncrementalPreserve_KeepsThePreviousBlobs) + "-backup");
+			try
+			{
+				Library source = Library.Create(sourcePath, BatchFormat.LengthPrefixed);
+				Library backup = Library.Create(backupPath, BatchFormat.LengthPrefixed);
+				Code photo = new Code("110011");
+				Digihouse.AttachPhoto(source, "chair", photo, null);
+				PreserveResult first = Preserver.Preserve(source, backup, null, null);
+				Assert.True(first.Published);
+				Assert.Equal(AppendStatus.Committed, Digihouse.ReleasePhoto(source, "chair", null).Status);
+				FaultInjector faults = new FaultInjector();
+				faults.ArmedPoint = FaultPoint.BeforeDestinationPointer;
+				Assert.Throws<CrashInjectedException>(() => Preserver.Preserve(source, backup, faults, null));
+				backup.Dispose();
+				source.Dispose();
+				using (Library reopened = Library.Open(backupPath))
+				{
+					Assert.Equal(first.EditionId, reopened.CurrentEditionId);
+					Assert.True(File.Exists(reopened.ContentFilePath(Library.ContentIdFor(photo))));
+					VerificationReport report = reopened.Verify(first.EditionId, null);
+					Assert.Equal(CheckResult.Pass, report.Completeness);
+					Assert.Equal(CheckResult.Pass, report.Integrity);
+					Assert.True(report.IsPublished);
 				}
 			}
 			finally
@@ -190,11 +233,14 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					Digihouse.AttachPhoto(source, "chair", photo, null);
 					Digihouse.Move(source, "parlor", "chair", 1, 1, 1, null);
 					Digihouse.Move(source, "parlor", "chair", 2, 2, 2, null);
-					string empty = backup.CurrentEditionId;
+					PreserveResult first = Preserver.Preserve(source, backup, null, null);
+					Assert.True(first.Published);
+					string preservedEdition = first.EditionId;
+					Digihouse.Move(source, "parlor", "chair", 3, 3, 3, null);
 					FaultInjector faults = new FaultInjector();
 					faults.Before = delegate(string point)
 					{
-						if (point == FaultPoint.AfterManifestCaptured)
+						if (point == "after-story-copied:digihouse/catalog")
 						{
 							Digihouse.CompactMoves(source, "parlor", null);
 							Digihouse.ReleasePhoto(source, "chair", null);
@@ -203,8 +249,11 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 					PreserveResult result = Preserver.Preserve(source, backup, faults, null);
 					Assert.True(result.Failed);
 					Assert.False(result.Published);
-					Assert.Equal(empty, backup.CurrentEditionId);
-					Assert.Contains("Nothing was published", result.Detail);
+					Assert.Equal(preservedEdition, backup.CurrentEditionId);
+					Assert.True(File.Exists(backup.ContentFilePath(Library.ContentIdFor(photo))));
+					VerificationReport report = backup.Verify(preservedEdition, null);
+					Assert.Equal(CheckResult.Pass, report.Integrity);
+					Assert.Equal(CheckResult.Pass, report.Completeness);
 				}
 			}
 			finally
@@ -255,7 +304,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 				using (Library applied = Library.Create(appliedPath, BatchFormat.LengthPrefixed))
 				using (Library refused = Library.Create(refusedPath, BatchFormat.LengthPrefixed))
 				{
-					RestoreResult exactResult = Preserver.Restore(oldBackup, oldEdition, exact, new RestoreOptions());
+					RestoreResult exactResult = Preserver.Restore(oldBackup, oldEdition, exact, AcceptSand());
 					Assert.True(exactResult.Restored);
 					Assert.False(exactResult.Refused);
 					Assert.Contains("present again", exactResult.Detail);
@@ -658,7 +707,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 				using (Library backup = Library.Open(backupPath))
 				using (Library restored = Library.Create(restoredPath, BatchFormat.LengthPrefixed))
 				{
-					Assert.True(Preserver.Restore(backup, edition, restored, new RestoreOptions()).Restored);
+					Assert.True(Preserver.Restore(backup, edition, restored, AcceptSand()).Restored);
 					Assert.Equal(rendered, FieldNotes.Read(restored, restored.CurrentEditionId).Render());
 					Assert.Equal(photo, ContentFiles.Read(restored.ContentFilePath(Library.ContentIdFor(photo))));
 				}
@@ -672,6 +721,13 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 		}
 
 		#region private functions
+		private static RestoreOptions AcceptSand()
+		{
+			RestoreOptions options = new RestoreOptions();
+			options.AcceptResurrection = true;
+			return options;
+		}
+
 		private static string Texts(Library library, string storyId)
 		{
 			List<string> lines = new List<string>();

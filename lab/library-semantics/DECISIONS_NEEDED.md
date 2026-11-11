@@ -14,19 +14,19 @@ Default in the lab: `Preserver` copies an edition into another library. `TapeSer
 
 ## 2. Do we add a length-prefixed batch frame, or only the edition pointer?
 
-Recommendation: both, for different jobs. The frame is for several records in one story that must appear together (room seed and ready). The pointer is for several stories (catalog plus room). One-record purchases stay one record. Do not add a commit marker.
+Recommendation: do not add the frame for v1. Edition readers plus the existing per-frame flush already hide a partial batch. Expected offset (#22) is the concurrency check inside the lock. The length-prefixed frame is the right tool only if a raw story-head reader must not see a prefix. That reader exists today (`FileStoryteller`). If v1 readers are edition-pinned, leave the frame alone.
 
-Consequence: a future story file is not a pure extension of today's per-frame `BRPSTORY` layout. Shipping it is a new format, copied forward, not an in-place upgrade. This lab does not ship it.
+Consequence: no shipped format change for batches. Story heads remain able to see flushed records the edition has not published. Callers that need a raw-file atomic batch do not have one.
 
-Default: the lab library is created with `BatchFormat.LengthPrefixed`. The other two formats remain in the tests.
+Default in the lab: both formats still run. New durability tests use per-frame for the edition-pointer claim and length-prefixed for the raw-file claim.
 
 ## 3. Does restoring an old backup bring deleted sand back?
 
-Recommendation: yes, on an exact restore, and say so in the result. Preventing that is a second step that needs a newer edition's certificates. Refuse the request when those certificates were not supplied. Do not infer a deletion from a missing blob.
+Recommendation: only when the caller sets `AcceptResurrection`. Otherwise exact restore of an edition that contains sand is refused. Applying a newer edition's certificates does not need that flag, and it does not copy later business events. Do not infer a deletion from a missing blob.
 
-Consequence: operators who want a deletion to stick must keep a backup from after the deletion, or pass that edition in. An air-gapped older tape will resurrect the blob. That limit should be written next to the restore command when one exists.
+Consequence: a restore tool cannot resurrect a JPEG by default. An operator who wants the old bytes back has to say so. An air-gapped copy still contains them.
 
-Default: `Restore` is exact. `PreventResurrection` without `NewerEvidence` returns refused and writes nothing.
+Default: `AcceptResurrection` defaults to false. `PreventResurrection` without `NewerEvidence` returns refused and writes nothing.
 
 ## 4. Can stone ever be erased?
 

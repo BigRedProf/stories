@@ -411,6 +411,15 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			get;
 			set;
 		} = "";
+
+		/// <summary>
+		/// "lab" for a lab generation. "shipped-v1" for an unchanged BRPSTORY file.
+		/// </summary>
+		public string Encoding
+		{
+			get;
+			set;
+		} = "lab";
 		#endregion
 	}
 

@@ -62,19 +62,22 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 	{
 		#region fields
 		private readonly string _root;
-		private readonly FileStream _lock;
+		private readonly FileStream? _lock;
 		private readonly object _gate;
 		private readonly BatchFormat _format;
+		private readonly Dictionary<string, StoryPrefix> _forcedPrefixes;
+		private int _directorySyncs;
 		private bool _disposed;
 		private bool _dead;
 		#endregion
 
 		#region constructors
-		private Library(string root, FileStream ownerLock, BatchFormat format)
+		private Library(string root, FileStream? ownerLock, BatchFormat format)
 		{
 			_root = root;
 			_lock = ownerLock;
 			_format = format;
+			_forcedPrefixes = new Dictionary<string, StoryPrefix>(StringComparer.Ordinal);
 			_gate = new object();
 		}
 		#endregion
@@ -93,6 +96,14 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			get
 			{
 				return _format;
+			}
+		}
+
+		public int DirectorySyncCount
+		{
+			get
+			{
+				return _directorySyncs;
 			}
 		}
 
@@ -132,29 +143,41 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			return Open(path);
 		}
 
+		public static string PeekEditionId(string path)
+		{
+			if (string.IsNullOrWhiteSpace(path))
+				throw new ArgumentException("A library path is required.", nameof(path));
+
+			return File.ReadAllText(LibraryLayout.Pointer(path)).Trim();
+		}
+
 		public static Library Open(string path)
 		{
 			if (string.IsNullOrWhiteSpace(path))
 				throw new ArgumentException("A library path is required.", nameof(path));
 
-			FileStream ownerLock;
-			try
+			bool skipLock = Environment.GetEnvironmentVariable("BRP_LAB_SKIP_WRITER_LOCK") == "1";
+			FileStream? ownerLock = null;
+			if (!skipLock)
 			{
-				ownerLock = new FileStream(
-					LibraryLayout.Lock(path),
-					FileMode.OpenOrCreate,
-					FileAccess.ReadWrite,
-					FileShare.None,
-					bufferSize: 1,
-					FileOptions.None
-				);
-			}
-			catch (IOException exception)
-			{
-				throw new IOException(
-					"Library '" + path + "' already has a writer.",
-					exception
-				);
+				try
+				{
+					ownerLock = new FileStream(
+						LibraryLayout.Lock(path),
+						FileMode.OpenOrCreate,
+						FileAccess.ReadWrite,
+						FileShare.None,
+						bufferSize: 1,
+						FileOptions.None
+					);
+				}
+				catch (IOException exception)
+				{
+					throw new IOException(
+						"Library '" + path + "' already has a writer.",
+						exception
+					);
+				}
 			}
 
 			try
@@ -167,7 +190,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 			catch
 			{
-				ownerLock.Dispose();
+				if (ownerLock != null)
+					ownerLock.Dispose();
+
 				throw;
 			}
 		}
@@ -205,7 +230,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				return;
 
 			_disposed = true;
-			_lock.Dispose();
+			if (_lock != null)
+				_lock.Dispose();
 		}
 
 		public long HighWater(string storyId)
@@ -357,6 +383,94 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			return LibraryLayout.ContentFile(_root, contentId);
 		}
 
+		public AppendResult AdoptShippedFile(
+			string storyId,
+			byte[] fileBytes,
+			int recordCount,
+			long highWater,
+			string idempotencyKey,
+			string expectedEditionId
+		)
+		{
+			if (fileBytes == null)
+				throw new ArgumentNullException(nameof(fileBytes));
+
+			if (recordCount < 0 || highWater < recordCount)
+				throw new ArgumentOutOfRangeException(nameof(recordCount));
+
+			lock (_gate)
+			{
+				RequireAlive();
+				string currentId = ReadPointer();
+				ParsedManifest current = ReadManifest(currentId);
+				string fileHash = Hashing.Sha256(fileBytes);
+				if (current.CommitKey == idempotencyKey)
+				{
+					if (current.BodyHash == fileHash)
+					{
+						return new AppendResult(
+							AppendStatus.AlreadyCommitted,
+							currentId,
+							"The shipped file is already the published edition.",
+							0
+						);
+					}
+
+					return new AppendResult(
+						AppendStatus.IdempotencyConflict,
+						currentId,
+						"This key adopted different bytes.",
+						0
+					);
+				}
+
+				if (expectedEditionId != currentId)
+				{
+					return new AppendResult(
+						AppendStatus.PositionConflict,
+						currentId,
+						"Expected edition " + expectedEditionId + " but the library is at " + currentId + ".",
+						0
+					);
+				}
+
+				int generation = GenerationOf(storyId);
+				string path = LibraryLayout.Generation(_root, storyId, generation);
+				Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+				using (FileStream stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None))
+				{
+					stream.Write(fileBytes, 0, fileBytes.Length);
+					stream.Flush(true);
+				}
+
+				StoryPrefix prefix = new StoryPrefix();
+				prefix.StoryId = storyId;
+				prefix.Generation = generation;
+				prefix.RecordCount = recordCount;
+				prefix.HighWater = highWater;
+				prefix.FileBytes = fileBytes.Length;
+				prefix.FileHash = fileHash;
+				prefix.Encoding = "shipped-v1";
+				_forcedPrefixes[storyId] = prefix;
+				try
+				{
+					return PublishExisting(
+						idempotencyKey,
+						fileHash,
+						Array.Empty<ContentWrite>(),
+						null,
+						0,
+						new string[] { storyId },
+						null
+					);
+				}
+				finally
+				{
+					_forcedPrefixes.Remove(storyId);
+				}
+			}
+		}
+
 		public void PublishImported(string manifestText, FaultInjector? faults)
 		{
 			if (manifestText == null)
@@ -400,6 +514,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 						faults.Hit(FaultPoint.BeforeDestinationPointer);
 
 					WritePointer(manifest.Id);
+					if (faults != null)
+						faults.Hit(FaultPoint.AfterDirectoryFsync);
+
 					ReclaimErasedContent();
 					if (faults != null)
 						faults.Hit(FaultPoint.AfterDestinationPointer);
@@ -425,8 +542,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			{
 				return new AppendResult(
 					AppendStatus.AlreadyCommitted,
-					currentId,
-					"The key is already in the published edition. The retry did not append.",
+					FindEditionForKey(request.IdempotencyKey, bodyHash, currentId),
+					"The key is already in a published edition. The retry did not append.",
 					0
 				);
 			}
@@ -509,6 +626,21 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				}
 			}
 
+			string? pauseDirectory = Environment.GetEnvironmentVariable("BRP_LAB_PAUSE_BEFORE_WRITE");
+			if (!string.IsNullOrWhiteSpace(pauseDirectory))
+			{
+				Directory.CreateDirectory(pauseDirectory);
+				File.WriteAllText(Path.Combine(pauseDirectory, Environment.ProcessId.ToString() + ".ready"), "ready");
+				DateTime deadline = DateTime.UtcNow.AddSeconds(15);
+				while (!File.Exists(Path.Combine(pauseDirectory, "go")))
+				{
+					if (DateTime.UtcNow > deadline)
+						throw new TimeoutException("The pause-before-write gate was not opened.");
+
+					Thread.Sleep(20);
+				}
+			}
+
 			WriteContent(request.Content);
 			int frames = 0;
 			for (int s = 0; s < ordered.Count; s++)
@@ -568,6 +700,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				faults.Hit(FaultPoint.AfterManifestBeforePointer);
 
 			WritePointer(manifest.Id);
+			if (faults != null)
+				faults.Hit(FaultPoint.AfterDirectoryFsync);
+
 			ReclaimErasedContent();
 			if (faults != null)
 				faults.Hit(FaultPoint.AfterPublishBeforeAck);
@@ -604,7 +739,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				int generation = GenerationFor(storyId, previous, generationOverrides);
 				StoryPrefix prefix = DescribeStory(storyId, generation);
 				prefixes.Add(prefix);
-				all.AddRange(ReadCommittedFrom(storyId, generation, prefix.RecordCount));
+				if (prefix.Encoding != "shipped-v1")
+					all.AddRange(ReadCommittedFrom(storyId, generation, prefix.RecordCount));
 			}
 
 			for (int i = 0; i < all.Count; i++)

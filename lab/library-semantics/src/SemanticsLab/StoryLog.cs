@@ -434,6 +434,15 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			frame[crcAt + 3] = (byte)(crc >> 24);
 
 			bool tear = tearWholeFrame && faults != null && faults.TearWrite;
+			if (tear && faults != null && faults.KillProcess)
+			{
+				// Leave the bytes in the FileStream buffer. A killed process does not
+				// flush that buffer. A thrown exception would, inside Dispose.
+				int partial = Math.Max(1, frame.Length / 2);
+				stream.Write(frame, 0, partial);
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+			}
+
 			if (tear)
 			{
 				int partial = Math.Max(1, frame.Length / 2);

@@ -56,6 +56,16 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			set;
 		}
 
+		/// <summary>
+		/// Required when the edition contains sand. Exact restore then materializes
+		/// that sand, including sand a later deletion removed.
+		/// </summary>
+		public bool AcceptResurrection
+		{
+			get;
+			set;
+		}
+
 		public Library? NewerEvidence
 		{
 			get;
@@ -193,6 +203,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					string from = LibraryLayout.Generation(origin, story.StoryId, story.Generation);
 					string to = LibraryLayout.Generation(destination.Root, story.StoryId, story.Generation);
 					bytes += CopyStory(from, to, story.FileBytes);
+					if (faults != null)
+						faults.Hit("after-story-copied:" + story.StoryId);
 				}
 
 				for (int i = 0; i < manifest.Content.Count; i++)
@@ -200,12 +212,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					ContentEntry entry = manifest.Content[i];
 					string to = LibraryLayout.ContentFile(destination.Root, entry.ContentId);
 					if (entry.Disposition != "required")
-					{
-						if (File.Exists(to))
-							File.Delete(to);
-
 						continue;
-					}
 
 					string from = LibraryLayout.ContentFile(origin, entry.ContentId);
 					if (!File.Exists(from))
@@ -283,12 +290,36 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				);
 			}
 
+			EditionView edition = backup.ReadEdition(editionId);
+			bool hasSand = false;
+			for (int i = 0; i < edition.Records.Count; i++)
+			{
+				if (edition.Records[i].Retention == RetentionClass.Sand)
+					hasSand = true;
+			}
+
+			if (hasSand && !options.AcceptResurrection && !options.PreventResurrection)
+			{
+				return new RestoreResult(
+					false,
+					true,
+					false,
+					"",
+					"Refused. This edition contains sand. Exact restore would materialize it, including sand deleted after this edition. Pass AcceptResurrection to proceed."
+				);
+			}
+
 			PreserveResult copied = Preserve(backup, destination, null, null);
 			if (copied.Failed || !copied.Published)
 				return new RestoreResult(false, true, false, editionId, copied.Detail);
 
-			string detail = "Restored edition " + editionId
-				+ ". Sand that this edition contains is present again. Newer removal evidence was not supplied, so this restore cannot keep later deletions deleted.";
+			string detail = "Restored edition " + editionId + ". This edition has no sand records.";
+			if (options.AcceptResurrection)
+			{
+				detail = "Restored edition " + editionId
+					+ ". Caller accepted resurrection. Sand that this edition contains is present again. Newer removal evidence was not supplied, so this restore cannot keep later deletions deleted.";
+			}
+
 			bool applied = false;
 			if (options.PreventResurrection)
 			{

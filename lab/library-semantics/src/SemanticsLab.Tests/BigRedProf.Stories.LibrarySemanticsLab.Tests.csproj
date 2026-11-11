@@ -18,6 +18,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\SemanticsLab\BigRedProf.Stories.LibrarySemanticsLab.csproj" />
+		<ProjectReference Include="..\CrashHost\CrashHost.csproj" />
+		<ProjectReference Include="..\..\..\..\src\Core\BigRedProf.Stories.Core.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

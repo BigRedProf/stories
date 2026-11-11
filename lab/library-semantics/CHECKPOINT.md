@@ -1,6 +1,6 @@
 # Checkpoint
 
-Resume point for the library-semantics investigation. Nothing here is accepted. Accepted means Russell said so. Team Grok has not reviewed it.
+Resume point for the library-semantics investigation. Nothing here is accepted. Accepted means Russell said so.
 
 —CJ
 
@@ -9,45 +9,42 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 | Word | Meaning here |
 | --- | --- |
 | Implemented | On this branch and compiled. |
-| Tested | A named test passed in this workspace. The log is `evidence/dotnet-test.txt`. |
-| Independently reviewed | Team Grok has written a disagreement or a confirmation. Not happened. |
+| Tested | A named test passed in this workspace. The log is `evidence/dotnet-test.txt`. 42 passed, 0 failed. |
+| Independently reviewed | Codex reviewed round 1 at `c97df0143a6d7587de36b4b7ec62086cfa290a67` and left five findings. Each was checked and fixed in round 2. Team Grok has not reviewed it. |
 | Accepted | Russell adopted it. Not happened. |
 
 ## Where things stand
 
 | Item | State |
 | --- | --- |
-| Inventory, requirements, alternatives | Implemented. `REQUIREMENTS.md`. |
-| Lab: three batch framings, edition pointer, preserve/restore, stone/sand, Digihouse, field notes, tape comparison | Implemented and tested. 29 tests, 0 failures. |
-| Failure injection: torn frame, crash before marker, crash before pointer, crash after publish, lost preserve ack, compaction during an unpinned copy | Tested. See the test names in `DECISION.md` and the seed log in the evidence file. |
-| Decision memo | Implemented as a recommendation. Not reviewed, not accepted. `DECISION.md`. |
-| Russell's open calls | `DECISIONS_NEEDED.md`. Defaults are in the lab so work did not stop. |
+| Inventory and requirements | Implemented. `REQUIREMENTS.md`. |
+| Lab, including process-kill, cross-process writers, shipped-file adoption, and the 0.11 bit comparison | Implemented and tested. |
+| Decision memo | Round 2 recommendation. Codex's findings are recorded in it. Not accepted. |
+| Russell's open calls | `DECISIONS_NEEDED.md`. The frame recommendation and the resurrection default changed in round 2. |
 | Shipped `FileStoryLog`, tape CLI, package versions | Unchanged. |
 
 ## Git
 
-- Branch: `cursor/library-semantics-lab-e4a6`. The suggested name `cj/library-semantics-lab` was not used; this agent has to use the `cursor/` prefix and the `-e4a6` suffix.
+- Branch: `cursor/library-semantics-lab-e4a6`.
 - Base: `origin/main` at `1a0647f7c648d3e08f5a4afca041c49b68752a0e`.
-- Requirements commit: `ac053029504cd7a0c494f60d7c55cc482191f9db`.
-- Lab, tests, evidence, and decision memo: `c2e6d465f709b645e74036dba5d47e3188114f92`.
-- The branch head is the commit that records this line. After pull, `git rev-parse HEAD`.
+- Round 1 lab commit: `c2e6d465f709b645e74036dba5d47e3188114f92`.
+- Round 1 head Codex reviewed: `c97df0143a6d7587de36b4b7ec62086cfa290a67`.
+- Round 2 head: the commit that contains this paragraph. After pull, `git rev-parse HEAD`.
 
 ## Commands
 
-From `lab/library-semantics`:
+From `lab/library-semantics`, with the .NET 8 SDK on `PATH`:
 
 ```bash
 dotnet test src/SemanticsLab.Tests/BigRedProf.Stories.LibrarySemanticsLab.Tests.csproj --nologo
 ```
 
-That is the whole lab. It does not run `task verify` and it does not change shipped formats. The .NET 8 SDK is required. This workspace did not have it installed; `dotnet-install.sh` channel 8.0 provided SDK 8.0.428, which satisfies `global.json` (`8.0.403` with `latestFeature` roll-forward).
+The suite builds `CrashHost` and, inside one test, Data 0.11.0-rc.1's bit-layout process. It does not run `task verify`. The filesystem used for the process-kill tests was ext4 on `/dev/vdc`. Those tests are process crashes. They are not power-loss tests.
 
-Randomized seed, printed by the test: `20261110`.
+## Recommendation after round 2
 
-## What the tests are allowed to say
-
-They show the lab's behavior. They do not show that Digihouse, Content's multihash, or the shipped story file implement any of it.
+Do not add a length-prefixed story frame for v1. Edition readers plus the current per-frame file already hide a partial batch. Require `AcceptResurrection` before an exact restore materializes sand. Keep the writer lock. It is what makes two processes safe. Expected offset decides the race only after a process holds that lock.
 
 ## Next useful action
 
-Russell, or Team Grok if they pick up the challenges in `DECISION.md`: read the six defaults in `DECISIONS_NEEDED.md`, especially exact-restore resurrection and whether the length-prefixed frame is worth a new story file. Do not merge this branch and do not start a SQL publishing house from it. The following implementation step, after a decision, would be expected-offset on the shipped scribe (#22), still without changing the story frame.
+Russell decides the two changed defaults in `DECISIONS_NEEDED.md`: no new story frame, and an explicit accept before sand comes back. Team Grok can still argue that raw-file atomicity is a v1 requirement. If that argument wins, the length-prefixed frame is already implemented and tested in the lab.

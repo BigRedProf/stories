@@ -496,6 +496,12 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 		private void CheckStoryRetention(StoryPrefix story, VerificationReport report)
 		{
+			if (story.Encoding == "shipped-v1")
+			{
+				report.Findings.Add("Story '" + story.StoryId + "' is shipped bytes. Retention was not interpreted.");
+				return;
+			}
+
 			string path = LibraryLayout.Generation(_root, story.StoryId, story.Generation);
 			if (!File.Exists(path))
 			{

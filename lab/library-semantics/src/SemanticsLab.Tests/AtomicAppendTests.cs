@@ -10,24 +10,66 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 			string path = LabPaths.Create(nameof(LengthPrefixed_TornWrite_DropsTheWholeBatch));
 			try
 			{
+				Library library = Library.Create(path, BatchFormat.LengthPrefixed);
+				RecordDraft kept = new RecordDraft(RetentionClass.Stone, LabCode.FromText("kept"));
+				StoryAppend keptStory = new StoryAppend("room", 0, new RecordDraft[] { kept });
+				AppendRequest keptRequest = new AppendRequest("kept", library.CurrentEditionId, new StoryAppend[] { keptStory });
+				Assert.Equal(AppendStatus.Committed, library.Append(keptRequest, null).Status);
+				string published = library.CurrentEditionId;
 				FaultInjector faults = new FaultInjector();
 				faults.TearWrite = true;
 				faults.ArmedPoint = FaultPoint.DuringFrameWrite;
-				Library library = Library.Create(path, BatchFormat.LengthPrefixed);
-				string before = library.CurrentEditionId;
-				Assert.Throws<CrashInjectedException>(() => Digihouse.InitializeRoom(library, "parlor", faults));
+				RecordDraft[] batch = new RecordDraft[]
+				{
+					new RecordDraft(RetentionClass.Stone, LabCode.FromText("seed")),
+					new RecordDraft(RetentionClass.Stone, LabCode.FromText("ready"))
+				};
+				StoryAppend batchStory = new StoryAppend("room", 1, batch);
+				AppendRequest batchRequest = new AppendRequest("init", published, new StoryAppend[] { batchStory });
+				Assert.Throws<CrashInjectedException>(() => library.Append(batchRequest, faults));
 				library.Dispose();
 
 				using (Library reopened = Library.Open(path))
 				{
-					Assert.Equal(before, reopened.CurrentEditionId);
-					Assert.Empty(reopened.ReadCommitted(Digihouse.CatalogStoryId));
-					Assert.Empty(reopened.ReadCommitted(Digihouse.RoomStoryId("parlor")));
-					AppendResult retry = Digihouse.InitializeRoom(reopened, "parlor", null);
+					Assert.Equal(published, reopened.CurrentEditionId);
+					IReadOnlyList<StoredRecord> records = reopened.ReadCommitted("room");
+					Assert.Single(records);
+					Assert.Equal("kept", LabCode.ToText(records[0].Body));
+					AppendResult retry = reopened.Append(batchRequest, null);
 					Assert.Equal(AppendStatus.Committed, retry.Status);
-					Assert.Equal(2, retry.FramesFlushed);
-					DigihouseState state = Digihouse.Read(reopened, reopened.CurrentEditionId);
-					Assert.Contains("parlor", state.RoomsReady);
+					Assert.Equal(1, retry.FramesFlushed);
+					records = reopened.ReadCommitted("room");
+					Assert.Equal(3, records.Count);
+					Assert.Equal("seed", LabCode.ToText(records[1].Body));
+					Assert.Equal("ready", LabCode.ToText(records[2].Body));
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(path);
+			}
+		}
+
+		[Fact]
+		public void LostAck_AfterAnotherCommit_ReturnsTheOriginalEdition()
+		{
+			string path = LabPaths.Create(nameof(LostAck_AfterAnotherCommit_ReturnsTheOriginalEdition));
+			try
+			{
+				using (Library library = Library.Create(path, BatchFormat.LengthPrefixed))
+				{
+					string expected = library.CurrentEditionId;
+					AppendResult first = Digihouse.Purchase(library, "chair", "ada", null);
+					Assert.Equal(AppendStatus.Committed, first.Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(library, "lamp", "bea", null).Status);
+					RecordDraft draft = new RecordDraft(RetentionClass.Stone, LabCode.FromText("purchase|chair|ada"));
+					StoryAppend story = new StoryAppend(Digihouse.OwnershipStoryId, 0, new RecordDraft[] { draft });
+					AppendRequest retry = new AppendRequest("purchase:chair:ada", expected, new StoryAppend[] { story });
+					AppendResult result = library.Append(retry, null);
+					Assert.Equal(AppendStatus.AlreadyCommitted, result.Status);
+					Assert.Equal(first.EditionId, result.EditionId);
+					Assert.NotEqual(library.CurrentEditionId, result.EditionId);
+					Assert.Single(library.ReadEdition(first.EditionId).Records);
 				}
 			}
 			finally
