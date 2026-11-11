@@ -207,6 +207,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			{
 				StoryPrefix story = manifest.Stories[i];
 				seen.Add(story.StoryId);
+				if (story.Encoding == "shipped-v1")
+					continue;
+
 				string path = LibraryLayout.Generation(_root, story.StoryId, story.Generation);
 				if (!File.Exists(path))
 					continue;
@@ -341,6 +344,9 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			for (int i = 0; i < manifest.Stories.Count; i++)
 			{
 				StoryPrefix story = manifest.Stories[i];
+				if (story.Encoding == "shipped-v1")
+					continue;
+
 				string path = LibraryLayout.Generation(_root, story.StoryId, story.Generation);
 				if (!File.Exists(path))
 					continue;
@@ -374,6 +380,10 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		{
 			if (_forcedPrefixes.ContainsKey(storyId))
 				return _forcedPrefixes[storyId];
+
+			StoryPrefix? published = FindPrefix(ReadManifest(ReadPointer()), storyId);
+			if (published != null && published.Encoding == "shipped-v1")
+				return published;
 
 			string path = LibraryLayout.Generation(_root, storyId, generation);
 			if (!File.Exists(path))

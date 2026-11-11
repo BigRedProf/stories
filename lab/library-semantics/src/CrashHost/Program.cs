@@ -19,6 +19,12 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			if (command == "race-append")
 				return RaceAppend(args);
 
+			if (command == "hold-open")
+				return HoldOpen(args);
+
+			if (command == "try-open")
+				return TryOpen(args);
+
 			if (command == "pidfile")
 				return PidFile(args);
 
@@ -111,6 +117,68 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			return 0;
 		}
 
+		private static int HoldOpen(string[] args)
+		{
+			if (args.Length < 8)
+				return Usage();
+
+			string root = args[1];
+			string heldFile = args[2];
+			string releaseFile = args[3];
+			string resultFile = args[4];
+			string expectedEdition = args[5];
+			string key = args[6];
+			string body = args[7];
+			try
+			{
+				using (Library library = Library.Open(root))
+				{
+					File.WriteAllText(heldFile, "held");
+					DateTime deadline = DateTime.UtcNow.AddSeconds(15);
+					while (!File.Exists(releaseFile))
+					{
+						if (DateTime.UtcNow > deadline)
+						{
+							File.WriteAllText(resultFile, "TimedOut");
+							return 2;
+						}
+
+						Thread.Sleep(20);
+					}
+
+					RecordDraft draft = new RecordDraft(RetentionClass.Stone, LabCode.FromText(body));
+					StoryAppend story = new StoryAppend("race", 0, new RecordDraft[] { draft });
+					AppendRequest request = new AppendRequest(key, expectedEdition, new StoryAppend[] { story });
+					AppendResult result = library.Append(request, null);
+					File.WriteAllText(resultFile, result.Status.ToString());
+				}
+			}
+			catch (Exception exception)
+			{
+				File.WriteAllText(resultFile, "Error " + exception.GetType().Name + " " + exception.Message);
+			}
+
+			return 0;
+		}
+
+		private static int TryOpen(string[] args)
+		{
+			if (args.Length < 3)
+				return Usage();
+
+			try
+			{
+				using (Library library = Library.Open(args[1]))
+					File.WriteAllText(args[2], "Opened " + library.CurrentEditionId);
+			}
+			catch (Exception exception)
+			{
+				File.WriteAllText(args[2], "Error " + exception.GetType().Name + " " + exception.Message);
+			}
+
+			return 0;
+		}
+
 		private static int PidFile(string[] args)
 		{
 			if (args.Length < 3)
@@ -127,6 +195,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
 			Console.Error.WriteLine("kill-append <root> <format> <point> <records> [--tear]");
 			Console.Error.WriteLine("hold-lock <root> <readyFile>");
 			Console.Error.WriteLine("race-append <root> <expectedEdition> <key> <body> <resultFile> <goFile>");
+			Console.Error.WriteLine("hold-open <root> <heldFile> <releaseFile> <resultFile> <expectedEdition> <key> <body>");
+			Console.Error.WriteLine("try-open <root> <resultFile>");
 			Console.Error.WriteLine("pidfile <lockFile> <readyFile>");
 			return 2;
 		}

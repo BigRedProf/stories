@@ -216,35 +216,39 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 		public void TwoProcesses_SameExpectedEdition_OneCommits()
 		{
 			string path = LabPaths.Create(nameof(TwoProcesses_SameExpectedEdition_OneCommits));
+			string held = Path.Combine(path, "held");
+			string release = Path.Combine(path, "release");
+			string holderResult = Path.Combine(path, "holder.txt");
+			string challengerResult = Path.Combine(path, "challenger.txt");
+			string retryResult = Path.Combine(path, "retry.txt");
 			string go = Path.Combine(path, "go");
-			string leftResult = Path.Combine(path, "left.txt");
-			string rightResult = Path.Combine(path, "right.txt");
 			try
 			{
 				string edition;
 				using (Library library = Library.Create(path, BatchFormat.PerFrame))
 					edition = library.CurrentEditionId;
 
-				Process left = CrashClient.Start("race-append", path, edition, "left", "left-body", leftResult, go);
-				Process right = CrashClient.Start("race-append", path, edition, "right", "right-body", rightResult, go);
-				Thread.Sleep(200);
-				File.WriteAllText(go, "go");
-				left.WaitForExit();
-				right.WaitForExit();
-				string leftStatus = File.ReadAllText(leftResult);
-				string rightStatus = File.ReadAllText(rightResult);
-				string winner = leftStatus == "Committed" ? "left" : "right";
-				string loserStatus = winner == "left" ? rightStatus : leftStatus;
-				Assert.Equal("Committed", winner == "left" ? leftStatus : rightStatus);
-				Assert.Contains("already has a writer", loserStatus);
+				Process holder = CrashClient.Start(
+					"hold-open",
+					path,
+					held,
+					release,
+					holderResult,
+					edition,
+					"left",
+					"left-body"
+				);
+				WaitForFile(held);
+				Process challenger = CrashClient.Start("try-open", path, challengerResult);
+				challenger.WaitForExit();
+				string challenged = File.ReadAllText(challengerResult);
+				Assert.Contains("already has a writer", challenged);
+				File.WriteAllText(release, "go");
+				holder.WaitForExit();
+				Assert.Equal("Committed", File.ReadAllText(holderResult));
 
-				string loserKey = winner == "left" ? "right" : "left";
-				string loserBody = winner == "left" ? "right-body" : "left-body";
-				string retryResult = Path.Combine(path, "retry.txt");
-				File.Delete(go);
-				Process retry = CrashClient.Start("race-append", path, edition, loserKey, loserBody, retryResult, go);
-				Thread.Sleep(100);
 				File.WriteAllText(go, "go");
+				Process retry = CrashClient.Start("race-append", path, edition, "right", "right-body", retryResult, go);
 				retry.WaitForExit();
 				Assert.Equal("PositionConflict", File.ReadAllText(retryResult));
 				using (Library library = Library.Open(path))
@@ -308,6 +312,53 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 		}
 
 		[Fact]
+		public void Restore_CopiesTheRequestedEdition_NotTheCurrentOne()
+		{
+			string sourcePath = LabPaths.Create(nameof(Restore_CopiesTheRequestedEdition_NotTheCurrentOne));
+			string backupPath = LabPaths.Create(nameof(Restore_CopiesTheRequestedEdition_NotTheCurrentOne) + "-backup");
+			string restoredPath = LabPaths.Create(nameof(Restore_CopiesTheRequestedEdition_NotTheCurrentOne) + "-restored");
+			string sandPath = LabPaths.Create(nameof(Restore_CopiesTheRequestedEdition_NotTheCurrentOne) + "-sand");
+			try
+			{
+				string stoneEdition;
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					stoneEdition = source.CurrentEditionId;
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 4, 5, 1, null).Status);
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					Assert.NotEqual(stoneEdition, backup.CurrentEditionId);
+				}
+
+				using (Library backup = Library.Open(backupPath))
+				using (Library restored = Library.Create(restoredPath, BatchFormat.PerFrame))
+				using (Library sandDest = Library.Create(sandPath, BatchFormat.PerFrame))
+				{
+					RestoreResult stone = Preserver.Restore(backup, stoneEdition, restored, new RestoreOptions());
+					Assert.True(stone.Restored);
+					Assert.Equal(stoneEdition, restored.CurrentEditionId);
+					Assert.Contains("no sand", stone.Detail);
+					Assert.Equal("ada", Digihouse.Read(restored, restored.CurrentEditionId).Owners["chair"]);
+					Assert.Empty(Digihouse.Read(restored, restored.CurrentEditionId).Positions);
+
+					RestoreResult sand = Preserver.Restore(backup, backup.CurrentEditionId, sandDest, new RestoreOptions());
+					Assert.True(sand.Refused);
+					Assert.Contains("AcceptResurrection", sand.Detail);
+					Assert.Equal(ManifestText.EmptyId(), sandDest.CurrentEditionId);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+				LabPaths.Delete(restoredPath);
+				LabPaths.Delete(sandPath);
+			}
+		}
+
+		[Fact]
 		public void ShippedStoryFile_IsAdoptedWithoutRewritingBytes()
 		{
 			string shipped = LabPaths.Create(nameof(ShippedStoryFile_IsAdoptedWithoutRewritingBytes) + "-shipped");
@@ -359,6 +410,33 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 						"adopt-room",
 						library.CurrentEditionId
 					).Status);
+					string shippedHall = LabPaths.Create(nameof(ShippedStoryFile_IsAdoptedWithoutRewritingBytes) + "-hall");
+					try
+					{
+						TextTrail hallId = new TextTrail("catalog", "hall");
+						using (FileScribe hall = new FileScribe(shippedHall, hallId, piedPiper))
+							hall.RecordSomething(new Code("111"));
+
+						string hallFile = Directory.GetFiles(shippedHall, "*.story")[0];
+						byte[] hallBytes = File.ReadAllBytes(hallFile);
+						Assert.Equal(AppendStatus.Committed, library.AdoptShippedFile(
+							"catalog/hall",
+							hallBytes,
+							1,
+							1,
+							"adopt-hall",
+							library.CurrentEditionId
+						).Status);
+						Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(library, "chair", "ada", null).Status);
+						Assert.Equal(original, File.ReadAllBytes(library.PublishedStoryPath("catalog/room")));
+						Assert.Equal(hallBytes, File.ReadAllBytes(library.PublishedStoryPath("catalog/hall")));
+						Assert.Equal("ada", Digihouse.Read(library, library.CurrentEditionId).Owners["chair"]);
+					}
+					finally
+					{
+						LabPaths.Delete(shippedHall);
+					}
+
 					Assert.True(Preserver.Preserve(library, backup, null, null).Published);
 					Assert.Equal(original, File.ReadAllBytes(backup.PublishedStoryPath("catalog/room")));
 				}

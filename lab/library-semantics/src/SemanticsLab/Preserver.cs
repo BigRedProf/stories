@@ -253,6 +253,78 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			return new PreserveResult(true, false, false, editionId, bytes, "Published edition " + editionId + ".");
 		}
 
+		private static PreserveResult CopyEdition(Library source, EditionView edition, Library destination)
+		{
+			if (source.Format != destination.Format)
+			{
+				return new PreserveResult(false, false, true, edition.Id, 0, "Refused. The libraries use different story framings.");
+			}
+
+			string manifestPath = LibraryLayout.Manifest(source.Root, edition.Id);
+			if (!File.Exists(manifestPath))
+			{
+				return new PreserveResult(false, false, true, edition.Id, 0, "Failed. The requested edition is not in the backup.");
+			}
+
+			ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(manifestPath));
+			if (manifest.Id != edition.Id)
+			{
+				return new PreserveResult(false, false, true, edition.Id, 0, "Failed. The edition file does not hash to the requested id.");
+			}
+
+			long bytes = 0;
+			try
+			{
+				for (int i = 0; i < manifest.Stories.Count; i++)
+				{
+					StoryPrefix story = manifest.Stories[i];
+					string from = LibraryLayout.Generation(source.Root, story.StoryId, story.Generation);
+					string to = LibraryLayout.Generation(destination.Root, story.StoryId, story.Generation);
+					bytes += CopyStory(from, to, story.FileBytes);
+				}
+
+				for (int i = 0; i < manifest.Content.Count; i++)
+				{
+					ContentEntry entry = manifest.Content[i];
+					if (entry.Disposition != "required")
+						continue;
+
+					string from = LibraryLayout.ContentFile(source.Root, entry.ContentId);
+					string to = LibraryLayout.ContentFile(destination.Root, entry.ContentId);
+					if (!File.Exists(from))
+					{
+						return new PreserveResult(
+							false,
+							false,
+							true,
+							edition.Id,
+							bytes,
+							"Failed. Required content " + entry.ContentId + " is missing. The restore was not published."
+						);
+					}
+
+					Directory.CreateDirectory(Path.GetDirectoryName(to)!);
+					File.Copy(from, to, true);
+					bytes += new FileInfo(to).Length;
+				}
+
+				destination.PublishImported(manifest.Text, null);
+			}
+			catch (Exception exception)
+			{
+				return new PreserveResult(
+					false,
+					false,
+					true,
+					edition.Id,
+					bytes,
+					"Failed. " + exception.Message + " The restore was not published."
+				);
+			}
+
+			return new PreserveResult(true, false, false, edition.Id, bytes, "Published edition " + edition.Id + ".");
+		}
+
 		public static RestoreResult Restore(Library backup, string editionId, Library destination, RestoreOptions options)
 		{
 			if (backup == null)
@@ -309,9 +381,20 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				);
 			}
 
-			PreserveResult copied = Preserve(backup, destination, null, null);
+			PreserveResult copied = CopyEdition(backup, edition, destination);
 			if (copied.Failed || !copied.Published)
 				return new RestoreResult(false, true, false, editionId, copied.Detail);
+
+			if (destination.CurrentEditionId != editionId)
+			{
+				return new RestoreResult(
+					false,
+					true,
+					false,
+					destination.CurrentEditionId,
+					"Refused. Restore published " + destination.CurrentEditionId + " instead of the requested edition " + editionId + "."
+				);
+			}
 
 			string detail = "Restored edition " + editionId + ". This edition has no sand records.";
 			if (options.AcceptResurrection)

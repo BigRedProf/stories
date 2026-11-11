@@ -114,6 +114,14 @@ Reviewed at `c97df0143a6d7587de36b4b7ec62086cfa290a67`, before this round. I che
 | Compaction ran before the copy | The fault sat between two hash stamps. | The fault runs after a story file has been copied. |
 | The seeded test violates `AGENTS.md` | A seed does not force each fault onto a relevant operation. The repo rule says no randomness in tests. | Replaced by an explicit sequence. The original task allowed a fixed seed. The finding is still right: the seed was not evidence that each fault happened. |
 
+Codex reviewed `34a8f6d` after that. Three more findings, all real:
+
+| Finding | What was wrong | What changed |
+| --- | --- | --- |
+| Resurrection consent was checked on one edition and a different edition was copied | Naming stone edition E1 still copied the backup's current edition when that current edition contained sand. | `Restore` copies the edition it checked. `Restore_CopiesTheRequestedEdition_NotTheCurrentOne`. |
+| A second shipped file, or a later lab append, parsed the first shipped file as a lab log | Only the story being adopted was exempted. `DescribeStory` and `ReadQuarantine` opened the other `BRPSTORY` bytes. | A published `shipped-v1` prefix is carried forward, and those files are skipped by the lab quarantine reader. The adoption test adopts a second file and then records a purchase. |
+| The two-process lock test could pass without the locks overlapping | If one process finished before the other started, the late process got `PositionConflict` instead of "already has a writer". | The holder opens, signals, and waits. The challenger opens only after that signal. The holder is released only after the challenger has failed. |
+
 ## For Team Grok
 
 Codex reviewed the round-1 commit. Team Grok has not. The questions that are still open:
