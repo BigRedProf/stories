@@ -1,0 +1,251 @@
+using BigRedProf.Stories.LibrarySemanticsLab;
+
+namespace BigRedProf.Stories.LibrarySemanticsLab.CrashHost
+{
+	public static class Program
+	{
+		public static int Main(string[] args)
+		{
+			if (args.Length == 0)
+				return Usage();
+
+			string command = args[0];
+			if (command == "kill-append")
+				return KillAppend(args);
+
+			if (command == "kill-journal")
+				return KillJournal(args);
+
+			if (command == "hold-lock")
+				return HoldLock(args);
+
+			if (command == "race-append")
+				return RaceAppend(args);
+
+			if (command == "hold-open")
+				return HoldOpen(args);
+
+			if (command == "try-open")
+				return TryOpen(args);
+
+			if (command == "pidfile")
+				return PidFile(args);
+
+			return Usage();
+		}
+
+		private static int KillAppend(string[] args)
+		{
+			if (args.Length < 5)
+				return Usage();
+
+			string root = args[1];
+			BatchFormat format = Library.ParseFormat(args[2]);
+			string point = args[3];
+			int records = int.Parse(args[4]);
+			bool tear = false;
+			bool flushTorn = false;
+			for (int i = 5; i < args.Length; i++)
+			{
+				if (args[i] == "--tear")
+					tear = true;
+
+				if (args[i] == "--tear-flushed")
+				{
+					tear = true;
+					flushTorn = true;
+				}
+			}
+
+			Library library = File.Exists(Path.Combine(root, "library.txt"))
+				? Library.Open(root)
+				: Library.Create(root, format);
+			FaultInjector faults = new FaultInjector();
+			faults.ArmedPoint = point;
+			faults.KillProcess = true;
+			faults.TearWrite = tear;
+			faults.FlushTorn = flushTorn;
+			RecordDraft[] drafts = new RecordDraft[records];
+			for (int i = 0; i < records; i++)
+				drafts[i] = new RecordDraft(RetentionClass.Stone, LabCode.FromText("record-" + i.ToString()));
+
+			StoryAppend story = new StoryAppend("durability", library.HighWater("durability"), drafts);
+			AppendRequest request = new AppendRequest(
+				"durability-batch",
+				library.CurrentEditionId,
+				new StoryAppend[] { story }
+			);
+			library.Append(request, faults);
+			library.Dispose();
+			return 0;
+		}
+
+		private static int KillJournal(string[] args)
+		{
+			if (args.Length < 4)
+				return Usage();
+
+			string root = args[1];
+			string point = args[2];
+			int records = int.Parse(args[3]);
+			using (JournalLibrary library = JournalLibrary.Open(root))
+			{
+				FaultInjector faults = new FaultInjector();
+				faults.ArmedPoint = point;
+				faults.KillProcess = true;
+				RecordDraft[] drafts = new RecordDraft[records];
+				for (int i = 0; i < records; i++)
+					drafts[i] = new RecordDraft(RetentionClass.Stone, LabCode.FromText("record-" + i.ToString()));
+
+				StoryAppend story = new StoryAppend("durability", library.HighWater("durability"), drafts);
+				AppendRequest request = new AppendRequest(
+					"durability-batch",
+					library.CurrentEditionId,
+					new StoryAppend[] { story }
+				);
+				library.Append(request, faults);
+			}
+
+			return 0;
+		}
+
+		private static int HoldLock(string[] args)
+		{
+			if (args.Length < 3)
+				return Usage();
+
+			Library library = Library.Open(args[1]);
+			File.WriteAllText(args[2], "ready");
+			Thread.Sleep(Timeout.Infinite);
+			library.Dispose();
+			return 0;
+		}
+
+		private static int RaceAppend(string[] args)
+		{
+			if (args.Length < 7)
+				return Usage();
+
+			string root = args[1];
+			string expectedEdition = args[2];
+			string key = args[3];
+			string body = args[4];
+			string resultFile = args[5];
+			string goFile = args[6];
+			DateTime deadline = DateTime.UtcNow.AddSeconds(15);
+			while (!File.Exists(goFile))
+			{
+				if (DateTime.UtcNow > deadline)
+				{
+					File.WriteAllText(resultFile, "TimedOut");
+					return 2;
+				}
+
+				Thread.Sleep(20);
+			}
+
+			try
+			{
+				using (Library library = Library.Open(root))
+				{
+					RecordDraft draft = new RecordDraft(RetentionClass.Stone, LabCode.FromText(body));
+					StoryAppend story = new StoryAppend("race", 0, new RecordDraft[] { draft });
+					AppendRequest request = new AppendRequest(key, expectedEdition, new StoryAppend[] { story });
+					AppendResult result = library.Append(request, null);
+					File.WriteAllText(resultFile, result.Status.ToString());
+				}
+			}
+			catch (Exception exception)
+			{
+				File.WriteAllText(resultFile, "Error " + exception.GetType().Name + " " + exception.Message);
+			}
+
+			return 0;
+		}
+
+		private static int HoldOpen(string[] args)
+		{
+			if (args.Length < 8)
+				return Usage();
+
+			string root = args[1];
+			string heldFile = args[2];
+			string releaseFile = args[3];
+			string resultFile = args[4];
+			string expectedEdition = args[5];
+			string key = args[6];
+			string body = args[7];
+			try
+			{
+				using (Library library = Library.Open(root))
+				{
+					File.WriteAllText(heldFile, "held");
+					DateTime deadline = DateTime.UtcNow.AddSeconds(15);
+					while (!File.Exists(releaseFile))
+					{
+						if (DateTime.UtcNow > deadline)
+						{
+							File.WriteAllText(resultFile, "TimedOut");
+							return 2;
+						}
+
+						Thread.Sleep(20);
+					}
+
+					RecordDraft draft = new RecordDraft(RetentionClass.Stone, LabCode.FromText(body));
+					StoryAppend story = new StoryAppend("race", 0, new RecordDraft[] { draft });
+					AppendRequest request = new AppendRequest(key, expectedEdition, new StoryAppend[] { story });
+					AppendResult result = library.Append(request, null);
+					File.WriteAllText(resultFile, result.Status.ToString());
+				}
+			}
+			catch (Exception exception)
+			{
+				File.WriteAllText(resultFile, "Error " + exception.GetType().Name + " " + exception.Message);
+			}
+
+			return 0;
+		}
+
+		private static int TryOpen(string[] args)
+		{
+			if (args.Length < 3)
+				return Usage();
+
+			try
+			{
+				using (Library library = Library.Open(args[1]))
+					File.WriteAllText(args[2], "Opened " + library.CurrentEditionId);
+			}
+			catch (Exception exception)
+			{
+				File.WriteAllText(args[2], "Error " + exception.GetType().Name + " " + exception.Message);
+			}
+
+			return 0;
+		}
+
+		private static int PidFile(string[] args)
+		{
+			if (args.Length < 3)
+				return Usage();
+
+			File.WriteAllText(args[1], Environment.ProcessId.ToString());
+			File.WriteAllText(args[2], "ready");
+			Thread.Sleep(Timeout.Infinite);
+			return 0;
+		}
+
+		private static int Usage()
+		{
+			Console.Error.WriteLine("kill-append <root> <format> <point> <records> [--tear|--tear-flushed]");
+			Console.Error.WriteLine("kill-journal <root> <point> <records>");
+			Console.Error.WriteLine("hold-lock <root> <readyFile>");
+			Console.Error.WriteLine("race-append <root> <expectedEdition> <key> <body> <resultFile> <goFile>");
+			Console.Error.WriteLine("hold-open <root> <heldFile> <releaseFile> <resultFile> <expectedEdition> <key> <body>");
+			Console.Error.WriteLine("try-open <root> <resultFile>");
+			Console.Error.WriteLine("pidfile <lockFile> <readyFile>");
+			return 2;
+		}
+	}
+}

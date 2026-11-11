@@ -1,0 +1,4 @@
+published-head latency, 9 appends, 1 ms poll, one story, per-frame, fsync included
+median ms on the listener clock from before Append until SeenAtMilliseconds	7.3
+median ms from Append return until SeenAtMilliseconds	0.7
+median ms SeenAtMilliseconds trailed a raw read of the same file	3.8

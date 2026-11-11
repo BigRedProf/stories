@@ -1,0 +1,8 @@
+Digihouse house: 12 rooms, 400 parlor moves plus one more, 40 moves in each other room. No photo blobs.
+old parlor generation bytes still on the backup	95970
+one-move suffix bytes copied	239
+new parlor generation bytes	36578
+new parlor record count	4
+bytes copied by the preserve after compaction	36578
+new edition manifest bytes, not included in the copy count	1560
+old generation bytes on the backup after that preserve	95970
