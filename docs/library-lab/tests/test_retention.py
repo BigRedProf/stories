@@ -70,6 +70,20 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(kinds[:6], [(STONE, True)] * 4 + [(SAND, False)] * 2)   # stone kept, sand retired
         self.assertTrue(src.verify(fold=apps.fold)["ok"])
 
+    def test_sand_promoted_to_stone_can_no_longer_be_removed_or_compacted(self):
+        fs, src = world()
+        src.promote(apps.room("kitchen"), 5, "this note is evidence in a dispute", "russell")
+        with self.assertRaises(StoneViolation):
+            src.remove_payload(apps.room("kitchen"), 5, "tidy", "alice")
+        src.compact(apps.room("kitchen"), 6, apps.rec("RoomNotesCleared"), "tombstone", "clear notes", "alice")
+        note4, note5 = src.read(apps.room("kitchen"), 4, 6)
+        self.assertEqual((note4.payload is None, note5.payload is None), (True, False))
+        bak = Library.create(fs, "/bak", "lib-bak")
+        self.assertEqual(preserve(src, bak, fold=apps.fold)["status"], "complete")
+        self.assertIsNotNone(bak.read(apps.room("kitchen"), 5, 6)[0].payload)   # the promise travels with the ledger
+        with self.assertRaises(StoneViolation):
+            bak.remove_payload(apps.room("kitchen"), 5, "tidy", "alice")
+
     def test_verification_tells_authorized_removal_from_loss(self):
         fs, src = world()
         retire(src)

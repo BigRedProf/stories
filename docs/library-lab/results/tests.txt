@@ -39,6 +39,7 @@ test_unpinned_backup_under_constant_churn_fails_explicitly (tests.test_retention
 test_an_edition_below_an_anchor_is_reported_as_unverifiable_not_as_verified (tests.test_retention.Compaction.test_an_edition_below_an_anchor_is_reported_as_unverifiable_not_as_verified) ... ok
 test_tombstone_and_anchor_modes_keep_identity_and_state (tests.test_retention.Compaction.test_tombstone_and_anchor_modes_keep_identity_and_state) ... ok
 test_evidence_is_durable_before_any_byte_is_reclaimed (tests.test_retention.Lifecycle.test_evidence_is_durable_before_any_byte_is_reclaimed) ... ok
+test_sand_promoted_to_stone_can_no_longer_be_removed_or_compacted (tests.test_retention.Lifecycle.test_sand_promoted_to_stone_can_no_longer_be_removed_or_compacted) ... ok
 test_shared_blob_is_kept_until_its_last_claim_is_released_and_stone_claims_never_are (tests.test_retention.Lifecycle.test_shared_blob_is_kept_until_its_last_claim_is_released_and_stone_claims_never_are) ... ok
 test_stone_cannot_be_removed_or_compacted_away (tests.test_retention.Lifecycle.test_stone_cannot_be_removed_or_compacted_away) ... ok
 test_stone_history_survives_content_deletion_and_movement_compaction (tests.test_retention.Lifecycle.test_stone_history_survives_content_deletion_and_movement_compaction) ... ok
@@ -49,6 +50,6 @@ test_without_newer_evidence_the_restore_reports_resurrection_and_refuses_writes 
 test_keep_set_results_compaction_backup_and_restore (tests.test_second_app.Scoreboard.test_keep_set_results_compaction_backup_and_restore) ... ok
 
 ----------------------------------------------------------------------
-Ran 46 tests in 0.403s
+Ran 47 tests in 0.451s
 
 OK

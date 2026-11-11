@@ -726,12 +726,22 @@ class Library:
     def remove_payload(self, sid, pos, reason, authority):
         with self.lock:
             e = self.read(sid, pos, pos + 1)[0]
-            if e.cls == STONE:
+            if e.cls == STONE or (sid, pos) in self.promoted():
                 raise StoneViolation("%s position %d is stone" % (sid, pos))
             ev = {"k": "PayloadRemoved", "story": sid, "pos": pos, "cid": e.cid.hex(),
                   "reason": reason, "authority": authority}
             self.append(RETENTION, [(Code.of_json(ev), STONE)])
             return self._after_evidence()
+
+    def promote(self, sid, pos, reason, authority):
+        """Sand to stone. The entry's class is part of its hashed header and never
+        changes; promotion is a stone ledger record that forbids later removal.
+        There is deliberately no demotion."""
+        ev = {"k": "Promoted", "story": sid, "pos": pos, "reason": reason, "authority": authority}
+        self.append(RETENTION, [(Code.of_json(ev), STONE)])
+
+    def promoted(self):
+        return {(r["story"], r["pos"]) for r in self.evidence() if r["k"] == "Promoted"}
 
     def compact(self, sid, upto, summary, mode, policy, authority):
         """Retire the sand in [base, upto) of a story, keeping `summary` in its place.
@@ -744,7 +754,8 @@ class Library:
             st = self._story(sid)
             if not st.base < upto <= st.head():
                 raise Refused("%s: cannot compact up to %d" % (sid, upto))
-            if mode == "anchor" and any(e.cls == STONE for e in st.entries[:upto - st.base]):
+            if mode == "anchor" and any(e.cls == STONE or (sid, e.pos) in self.promoted()
+                                        for e in st.entries[:upto - st.base]):
                 raise StoneViolation("%s: range holds stone; anchor compaction would drop it" % sid)
             ev = {"k": "Compacted", "story": sid, "upto": upto, "mode": mode,
                   "chain": st.chain_at(upto).hex(), "summary": [summary.bits, summary.data.hex()],
@@ -803,7 +814,7 @@ class Library:
         if True:
             dirty, payloads, blobs = set(), 0, 0
             for r in self.evidence():
-                if r["k"] == "ContentReleased" or r["story"] not in self.policy:
+                if r["k"] in ("ContentReleased", "Promoted") or r["story"] not in self.policy:
                     continue
                 st = self._story(r["story"])
                 if r["k"] == "PayloadRemoved":
@@ -821,8 +832,9 @@ class Library:
                         payloads += sum(1 for e in st.entries[:r["upto"] - st.base] if e.payload is not None)
                         self.adopt_anchor(st.sid, r["upto"], bytes.fromhex(r["chain"]))
                     else:
+                        keep = self.promoted()
                         for e in st.entries[:r["upto"] - st.base]:
-                            if e.cls == SAND and e.payload is not None:
+                            if e.cls == SAND and e.payload is not None and (st.sid, e.pos) not in keep:
                                 e.payload = None
                                 payloads += 1
                                 dirty.add(st.sid)
@@ -855,6 +867,7 @@ class Library:
         with self.lock:
             manifest = manifest or self.manifest()
             removed, compacted = self.authorized()
+            promoted = self.promoted()
             integrity, missing, stone_missing, unauthorized, below = [], [], [], [], []
             counts = {"entries": 0, "present": 0, "removed_authorized": 0}
             pending = 0
@@ -870,9 +883,10 @@ class Library:
                 for e in st.entries[:pos - st.base]:
                     prev = link(prev, e)
                     counts["entries"] += 1
-                    ok_removed = (sid, e.pos) in removed or (e.cls == SAND and e.pos < compacted.get(sid, 0))
+                    ok_removed = ((sid, e.pos) in removed or (e.cls == SAND and e.pos < compacted.get(sid, 0))) \
+                        and (sid, e.pos) not in promoted
                     if e.payload is None:
-                        if e.cls == STONE:
+                        if e.cls == STONE or (sid, e.pos) in promoted:
                             stone_missing.append("%s position %d: stone payload is gone" % (sid, e.pos))
                         elif ok_removed:
                             counts["removed_authorized"] += 1
