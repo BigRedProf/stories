@@ -1,62 +1,118 @@
-# Lab test run, after the 37c659e restore-retry fix
+# Lab test run
+Head: 9a1ea6de732bb9d065684d9c488a91adac38a9ca
+Seed: none
+Result: 55 passed, 0 failed, 0 skipped.
 
-Result: 44 passed, 0 failed, 0 skipped.
+Listener (PublishedListener_LatencyAfterAppend), 9 appends, 1 ms poll, one story, per-frame, fsync included:
+median ms from append start until the listener yielded the record	5.1
+median ms from append return until the listener yielded the record	0.0
+median ms the listener trailed a raw head read of the same file	3.9
+
+Journal (Publish_JournalCost_TracksChangedStories), one movement, milliseconds, fsync included:
+stories	full manifest	journal delta
+10	1.3	0.7
+1000	50.9	3.9
+5000	456.1	6.2
+10000	1537.1	6.3
 
 Test run for /agent/repos/stories/lab/library-semantics/src/SemanticsLab.Tests/bin/Debug/net8.0/BigRedProf.Stories.LibrarySemanticsLab.Tests.dll (.NETCoreApp,Version=v8.0)
 A total of 1 test files matched the specified pattern.
 /agent/repos/stories/lab/library-semantics/src/SemanticsLab.Tests/bin/Debug/net8.0/BigRedProf.Stories.LibrarySemanticsLab.Tests.dll
 [xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.5.3.1+6b60a9e56a (64-bit .NET 8.0.34)
-[xUnit.net 00:00:00.05]   Discovering: BigRedProf.Stories.LibrarySemanticsLab.Tests
-[xUnit.net 00:00:00.07]   Discovered:  BigRedProf.Stories.LibrarySemanticsLab.Tests
-[xUnit.net 00:00:00.07]   Starting:    BigRedProf.Stories.LibrarySemanticsLab.Tests
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.OccupiedUnrelatedLibrary_IsRefused [30 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashBeforeMarker_HidesBytesANaiveReaderWouldKeep [30 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.InterruptedPreserve_DoesNotBecomeTheCurrentEdition [12 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.Codes_KeepBitLengthThroughARoundTrip [19 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.LostPreserveAck_SecondCallDoesNotCopyAgain [8 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TimeoutAfterCommit_IsNotARollback [4 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FlippedStoryByte_FailsIntegrityAndIsNotReportedAsAGap [6 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.ExplicitFaultTests.NamedFaults_HitTheOperationTheyAreArmedOn [63 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.MissingBlob_DoesNotPublishACompleteBackup [5 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LengthPrefixed_TornWrite_DropsTheWholeBatch [10 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_AfterAnotherCommit_ReturnsTheOriginalEdition [6 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_AfterDirectoryFsync_KeepsTheEdition [76 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.InterruptedIncrementalPreserve_KeepsThePreviousBlobs [11 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TwoWriters_SameExpectedEdition_OnlyOneCommits [10 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.PerFrame_CrashAfterFirstRecord_IsVisibleOnTheStoryHeadOnly [5 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashAfterFramesBeforePublish_RetriesWithoutDuplicating [4 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.TapeCopy_CanTearAcrossStoriesAndOmitsContent [18 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_RetryWithThePreCommitEdition_DoesNotDuplicate [3 ms]
+[xUnit.net 00:00:00.06]   Discovering: BigRedProf.Stories.LibrarySemanticsLab.Tests
+[xUnit.net 00:00:00.09]   Discovered:  BigRedProf.Stories.LibrarySemanticsLab.Tests
+[xUnit.net 00:00:00.09]   Starting:    BigRedProf.Stories.LibrarySemanticsLab.Tests
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.OccupiedUnrelatedLibrary_IsRefused [32 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Journal_ReadEdition_IsOnePointInTime [42 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.InterruptedPreserve_DoesNotBecomeTheCurrentEdition [18 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.LostPreserveAck_SecondCallDoesNotCopyAgain [9 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FlippedStoryByte_FailsIntegrityAndIsNotReportedAsAGap [8 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.ExplicitFaultTests.NamedFaults_HitTheOperationTheyAreArmedOn [79 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.MissingBlob_DoesNotPublishACompleteBackup [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.InterruptedIncrementalPreserve_KeepsThePreviousBlobs [20 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.TapeCopy_CanTearAcrossStoriesAndOmitsContent [38 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_AfterDirectoryFsync_KeepsTheEdition [90 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.RestoreOlderThanDeletion_BringsSandBack_UnlessCertificatesAreSupplied [61 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.UnpinnedBackup_FailsWhenCompactionWinsTheRace [28 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_BeforeFlush_DropsTheUnflushedFrame [65 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Promote_BlocksRelease_AndStoneCompactionIsRejected [18 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.GapWithoutCertificate_FailsRetention_WhileAFlippedByteFailsIntegrity [13 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FieldNotes_UsesTheSameBackupContract [26 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.PinnedBackup_KeepsBytesThatCompactionRemoves [40 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.IncrementalPreserve_CopiesOnlyTheNewSuffix [14 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.StoneHistory_SurvivesSandDeletionAndCompaction [36 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Lifecycle_SurvivesBackupCompactionAndSourceLoss [36 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.EmptyStory_IsPreserved [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.SharedSandClaim_DoesNotDropBytesAnotherClaimNeeds [24 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashBeforeMarker_HidesBytesANaiveReaderWouldKeep [12 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.Codes_KeepBitLengthThroughARoundTrip [11 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TimeoutAfterCommit_IsNotARollback [7 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LengthPrefixed_TornWrite_DropsTheWholeBatch [14 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_AfterAnotherCommit_ReturnsTheOriginalEdition [10 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.TwoWriters_SameExpectedEdition_OnlyOneCommits [5 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.PerFrame_CrashAfterFirstRecord_IsVisibleOnTheStoryHeadOnly [11 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.CommitMarker_CrashAfterFramesBeforePublish_RetriesWithoutDuplicating [13 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_RetryWithThePreCommitEdition_DoesNotDuplicate [5 ms]
   Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.SecondOpen_IsRejectedWhileTheWriterLockIsHeld [1 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.SkippingTheOffsetCheck_LetsBothWritersLand [4 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_DifferentBody_Conflicts [3 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.RestoreOlderThanDeletion_BringsSandBack_UnlessCertificatesAreSupplied [39 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_BeforeFlush_DropsTheUnflushedFrame [58 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.UnpinnedBackup_FailsWhenCompactionWinsTheRace [30 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Promote_BlocksRelease_AndStoneCompactionIsRejected [9 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.GapWithoutCertificate_FailsRetention_WhileAFlippedByteFailsIntegrity [12 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.FieldNotes_UsesTheSameBackupContract [27 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.PinnedBackup_KeepsBytesThatCompactionRemoves [24 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.IncrementalPreserve_CopiesOnlyTheNewSuffix [6 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.StoneHistory_SurvivesSandDeletionAndCompaction [30 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.Lifecycle_SurvivesBackupCompactionAndSourceLoss [26 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.EmptyStory_IsPreserved [4 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.PreservationAndRetentionTests.SharedSandClaim_DoesNotDropBytesAnotherClaimNeeds [6 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.SkippingTheOffsetCheck_LetsBothWritersLand [9 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.AtomicAppendTests.LostAck_DifferentBody_Conflicts [8 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.PublishedHead_HidesFlushedAndTornBytes_AcrossProcessKills [522 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.PublishedListener_LatencyAfterAppend [54 ms]
+  Standard Output Messages:
+ published-head latency, 9 appends, 1 ms poll, one story, per-frame, fsync included
+ median ms from append start until the listener yielded the record	5.1
+ median ms from append return until the listener yielded the record	0.0
+ median ms the listener trailed a raw head read of the same file	3.9
+ 
+
+
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Journal_ProcessKill_BeforePointer_HidesTheBatch [86 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Journal_TwoStories_AppearTogether [12 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Journal_Checkpoint_ReadsAfterThePrefixIsDamaged [10 ms]
   Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.CodeBytes_MatchData_0_11_0_rc_1 [1 s]
   Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes [16 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.Publish_FsyncsTheDirectoryAfterThePointerRename [4 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.TwoProcesses_WithoutTheLock_DoNotGetSingleWinner [114 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.TwoProcesses_SameExpectedEdition_OneCommits [231 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.PerFrame_EditionHidesThePrefix_AndTheNextWriterUsesThePublishedOffset [7 ms]
-[xUnit.net 00:00:01.99]   Finished:    BigRedProf.Stories.LibrarySemanticsLab.Tests
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ExactRestoreOfSand_RequiresAnExplicitAccept [13 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.KilledHolder_ReleasesTheFileLock_APidFileWouldNot [123 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.Restore_CopiesTheRequestedEdition_NotTheCurrentOne [13 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ShippedStoryFile_IsAdoptedWithoutRewritingBytes [27 ms]
-  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_AfterFirstFlushedRecord_EditionStaysPut [79 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.Publish_FsyncsTheDirectoryAfterThePointerRename [3 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.TwoProcesses_WithoutTheLock_DoNotGetSingleWinner [99 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.TwoProcesses_SameExpectedEdition_OneCommits [219 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.PerFrame_EditionHidesThePrefix_AndTheNextWriterUsesThePublishedOffset [4 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ExactRestoreOfSand_RequiresAnExplicitAccept [14 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.KilledHolder_ReleasesTheFileLock_APidFileWouldNot [144 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.Restore_CopiesTheRequestedEdition_NotTheCurrentOne [14 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ShippedStoryFile_IsAdoptedWithoutRewritingBytes [38 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundTwoTests.ProcessKill_AfterFirstFlushedRecord_EditionStaysPut [74 ms]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.CrossReviewTests.OneMovement_ReusesUnchangedStoryHashes [2 s]
+  Standard Output Messages:
+ stories	milliseconds
+ 10	5
+ 1000	73
+
+
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.CrossReviewTests.Compaction_NextIncrementalCopiesTheNewGeneration [1 s]
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Compaction_IncrementalCopiesTheNewGeneration_AtHouseScale [5 s]
+  Standard Output Messages:
+ Digihouse house: 12 rooms, 400 parlor moves plus one more, 40 moves in each other room. No photo blobs.
+ old parlor generation bytes still on the backup	95970
+ one-move suffix bytes copied	239
+ new parlor generation bytes	36578
+ new parlor record count	4
+ bytes copied by the preserve after compaction	36578
+ new edition manifest bytes, not included in the copy count	1560
+ old generation bytes on the backup after that preserve	95970
+ 
+
+
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Journal_ProcessKill_AfterPointer_KeepsTheEdition [88 ms]
+[xUnit.net 00:02:35.70]   Finished:    BigRedProf.Stories.LibrarySemanticsLab.Tests
+  Passed BigRedProf.Stories.LibrarySemanticsLab.Tests.RoundThreeTests.Publish_JournalCost_TracksChangedStories [2 m 29 s]
+  Standard Output Messages:
+ 10	1.3	0.7
+ 1000	50.9	3.9
+ 5000	456.1	6.2
+ 10000	1537.1	6.3
+
+
 
 Test Run Successful.
-Total tests: 44
-     Passed: 44
- Total time: 2.3106 Seconds
-VSTEST_ARTIFACTS_DIRECTORY environment variable was not found, falling back to a user-private temporary directory. This is most likely caused by an outdated Microsoft.NET.Test.Sdk package reference in the test project.
+Total tests: 55
+     Passed: 55
+ Total time: 2.6020 Minutes

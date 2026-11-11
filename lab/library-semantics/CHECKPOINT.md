@@ -9,7 +9,7 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 | Word | Meaning here |
 | --- | --- |
 | Implemented | On this branch and compiled. |
-| Tested | A named test passed in this workspace. 55 passed, 0 failed. Head-listener medians, publish timings, and the house compaction copy are in `evidence/round3-head.txt`, `evidence/round3-publish.txt`, and `evidence/round3-compaction.txt`. |
+| Tested | A named test passed in this workspace. 55 passed, 0 failed, at `9a1ea6de732bb9d065684d9c488a91adac38a9ca`. The log is `evidence/dotnet-test.txt`. |
 | Independently reviewed | Codex reviewed `c97df01`, `34a8f6d`, and `37c659e`. The findings from those commits were checked and fixed. Round 3 has not been reviewed. Team Grok has not reviewed it. |
 | Accepted | Russell adopted it. Not happened. |
 
@@ -31,7 +31,7 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 - Round 1 lab commit: `c2e6d465f709b645e74036dba5d47e3188114f92`.
 - Round 1 head Codex reviewed: `c97df0143a6d7587de36b4b7ec62086cfa290a67`.
 - Round 2 head: `e6737b9f3dc132234731565e653fa42a61768609`, the commit the #29 cross-review read.
-- Round 3 head: the commit that contains this paragraph. After pull, `git rev-parse HEAD`.
+- Round 3 head: `9a1ea6de732bb9d065684d9c488a91adac38a9ca`. 55 passed, 0 failed. The log is `evidence/dotnet-test.txt`.
 
 ## Commands
 

@@ -135,7 +135,7 @@ On compaction, after 300 moves the next ordinary movement preserved as a suffix.
 
 ## Round 3
 
-Russell is away, so these are reversible defaults. None of them are accepted.
+Russell is away, so these are reversible defaults. None of them are accepted. The suite at `9a1ea6de732bb9d065684d9c488a91adac38a9ca` passed 55 tests and failed 0. The log is `evidence/dotnet-test.txt`. There is no random seed.
 
 **Head readers stop at the published length.** `PublishedHead` is the lab stand-in for `FileStoryteller`. `PublishedListener` is the stand-in for a live listener. Both read the story file and stop at the byte length named by the current edition. Under SIGKILL, a flushed two-record batch and a torn per-frame prefix are both invisible to that head, and the listener never yields the records the next writer replaces (`PublishedHead_HidesFlushedAndTornBytes_AcrossProcessKills`). On one story, with a 1 ms poll and fsync included, the median wait from the start of the append until the listener yielded the record was 3.5 ms. The listener trailed a raw read of the same file by 2.7 ms, and it trailed `Append`'s return by 1.1 ms (`evidence/round3-head.txt`).
 
@@ -150,7 +150,7 @@ Keeping heads raw and adding a length-prefixed frame does not do this job. A fra
 | 5,000 | 552.4 ms | 5.1 ms |
 | 10,000 | 1,601.1 ms | 3.8 ms |
 
-The journal samples sit between 2.2 and 5.1 ms while the library grows a thousand times. That is the fsync floor plus noise, not a walk of every story. The manifest design is the one that reaches 1.6 seconds. This journal is not wired into `Preserver`. A backup of it would copy the journal, or a checkpoint plus the tail, and that copy is not built here. The manifest library is unchanged and is still what the preserve tests use.
+The journal samples sit between 2.2 and 5.1 ms while the library grows a thousand times. That is the fsync floor plus noise, not a walk of every story. The manifest design is the one that reaches 1.6 seconds. The journal publish is not wired into the backup copier yet. A backup of it would copy the journal, or a checkpoint plus the tail, and that copy is not built here. The manifest library is unchanged and is still what the preserve tests use.
 
 **Compaction still copies the new generation, and the house-scale number is now measured.** Twelve rooms, 400 parlor moves plus one more, 40 moves in each other room, no photo blobs. The preserve of that one extra move copied 239 bytes. After compaction the parlor story is 4 records and 36,578 bytes, and the next preserve copied exactly those 36,578 bytes. The new edition manifest is 1,560 bytes and is not in that count. The previous generation, 95,970 bytes, stays on the backup (`evidence/round3-compaction.txt`, `Compaction_IncrementalCopiesTheNewGeneration_AtHouseScale`). Most of the 36,578 bytes is the stone certificate's list of the 401 superseded move keys, not the four surviving records. #29's header chain, on their report, copied 3 ledger records after compacting 300 moves. This design sends about 36 KB once for this room and keeps the old generation as well, because the old edition still means those old bytes. I would not drop that so the incremental can be three records.
 
