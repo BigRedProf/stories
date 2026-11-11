@@ -272,6 +272,28 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 				return new PreserveResult(false, false, true, edition.Id, 0, "Failed. The edition file does not hash to the requested id.");
 			}
 
+			if (destination.CurrentEditionId == manifest.Id)
+			{
+				VerificationReport report = destination.Verify(manifest.Id, null);
+				if (report.Integrity == CheckResult.Pass && report.Completeness == CheckResult.Pass)
+				{
+					return new PreserveResult(
+						true,
+						true,
+						false,
+						manifest.Id,
+						0,
+						"The destination already has this edition. The retry did not copy."
+					);
+				}
+			}
+
+			string? mismatch = SourceMatchesManifest(source.Root, manifest);
+			if (mismatch != null)
+			{
+				return new PreserveResult(false, false, true, edition.Id, 0, mismatch);
+			}
+
 			long bytes = 0;
 			try
 			{
@@ -291,18 +313,6 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 					string from = LibraryLayout.ContentFile(source.Root, entry.ContentId);
 					string to = LibraryLayout.ContentFile(destination.Root, entry.ContentId);
-					if (!File.Exists(from))
-					{
-						return new PreserveResult(
-							false,
-							false,
-							true,
-							edition.Id,
-							bytes,
-							"Failed. Required content " + entry.ContentId + " is missing. The restore was not published."
-						);
-					}
-
 					Directory.CreateDirectory(Path.GetDirectoryName(to)!);
 					File.Copy(from, to, true);
 					bytes += new FileInfo(to).Length;
@@ -382,6 +392,11 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			PreserveResult copied = CopyEdition(backup, edition, destination);
+			if (copied.AlreadyPreserved)
+			{
+				return new RestoreResult(true, false, false, editionId, copied.Detail);
+			}
+
 			if (copied.Failed || !copied.Published)
 				return new RestoreResult(false, true, false, editionId, copied.Detail);
 
@@ -417,6 +432,38 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 		#endregion
 
 		#region private functions
+		private static string? SourceMatchesManifest(string origin, ParsedManifest manifest)
+		{
+			for (int i = 0; i < manifest.Stories.Count; i++)
+			{
+				StoryPrefix story = manifest.Stories[i];
+				string from = LibraryLayout.Generation(origin, story.StoryId, story.Generation);
+				if (!File.Exists(from))
+					return "Failed. Story '" + story.StoryId + "' is missing from the backup. The destination was not modified.";
+
+				string hash = Hashing.FilePrefix(from, story.FileBytes);
+				if (hash != story.FileHash)
+					return "Failed. Story '" + story.StoryId + "' does not match the edition. The destination was not modified.";
+			}
+
+			for (int i = 0; i < manifest.Content.Count; i++)
+			{
+				ContentEntry entry = manifest.Content[i];
+				if (entry.Disposition != "required")
+					continue;
+
+				string from = LibraryLayout.ContentFile(origin, entry.ContentId);
+				if (!File.Exists(from))
+					return "Failed. Required content " + entry.ContentId + " is missing. The destination was not modified.";
+
+				string hash = Hashing.Sha256(File.ReadAllBytes(from));
+				if (hash != entry.Hash)
+					return "Failed. Content " + entry.ContentId + " does not match the edition. The destination was not modified.";
+			}
+
+			return null;
+		}
+
 		private static bool SourceHasAncestor(Library source, string editionId, string candidate)
 		{
 			string cursor = editionId;

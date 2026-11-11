@@ -359,6 +359,54 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 		}
 
 		[Fact]
+		public void RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes()
+		{
+			string sourcePath = LabPaths.Create(nameof(RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes));
+			string backupPath = LabPaths.Create(nameof(RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes) + "-backup");
+			string restoredPath = LabPaths.Create(nameof(RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes) + "-restored");
+			try
+			{
+				string edition;
+				Code photo = new Code("1011001");
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", photo, null).Status);
+					edition = source.CurrentEditionId;
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+				}
+
+				using (Library backup = Library.Open(backupPath))
+				using (Library restored = Library.Create(restoredPath, BatchFormat.PerFrame))
+				{
+					RestoreOptions options = new RestoreOptions();
+					options.AcceptResurrection = true;
+					Assert.True(Preserver.Restore(backup, edition, restored, options).Restored);
+					string contentId = Library.ContentIdFor(photo);
+					byte[] good = File.ReadAllBytes(restored.ContentFilePath(contentId));
+					string backupBlob = backup.ContentFilePath(contentId);
+					byte[] corrupt = File.ReadAllBytes(backupBlob);
+					corrupt[corrupt.Length / 2] ^= 0x5A;
+					File.WriteAllBytes(backupBlob, corrupt);
+
+					RestoreResult retry = Preserver.Restore(backup, edition, restored, options);
+					Assert.True(retry.Restored);
+					Assert.Contains("did not copy", retry.Detail);
+					Assert.Equal(good, File.ReadAllBytes(restored.ContentFilePath(contentId)));
+					VerificationReport report = restored.Verify(edition, null);
+					Assert.Equal(CheckResult.Pass, report.Completeness);
+					Assert.Equal(CheckResult.Pass, report.Integrity);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+				LabPaths.Delete(restoredPath);
+			}
+		}
+
+		[Fact]
 		public void ShippedStoryFile_IsAdoptedWithoutRewritingBytes()
 		{
 			string shipped = LabPaths.Create(nameof(ShippedStoryFile_IsAdoptedWithoutRewritingBytes) + "-shipped");

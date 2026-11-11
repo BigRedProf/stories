@@ -9,8 +9,8 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 | Word | Meaning here |
 | --- | --- |
 | Implemented | On this branch and compiled. |
-| Tested | A named test passed in this workspace. The log is `evidence/dotnet-test.txt`. 43 passed, 0 failed. |
-| Independently reviewed | Codex reviewed `c97df01` (five findings, fixed) and `34a8f6d` (three findings, fixed in the following commit). Team Grok has not reviewed it. |
+| Tested | A named test passed in this workspace. The log is `evidence/dotnet-test.txt`. 44 passed, 0 failed. |
+| Independently reviewed | Codex reviewed `c97df01`, `34a8f6d`, and `37c659e`. The findings from those commits were checked and fixed. Team Grok has not reviewed it. |
 | Accepted | Russell adopted it. Not happened. |
 
 ## Where things stand

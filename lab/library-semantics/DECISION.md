@@ -121,6 +121,7 @@ Codex reviewed `34a8f6d` after that. Three more findings, all real:
 | Resurrection consent was checked on one edition and a different edition was copied | Naming stone edition E1 still copied the backup's current edition when that current edition contained sand. | `Restore` copies the edition it checked. `Restore_CopiesTheRequestedEdition_NotTheCurrentOne`. |
 | A second shipped file, or a later lab append, parsed the first shipped file as a lab log | Only the story being adopted was exempted. `DescribeStory` and `ReadQuarantine` opened the other `BRPSTORY` bytes. | A published `shipped-v1` prefix is carried forward, and those files are skipped by the lab quarantine reader. The adoption test adopts a second file and then records a purchase. |
 | The two-process lock test could pass without the locks overlapping | If one process finished before the other started, the late process got `PositionConflict` instead of "already has a writer". | The holder opens, signals, and waits. The challenger opens only after that signal. The holder is released only after the challenger has failed. |
+| A published restore could be corrupted by a later retry | `CopyEdition` overwrote a valid destination blob before checking the backup hash. | A destination that already verifies is not copied again. Source bytes are checked against the manifest before any write. `RestoreRetry_DoesNotReplaceAValidBlobWithCorruptBackupBytes`. |
 
 ## For Team Grok
 
