@@ -69,3 +69,11 @@ Recommendation: head readers stay. `FileStoryteller`, `Watch-Story`, and Digihou
 Consequence: a listener does not see a record until the pointer is durable. That is the publish time plus one poll: a few milliseconds on the journal, and the full manifest rewrite if publication still rewrites every story. A raw head that ignores the published length still hears phantoms. The length-prefixed frame does not close that hole.
 
 Default: `PublishedHead` and `PublishedListener`. Reversible by reading the story file without the cutoff. Nothing here is accepted.
+
+## 9. Does v1 restore apply newer deletion evidence onto an older edition?
+
+Recommendation: no. v1 restore copies one checked edition and stops. It does not run erasure replay. A deletion is kept by preserving the edition that already contains it, and restoring that edition. An older edition that still contains sand is restored only when the caller sets `AcceptResurrection`.
+
+Consequence: there is no operation that restores an older edition and also keeps a later deletion deleted. The lab's `PreventResurrection` path stays an experiment. The eleven preserve, restore, and erasure-replay bugs in `DECISION.md` are point fixes, not a proof that replay is finished. Choosing replay later means a new design, either ordinary idempotent appends or a crash-and-retry harness, not another fix on the current loop.
+
+Default: `PreventResurrection` remains implemented in the lab and is not the v1 recommendation. Exact restore of sand still requires `AcceptResurrection`.

@@ -135,24 +135,61 @@ On compaction, after 300 moves the next ordinary movement preserved as a suffix.
 
 ## Round 3
 
-Russell is away, so these are reversible defaults. None of them are accepted. The suite that checked the Codex review of `fcc584ff950337c70e8f7d01fb87f75a0f40bdb3` passed 64 tests and failed 0. The log is `evidence/dotnet-test.txt`. There is no random seed.
+Russell is away, so these are reversible defaults. None of them are accepted. The suite run on `b014643c6509fb335361b790b14facfc4ae08cf3` passed 64 tests and failed 0. The log is `evidence/dotnet-test.txt`. There is no random seed.
 
 **Head readers stop at the published length.** `PublishedHead` is the lab stand-in for `FileStoryteller`. `PublishedListener` is the stand-in for a live listener. Both read the story file and stop at the byte length named by the current edition. Under SIGKILL, a flushed two-record batch and a torn per-frame prefix are both invisible to that head, and the listener never yields the records the next writer replaces (`PublishedHead_HidesFlushedAndTornBytes_AcrossProcessKills`). That is per-story published-prefix safety. One poll of `PublishedListener` reads one captured edition and uses that manifest's prefixes, so that poll does not mix an old story with a newer pointer (`PublishedHead_CapturedPrefix_IgnoresALaterPointer`). Records gathered across two polls can still straddle a publication. The cutoff does not make two stories one atomic delivery.
 
-Keeping heads raw and adding a length-prefixed frame does not do this job. A frame that has been flushed and not yet published is still on the raw head: the length-prefixed kill in that same test leaves `record-0` and `record-1` in `StoryLog.Read` and leaves them out of `PublishedHead`. The next writer can still replace that tail, and a raw listener hears it. The frame's remaining win is the torn batch, which a raw reader already drops. It is a new story format, and it does not make two stories appear together for a raw head. The cutoff hides the flushed unpublished batch and the torn prefix. It does not add cross-story atomicity on top of that. The cost is that visibility waits for the pointer. On this run, `SeenAtMilliseconds` was 7.3 ms after the sample taken before `Append`, 0.7 ms after `Append` returned, and 3.8 ms after a raw read (`evidence/round3-head.txt`). That is the listener clock, not the moment the test thread woke up. On the full-manifest publisher below, the same wait is the publish time, because the listener cannot see the record until the pointer moves. The millisecond table is a measurement, not a test assertion. The assertion is the examination count: one movement examined 2 stories on the journal at every size, and 20, 2,000, 10,000, and 20,000 stories on the full manifest, two looks per story (`Publish_JournalCost_TracksChangedStories`).
+Keeping heads raw and adding a length-prefixed frame does not do this job. A frame that has been flushed and not yet published is still on the raw head: the length-prefixed kill in that same test leaves `record-0` and `record-1` in `StoryLog.Read` and leaves them out of `PublishedHead`. The next writer can still replace that tail, and a raw listener hears it. The frame's remaining win is the torn batch, which a raw reader already drops. It is a new story format, and it does not make two stories appear together for a raw head. The cutoff hides the flushed unpublished batch and the torn prefix. It does not add cross-story atomicity on top of that. The cost is that visibility waits for the pointer. On the suite run recorded in `evidence/dotnet-test.txt`, `SeenAtMilliseconds` was 3.6 ms after the sample taken before `Append`, 0.6 ms after `Append` returned, and 2.4 ms after a raw read. That is the listener clock, not the moment the test thread woke up. On the full-manifest publisher below, the same wait is the publish time, because the listener cannot see the record until the pointer moves. The millisecond table is a measurement, not a test assertion. The assertion is the examination count: one movement examined 2 stories on the journal at every size, and 20, 2,000, 10,000, and 20,000 stories on the full manifest, two looks per story (`Publish_JournalCost_TracksChangedStories`).
 
-**Publish the stories that changed.** `JournalLibrary` appends one checksummed frame naming the parent edition and the prefixes that changed, fsyncs that frame, then fsyncs the directory after the pointer rename. The edition id is the hash of the parent id plus that delta. Reading an id replays to that frame and no further, so the id is one point in time (`Journal_ReadEdition_IsOnePointInTime`). A kill after the journal fsync and before the pointer hides the batch from the head; a kill after the directory fsync keeps it (`Journal_ProcessKill_BeforePointer_HidesTheBatch`, `Journal_ProcessKill_AfterPointer_KeepsTheEdition`). Every N commits the full map is written as a checkpoint. After the journal prefix was zeroed, the tip and the two editions after the checkpoint still read (`Journal_Checkpoint_ReadsAfterThePrefixIsDamaged`). One movement, fsync included (`evidence/round3-publish.txt`):
+**Publish the stories that changed.** `JournalLibrary` appends one checksummed frame naming the parent edition and the prefixes that changed, fsyncs that frame, then fsyncs the directory after the pointer rename. The edition id is the hash of the parent id plus that delta. Reading an id replays to that frame and no further, so the id is one point in time (`Journal_ReadEdition_IsOnePointInTime`). A kill after the journal fsync and before the pointer hides the batch from the head; a kill after the directory fsync keeps it (`Journal_ProcessKill_BeforePointer_HidesTheBatch`, `Journal_ProcessKill_AfterPointer_KeepsTheEdition`). Every N commits the full map is written as a checkpoint. After the journal prefix was zeroed, the tip and the two editions after the checkpoint still read (`Journal_Checkpoint_ReadsAfterThePrefixIsDamaged`). One movement, fsync included (`evidence/dotnet-test.txt`):
 
 | Stories | Full manifest | Journal delta |
 | --- | ---: | ---: |
-| 10 | 7.6 ms | 2.8 ms |
-| 1,000 | 61.9 ms | 2.1 ms |
-| 5,000 | 475.9 ms | 5.0 ms |
-| 10,000 | 1,495.7 ms | 4.2 ms |
+| 10 | 3.4 ms | 3.5 ms |
+| 1,000 | 56.4 ms | 2.3 ms |
+| 5,000 | 507.8 ms | 3.9 ms |
+| 10,000 | 1,455.5 ms | 7.8 ms |
 
-The journal samples on this run are 2.8, 2.1, 5.0, and 4.2 ms. That is the fsync floor plus noise, not a walk of every story. The manifest design on this run reaches 1.5 seconds. The test asserts the examination counts, not these times. The journal publish is not wired into the backup copier yet. A backup of it would copy the journal, or a checkpoint plus the tail, and that copy is not built here. The manifest library is unchanged and is still what the preserve tests use.
+The journal samples on this run are 3.5, 2.3, 3.9, and 7.8 ms. That is the fsync floor plus noise, not a walk of every story. The manifest design on this run reaches 1.5 seconds. The test asserts the examination counts, not these times. The journal publish is not wired into the backup copier yet. A backup of it would copy the journal, or a checkpoint plus the tail, and that copy is not built here. The manifest library is unchanged and is still what the preserve tests use.
 
 **Compaction still copies the new generation, and the house-scale number is now measured.** Twelve rooms, 400 parlor moves plus one more, 40 moves in each other room, no photo blobs. The preserve of that one extra move copied 239 bytes. After compaction the parlor story is 4 records and 36,578 bytes, and the next preserve copied exactly those 36,578 bytes. The new edition manifest is 1,560 bytes and is not in that count. The previous generation, 95,970 bytes, stays on the backup (`evidence/round3-compaction.txt`, `Compaction_IncrementalCopiesTheNewGeneration_AtHouseScale`). Most of the 36,578 bytes is the stone certificate's list of the 401 superseded move keys, not the four surviving records. #29's header chain, on their report, copied 3 ledger records after compacting 300 moves. This design sends about 36 KB once for this room and keeps the old generation as well, because the old edition still means those old bytes. I would not drop that so the incremental can be three records.
+
+## Restore path risk
+
+Codex reviewed the preserve and restore path four times. Each review found bugs the previous fix had not closed. Eleven of those findings are bugs in preserve, restore, or erasure replay. The fixes are point fixes. They are not a proof that the path is finished. The other review comments in those rounds were about tests, head readers, timings, and the journal checkpoint, and they are not in this list.
+
+**Crash, or a retry that is not idempotent**
+
+- An incremental preserve deleted the destination photo before the pointer moved. A crash left the previous edition missing a blob it still required. Round 1, fixed in `34a8f6d`.
+- A shared blob was overwritten in place with `File.Copy`. A crash during that copy can truncate a blob the published edition still needs. Review of `fcc584f`, fixed in `b014643`. Identical blobs are now skipped. A new blob is staged and renamed.
+- After the first of two deletion certificates, the destination was neither empty nor the requested edition, so the retry was refused and the second certificate never ran. Review of `40d73cb`, fixed in `fcc584f`.
+- A destination that already had the edition returned before applying newer erasures, so a second restore with deletion evidence left the photo in place. Review of `9f0578e`, fixed in `40d73cb`.
+- A compaction that had already removed its inputs was validated again on retry and came back `Rejected` instead of `AlreadyCommitted`, so any later certificate in that replay did not run. Review of `fcc584f`, fixed in `b014643`.
+
+**Corrupt source bytes**
+
+- Retrying a restore copied a corrupt backup blob over a destination blob that was still valid, and the hash check ran after the overwrite. Review of `37c659e`, fixed in `e6737b9`.
+- An incremental preserve compared the source photo to itself. A photo that was already corrupt passed both stamps, replaced the backup's good blob, and the hash check then failed with the previous edition still published. Review of `40d73cb`, fixed in `fcc584f`.
+
+**Certificate replay against an older edition**
+
+- Restore checked one edition for sand and then copied the backup's current edition, which could be a later edition that contained sand. Review of `34a8f6d`, fixed in `37c659e`.
+- A compaction certificate whose range included a move appended after the backed-up edition was rejected, and restore still reported success while the old moves stayed. Review of `40d73cb`, fixed in `fcc584f` by trimming the range to the records this edition has and failing the restore on any other rejection.
+- After a release and then a compaction, the compaction deleted the story generation the release edition named. The resume walk read that edition's story file and threw, so the retry could not see a legitimate erasure chain. Review of `fcc584f`, fixed in `b014643`. The walk now uses the manifest's parent id and commit key.
+
+**Compaction summaries**
+
+- Trimming the range did not trim the summary. The backup's last move was `2,2`, the source had added `3,3`, and the restored room read `3,3`. That is a newer business event copied in under a promise that newer-only events are not copied. Review of `fcc584f`, fixed in `b014643`. The summary is rebuilt from the moves the restored edition has.
+
+What this implies for v1: restore with newer deletion evidence is the most complex and least settled part of the design. Each fix answered the case in front of it and left a nearby case. The lab's fixes are point fixes. They are not proof of correctness.
+
+Three options are worth weighing.
+
+- (a) A simpler v1 restore. It copies one checked edition and stops. It refuses to apply newer erasures. A deletion is kept by preserving the edition that already contains the deletion, and restoring that edition. An older edition that still contains sand comes back only when the caller sets `AcceptResurrection`, and the caller is told the sand is present again.
+- (b) Model erasure replay as an ordinary idempotent story append, with the same expected offset the rest of the library uses. That removes one special replay loop. It does not remove the copy crash window, the deleted story generation, or the summary that was computed on a longer history.
+- (c) Keep the current design and add a randomized crash-and-retry harness over preserve, restore, and certificate replay. That is how more of these bugs would be found. It does not decide whether the feature should exist.
+
+I recommend (a). The cost is that v1 has no operation which restores Tuesday's edition and also keeps Wednesday's deletion. After a deletion, the backup worth restoring is a preserve of Wednesday. Tuesday's copy still has the sand, and bringing it back is an explicit accept, not a replay. `PreventResurrection` stays in the lab and is not a v1 promise. I would not spend the next round on another point fix, and I would not build the harness until someone chooses (b) or (c).
 
 ## For Team Grok
 
