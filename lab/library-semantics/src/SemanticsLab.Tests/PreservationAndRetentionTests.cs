@@ -404,6 +404,139 @@ namespace BigRedProf.Stories.LibrarySemanticsLab.Tests
 		}
 
 		[Fact]
+		public void IncrementalPreserve_DoesNotReplaceAValidBlobWithCorruptSourceBytes()
+		{
+			string sourcePath = LabPaths.Create(nameof(IncrementalPreserve_DoesNotReplaceAValidBlobWithCorruptSourceBytes));
+			string backupPath = LabPaths.Create(nameof(IncrementalPreserve_DoesNotReplaceAValidBlobWithCorruptSourceBytes) + "-backup");
+			try
+			{
+				string photoId;
+				byte[] original;
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", new Code("1100110"), null).Status);
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					photoId = Digihouse.Read(backup, backup.CurrentEditionId).Photos["chair"];
+					original = File.ReadAllBytes(backup.ContentFilePath(photoId));
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "lamp", "bea", null).Status);
+					File.WriteAllBytes(source.ContentFilePath(photoId), new byte[] { 9, 9, 9 });
+					PreserveResult copied = Preserver.Preserve(source, backup, null, null);
+					Assert.True(copied.Failed);
+					Assert.False(copied.Published);
+					Assert.Equal(original, File.ReadAllBytes(backup.ContentFilePath(photoId)));
+					Assert.Equal(CheckResult.Pass, backup.Verify(backup.CurrentEditionId, null).Integrity);
+					Assert.False(Digihouse.Read(backup, backup.CurrentEditionId).Owners.ContainsKey("lamp"));
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+			}
+		}
+
+		[Fact]
+		public void SecondRestore_ResumesErasuresAfterTheFirstCertificate()
+		{
+			string sourcePath = LabPaths.Create(nameof(SecondRestore_ResumesErasuresAfterTheFirstCertificate));
+			string backupPath = LabPaths.Create(nameof(SecondRestore_ResumesErasuresAfterTheFirstCertificate) + "-backup");
+			string destinationPath = LabPaths.Create(nameof(SecondRestore_ResumesErasuresAfterTheFirstCertificate) + "-dest");
+			try
+			{
+				string oldEdition;
+				string newEdition;
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "chair", "ada", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Purchase(source, "lamp", "bea", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "chair", new Code("1100110"), null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.AttachPhoto(source, "lamp", new Code("1010101"), null).Status);
+					oldEdition = source.CurrentEditionId;
+					using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+						Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+
+					Assert.Equal(AppendStatus.Committed, Digihouse.ReleasePhoto(source, "chair", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.ReleasePhoto(source, "lamp", null).Status);
+					newEdition = source.CurrentEditionId;
+				}
+
+				using (Library backup = Library.Open(backupPath))
+				using (Library source = Library.Open(sourcePath))
+				using (Library destination = Library.Create(destinationPath, BatchFormat.PerFrame))
+				{
+					RestoreResult first = Preserver.Restore(backup, oldEdition, destination, AcceptSand());
+					Assert.True(first.Restored);
+					Assert.Equal(AppendStatus.Committed, Digihouse.ReleasePhoto(destination, "chair", null).Status);
+					RestoreOptions again = new RestoreOptions();
+					again.PreventResurrection = true;
+					again.NewerEvidence = source;
+					again.NewerEditionId = newEdition;
+					RestoreResult second = Preserver.Restore(backup, oldEdition, destination, again);
+					Assert.True(second.Restored);
+					Assert.True(second.ErasuresApplied);
+					Assert.False(second.Refused);
+					DigihouseState state = Digihouse.Read(destination, destination.CurrentEditionId);
+					Assert.StartsWith("erased:", state.Photos["chair"]);
+					Assert.StartsWith("erased:", state.Photos["lamp"]);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+				LabPaths.Delete(destinationPath);
+			}
+		}
+
+		[Fact]
+		public void Restore_CompactionCertificate_DropsMovesTheOldEditionHas()
+		{
+			string sourcePath = LabPaths.Create(nameof(Restore_CompactionCertificate_DropsMovesTheOldEditionHas));
+			string backupPath = LabPaths.Create(nameof(Restore_CompactionCertificate_DropsMovesTheOldEditionHas) + "-backup");
+			string destinationPath = LabPaths.Create(nameof(Restore_CompactionCertificate_DropsMovesTheOldEditionHas) + "-dest");
+			try
+			{
+				string oldEdition;
+				string newEdition;
+				using (Library source = Library.Create(sourcePath, BatchFormat.PerFrame))
+				using (Library backup = Library.Create(backupPath, BatchFormat.PerFrame))
+				using (Library destination = Library.Create(destinationPath, BatchFormat.PerFrame))
+				{
+					Assert.Equal(AppendStatus.Committed, Digihouse.InitializeRoom(source, "parlor", null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 1, 1, 1, null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 2, 2, 2, null).Status);
+					oldEdition = source.CurrentEditionId;
+					Assert.True(Preserver.Preserve(source, backup, null, null).Published);
+					Assert.Equal(AppendStatus.Committed, Digihouse.Move(source, "parlor", "chair", 3, 3, 3, null).Status);
+					Assert.Equal(AppendStatus.Committed, Digihouse.CompactMoves(source, "parlor", null).Status);
+					newEdition = source.CurrentEditionId;
+					RestoreOptions options = new RestoreOptions();
+					options.PreventResurrection = true;
+					options.NewerEvidence = source;
+					options.NewerEditionId = newEdition;
+					RestoreResult restored = Preserver.Restore(backup, oldEdition, destination, options);
+					Assert.True(restored.Restored);
+					Assert.True(restored.ErasuresApplied);
+					Assert.False(restored.Refused);
+					string room = Texts(destination, Digihouse.RoomStoryId("parlor"));
+					Assert.DoesNotContain("move|parlor|chair|1|1", room);
+					Assert.DoesNotContain("move|parlor|chair|2|2", room);
+					Assert.Contains("move-summary|parlor|chair", room);
+				}
+			}
+			finally
+			{
+				LabPaths.Delete(sourcePath);
+				LabPaths.Delete(backupPath);
+				LabPaths.Delete(destinationPath);
+			}
+		}
+
+		[Fact]
 		public void SharedSandClaim_DoesNotDropBytesAnotherClaimNeeds()
 		{
 			string path = LabPaths.Create(nameof(SharedSandClaim_DoesNotDropBytesAnotherClaimNeeds));

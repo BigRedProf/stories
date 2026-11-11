@@ -9,7 +9,7 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 | Word | Meaning here |
 | --- | --- |
 | Implemented | On this branch and compiled. |
-| Tested | A named test passed in this workspace. 58 passed, 0 failed. The log is `evidence/dotnet-test.txt`. |
+| Tested | A named test passed in this workspace. 61 passed, 0 failed. The log is `evidence/dotnet-test.txt`. |
 | Independently reviewed | Codex reviewed `c97df01`, `34a8f6d`, and `37c659e`. The findings from those commits were checked and fixed. Round 3 has not been reviewed. Team Grok has not reviewed it. |
 | Accepted | Russell adopted it. Not happened. |
 
@@ -31,7 +31,7 @@ Resume point for the library-semantics investigation. Nothing here is accepted. 
 - Round 1 lab commit: `c2e6d465f709b645e74036dba5d47e3188114f92`.
 - Round 1 head Codex reviewed: `c97df0143a6d7587de36b4b7ec62086cfa290a67`.
 - Round 2 head: `e6737b9f3dc132234731565e653fa42a61768609`, the commit the #29 cross-review read.
-- Round 3 head reviewed by Codex: `9f0578e958da747afd86f3a776ace974ce1b8f0c`. The fixes are in the commit that contains this paragraph. 58 passed, 0 failed. The log is `evidence/dotnet-test.txt`.
+- Round 3 head reviewed by Codex: `40d73cb925fe62e9f1f9967384125011d27af730`. The fixes are in the commit that contains this paragraph. 61 passed, 0 failed. The log is `evidence/dotnet-test.txt`.
 
 ## Commands
 

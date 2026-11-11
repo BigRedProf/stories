@@ -194,6 +194,10 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			ParsedManifest manifest = ManifestText.Parse(File.ReadAllText(manifestPath));
+			string? mismatch = SourceMatchesManifest(origin, manifest);
+			if (mismatch != null)
+				return new PreserveResult(false, false, true, editionId, 0, mismatch);
+
 			long bytes = 0;
 			try
 			{
@@ -361,16 +365,25 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			}
 
 			string emptyId = ManifestText.EmptyId();
+			bool resumeErasures = false;
 			if (destination.CurrentEditionId != emptyId && destination.CurrentEditionId != editionId)
 			{
-				return new RestoreResult(
-					false,
-					true,
-					false,
-					"",
-					"Refused. The destination is at " + destination.CurrentEditionId + ", which is not empty."
-				);
+				if (options.PreventResurrection && ErasureChainReaches(destination, editionId, options.NewerEvidence!, options.NewerEditionId!))
+					resumeErasures = true;
+				else
+				{
+					return new RestoreResult(
+						false,
+						true,
+						false,
+						"",
+						"Refused. The destination is at " + destination.CurrentEditionId + ", which is not empty."
+					);
+				}
 			}
+
+			if (resumeErasures)
+				return FinishErasures(editionId, destination, options);
 
 			EditionView edition = backup.ReadEdition(editionId);
 			bool hasSand = false;
@@ -395,17 +408,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			if (copied.AlreadyPreserved)
 			{
 				if (options.PreventResurrection)
-				{
-					int count = ApplyErasures(options.NewerEvidence!, options.NewerEditionId!, destination);
-					return new RestoreResult(
-						true,
-						false,
-						true,
-						editionId,
-						"The destination already had edition " + editionId + ". Applied " + count.ToString()
-							+ " later certificate batches. Nothing was copied again."
-					);
-				}
+					return FinishErasures(editionId, destination, options);
 
 				return new RestoreResult(true, false, false, editionId, copied.Detail);
 			}
@@ -433,12 +436,7 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 
 			bool applied = false;
 			if (options.PreventResurrection)
-			{
-				int count = ApplyErasures(options.NewerEvidence!, options.NewerEditionId!, destination);
-				applied = true;
-				detail = "Restored edition " + editionId + ", then applied " + count.ToString()
-					+ " later certificate batches. Business events that exist only in the newer edition were not copied. This is not a roll-forward.";
-			}
+				return FinishErasures(editionId, destination, options);
 
 			return new RestoreResult(true, false, applied, destination.CurrentEditionId, detail);
 		}
@@ -568,10 +566,68 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 			return true;
 		}
 
-		private static int ApplyErasures(Library newer, string newerEditionId, Library destination)
+		private static RestoreResult FinishErasures(string editionId, Library destination, RestoreOptions options)
+		{
+			ErasureReplay replay = ApplyErasures(options.NewerEvidence!, options.NewerEditionId!, destination);
+			if (replay.Failure != null)
+			{
+				return new RestoreResult(
+					false,
+					true,
+					false,
+					destination.CurrentEditionId,
+					"Refused. Resurrection prevention did not finish. " + replay.Failure
+				);
+			}
+
+			return new RestoreResult(
+				true,
+				false,
+				true,
+				destination.CurrentEditionId,
+				"Restored edition " + editionId + ", then applied " + replay.Applied.ToString()
+					+ " later certificate batches. Business events that exist only in the newer edition were not copied. This is not a roll-forward."
+			);
+		}
+
+		private static bool ErasureChainReaches(Library destination, string editionId, Library newer, string newerEditionId)
+		{
+			HashSet<string> keys = ErasureKeys(newer, newerEditionId);
+			string cursor = destination.CurrentEditionId;
+			HashSet<string> seen = new HashSet<string>(StringComparer.Ordinal);
+			while (cursor != editionId)
+			{
+				if (!seen.Add(cursor) || cursor == "-" || cursor.Length == 0)
+					return false;
+
+				EditionView view = destination.ReadEdition(cursor);
+				if (!keys.Contains(view.CommitKey))
+					return false;
+
+				cursor = view.ParentId;
+			}
+
+			return true;
+		}
+
+		private static HashSet<string> ErasureKeys(Library newer, string newerEditionId)
+		{
+			HashSet<string> keys = new HashSet<string>(StringComparer.Ordinal);
+			EditionView evidence = newer.ReadEdition(newerEditionId);
+			for (int i = 0; i < evidence.Records.Count; i++)
+			{
+				EffectKind effect = evidence.Records[i].Effect;
+				if (effect == EffectKind.ReleaseClaim || effect == EffectKind.PromoteClaim || effect == EffectKind.CompactSand)
+					keys.Add(evidence.Records[i].IdempotencyKey);
+			}
+
+			return keys;
+		}
+
+		private static ErasureReplay ApplyErasures(Library newer, string newerEditionId, Library destination)
 		{
 			EditionView evidence = newer.ReadEdition(newerEditionId);
-			int applied = 0;
+			ErasureReplay replay = new ErasureReplay();
 			List<StoredRecord> ordered = evidence.Records.OrderBy(item => item.StoryId, StringComparer.Ordinal).ThenBy(item => item.Offset).ToList();
 			HashSet<string> done = new HashSet<string>(StringComparer.Ordinal);
 			for (int i = 0; i < ordered.Count; i++)
@@ -588,8 +644,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 						destination.CurrentEditionId,
 						null
 					);
-					if (result.Status == AppendStatus.Committed)
-						applied++;
+					if (!NoteErasure(replay, result))
+						return replay;
 				}
 
 				if (record.Effect == EffectKind.PromoteClaim)
@@ -603,8 +659,8 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 						destination.CurrentEditionId,
 						null
 					);
-					if (result.Status == AppendStatus.Committed)
-						applied++;
+					if (!NoteErasure(replay, result))
+						return replay;
 				}
 
 				if (record.Effect == EffectKind.CompactSand && done.Add(record.IdempotencyKey))
@@ -617,25 +673,66 @@ namespace BigRedProf.Stories.LibrarySemanticsLab
 					}
 
 					if (summary == null)
-						continue;
+					{
+						replay.Failure = "The compaction certificate has no summary.";
+						return replay;
+					}
 
 					string[] parts = record.EffectArgument.Split('|');
+					long start = long.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
+					long end = long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture);
+					long high = destination.HighWater(record.StoryId);
+					if (end > high)
+						end = high;
+
+					if (end <= start)
+						continue;
+
 					AppendResult result = destination.CompactSand(
 						record.StoryId,
-						long.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture),
-						long.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture),
+						start,
+						end,
 						LabCode.ToText(summary.Body),
 						LabCode.ToText(record.Body),
 						record.IdempotencyKey,
 						destination.CurrentEditionId,
 						null
 					);
-					if (result.Status == AppendStatus.Committed)
-						applied++;
+					if (!NoteErasure(replay, result))
+						return replay;
 				}
 			}
 
-			return applied;
+			return replay;
+		}
+
+		private static bool NoteErasure(ErasureReplay replay, AppendResult result)
+		{
+			if (result.Status == AppendStatus.Committed)
+			{
+				replay.Applied++;
+				return true;
+			}
+
+			if (result.Status == AppendStatus.AlreadyCommitted)
+				return true;
+
+			replay.Failure = result.Detail;
+			return false;
+		}
+		private sealed class ErasureReplay
+		{
+			public int Applied
+			{
+				get;
+				set;
+			}
+
+			public string? Failure
+			{
+				get;
+				set;
+			}
 		}
 		#endregion
 	}
