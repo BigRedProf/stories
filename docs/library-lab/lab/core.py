@@ -398,11 +398,13 @@ class Library:
     # ---- lifecycle
 
     @classmethod
-    def create(cls, fs, root, library_id):
+    def create(cls, fs, root, library_id, role="primary"):
+        """role 'backup' makes a library that only preservation may write to:
+        application appends and commits are refused."""
         if fs.exists(root.rstrip("/") + "/LIBRARY"):
             raise Refused("a library already exists at " + root)
         fs.replace(root.rstrip("/") + "/LIBRARY",
-                   json.dumps({"id": library_id, "format": "library-lab-1"}).encode())
+                   json.dumps({"id": library_id, "format": "library-lab-1", "role": role}).encode())
         return cls.open(fs, root)
 
     @classmethod
@@ -496,9 +498,13 @@ class Library:
         no-op that returns the original positions.
         """
         with self.lock:
+            if self.info.get("role") == "backup" and sid != RETENTION:
+                raise Refused("this is a backup library; applications cannot write to it")
             st = self._story(sid)
             if txn != NO_TXN and txn in st.txns:
                 return {sid: st.txns[txn]}
+            if txn != NO_TXN and txn.hex() in self.superseded(sid):
+                return {sid: "compacted"}        # it was applied, then compacted away
             if expected_pos is not None and st.head() != expected_pos:
                 raise Conflict("%s is at %d, expected %d" % (sid, st.head(), expected_pos))
             entries = self._entries(sid, st, items)
@@ -520,6 +526,8 @@ class Library:
         such frames. A retry with the same txn returns the original receipt.
         """
         with self.lock:
+            if self.info.get("role") == "backup":
+                raise Refused("this is a backup library; applications cannot write to it")
             if txn in self.committed:
                 return self.committed[txn]["first"]
             for sid, pos in (expected or {}).items():
@@ -747,9 +755,12 @@ class Library:
             if mode == "anchor" and any(e.cls == STONE or (sid, e.pos) in self.promoted()
                                         for e in st.entries[:upto - st.base]):
                 raise StoneViolation("%s: range holds stone; anchor compaction would drop it" % sid)
+            # Retry ids of frames an anchor will drop are carried on the evidence, so a
+            # late retry of a compacted append is still recognized (PR #28's finding).
+            gone = [t.hex() for t, (first, n) in sorted(st.txns.items()) if first < upto] if mode == "anchor" else []
             ev = {"k": "Compacted", "story": sid, "upto": upto, "mode": mode,
                   "chain": st.chain_at(upto).hex(), "summary": [summary.bits, summary.data.hex()],
-                  "policy": policy, "authority": authority}
+                  "policy": policy, "authority": authority, "superseded": gone}
             self.append(RETENTION, [(Code.of_json(ev), STONE)])
             return self._after_evidence()
 
@@ -766,6 +777,10 @@ class Library:
         if self.escrow:
             self.escrow(self)
         return self.reclaim()
+
+    def superseded(self, sid):
+        return {t for r in self.evidence() if r["k"] == "Compacted" and r["story"] == sid
+                for t in r.get("superseded", [])}
 
     def compaction(self, sid):
         """(upto, summary Code) for the newest compaction of a story, or None."""

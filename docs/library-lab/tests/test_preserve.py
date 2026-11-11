@@ -184,6 +184,21 @@ class DamageIsNeverCompleteness(unittest.TestCase):
         self.assertEqual(last_preserved(self.bak)["manifest"], self.src.capture_edition()["manifest"])
 
 
+class BackupRole(unittest.TestCase):
+    def test_a_backup_library_refuses_application_writes_but_accepts_preservation(self):
+        fs = SimFS()
+        src = source(fs)
+        bak = Library.create(fs, "/bak", "lib-bak", role="backup")
+        self.assertEqual(preserve(src, bak)["status"], "complete")
+        with self.assertRaises(Refused):
+            apps.transfer(bak, "sofa", "bob", "mallory", 1)
+        with self.assertRaises(Refused):
+            bak.begin_story("digihouse/rogue", "stone")
+        self.assertEqual(Library.open(fs, "/bak").info["role"], "backup")       # the role is durable
+        new, report = restore(bak, fs, "/new", "lib-new", accept_resurrection="operator")
+        apps.transfer(new, "sofa", "bob", "erin", 1)                             # the restored library is a primary
+
+
 class TapeLikeMedia(unittest.TestCase):
     def test_a_backup_library_can_live_on_write_once_objects(self):
         fs = SimFS()

@@ -2,7 +2,7 @@
 
 For Russell. Covers stories #25, #26, #27 and reopens #23.
 Draft of 2026-11-11. Evidence is the Python prototype in this directory:
-48 deterministic tests ([results/tests.txt](results/tests.txt)), a narrated run
+50 deterministic tests ([results/tests.txt](results/tests.txt)), a narrated run
 ([results/demo.txt](results/demo.txt)) and timings
 ([results/bench.txt](results/bench.txt)). Run instructions are in
 [README.md](README.md).
@@ -121,8 +121,9 @@ What tapes still have going for them, stated as strongly as I can:
 - **Format diversity.** A backup written by different code will not share a bug
   with the primary. A Library backing up a Library shares everything.
 - **A tape cannot be mistaken for a live service.** A backup Library is a
-  Library; something could write to it. A role flag that refuses application
-  writes would close this; it is not prototyped.
+  Library; something could write to it. The prototype closes this with a
+  durable "backup" role that refuses application writes and accepts only
+  preservation.
 - **Today's deployed API holds stories in memory,** so tapes are the only
   durability the running system has. Removing them before a durable Library
   ships would be a regression.
@@ -337,11 +338,11 @@ stand-ins. The real design should use pack rats and `Multihash`.
   comes from reading it and modelling it.
 - **The crash model is simplified:** rename, truncate and delete are treated as
   atomic and durable; directory fsync and reordered writes are not modelled.
-- **Retry ids do not survive anchor compaction.** A retried movement whose
-  frame was compacted away would be appended again. PR #28 handles this by
-  listing superseded keys on the compaction certificate; I have not.
-- **Not built:** commit-log checkpointing, multi-process writers, a backup role
-  flag, per-edition pins (any pin defers all reclamation), ledger compaction,
+- **Retry ids across anchor compaction** are carried on the compaction record,
+  following PR #28, which found the problem. The list grows with the range
+  compacted; neither lab has measured that.
+- **Not built:** commit-log checkpointing, multi-process writers, per-edition
+  pins (any pin defers all reclamation), ledger compaction,
   encryption, and retry-id expiry.
 - **Catalog retirement** (`StoryEnded`) is not exercised.
 - **SQL house behind or ahead of the Library** (#23's hardest case) is out of

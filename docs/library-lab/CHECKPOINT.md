@@ -19,8 +19,8 @@ Last updated 2026-11-11.
 | --- | --- | --- | --- | --- |
 | Requirements and alternatives note | yes | n/a | no | no |
 | Atomic append designs A, B, C, D, E, S | yes | yes (19 tests) | no | no |
-| Library-to-Library backup, verify, restore | yes | yes (13 tests) | no | no |
-| Stone/sand, compaction, races, stale restore | yes | yes (15 tests) | no | no |
+| Library-to-Library backup, verify, restore | yes | yes (14 tests) | no | no |
+| Stone/sand, compaction, races, stale restore | yes | yes (16 tests) | no | no |
 | Second application (scoreboard) | yes | yes (1 test) | no | no |
 | Timings | yes | recorded once | no | no |
 | Decision memo | draft | n/a | no | no |
@@ -35,7 +35,7 @@ python3 demo.py
 python3 bench.py
 ```
 
-Expected: `Ran 48 tests ... OK`; `demo.py` output identical to
+Expected: `Ran 50 tests ... OK`; `demo.py` output identical to
 `results/demo.txt`.
 
 ## Results in one paragraph
@@ -65,16 +65,14 @@ when none does.
 2. **Team Grok's challenge** of both labs. The memo lists where I expect it.
 3. **Russell's decisions D1 to D9** in `DECISIONS.md`. D3 gates all .NET work
    here; D8 decides whether D3 is needed for v1.
-4. Carry retry ids across anchor compaction (PR #28 does; this lab does not).
-5. If D3 is yes: port the story batch frame and header chain to a branch of
+4. If D3 is yes: port the story batch frame and header chain to a branch of
    `FileStoryLog` with golden bytes, as #24 did, and re-run the crash matrix
    there.
-6. Commit-log checkpointing and a retry-id window.
-7. A backup role flag that refuses application writes to a backup Library.
-8. Per-edition pins instead of "any pin defers all reclamation".
-9. Model directory fsync and non-atomic rename in the crash file system.
-10. Exercise `StoryEnded` and catalog retirement.
-11. #23's SQL-behind-Library and Library-behind-SQL cases, if a SQL house stays
+5. Commit-log checkpointing and a retry-id window.
+6. Per-edition pins instead of "any pin defers all reclamation".
+7. Model directory fsync and non-atomic rename in the crash file system.
+8. Exercise `StoryEnded` and catalog retirement.
+9. #23's SQL-behind-Library and Library-behind-SQL cases, if a SQL house stays
    in scope.
 
 ## Next useful action

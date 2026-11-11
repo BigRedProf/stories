@@ -153,6 +153,17 @@ class Compaction(unittest.TestCase):
         self.assertLess(sizes["tombstone"][1], sizes["tombstone"][0])
         Compaction.sizes = sizes
 
+    def test_a_retry_of_an_append_that_was_compacted_away_is_not_applied_again(self):
+        fs, src = world()
+        first = src.append(apps.MOVES, [(apps.move_code(1, 5, 5), SAND)], txn=txn_id("move-x"))
+        apps.moves(src, 351, 20)
+        src.compact(apps.MOVES, 360, apps.positions_summary(src, 360), "anchor", "latest-position", "policy")
+        reopened = Library.open(fs, "/src")
+        head = reopened.head(apps.MOVES)[0]
+        again = reopened.append(apps.MOVES, [(apps.move_code(1, 5, 5), SAND)], txn=txn_id("move-x"))
+        self.assertEqual((first[apps.MOVES], again[apps.MOVES]), ((350, 1), "compacted"))
+        self.assertEqual(reopened.head(apps.MOVES)[0], head)
+
     def test_an_edition_below_an_anchor_is_reported_as_unverifiable_not_as_verified(self):
         fs, src = world((apps.phase1,))
         early = src.capture_edition()                                    # movement head 200
