@@ -21,7 +21,7 @@ class Scoreboard(unittest.TestCase):
         final = apps.scoreboard_finish(lib)                  # the result is stone
         bak = Library.create(fs, "/bak", "lib-bak")
         self.assertEqual(preserve(lib, bak)["status"], "complete")
-        new, report = restore(bak, SimFS(), "/new", "lib-new")
+        new, report = restore(bak, SimFS(), "/new", "lib-new", accept_resurrection="operator")
         self.assertEqual(report["status"], "complete")
         self.assertEqual(new.fingerprint(), lib.fingerprint())
         self.assertEqual(apps.scoreboard_sets(new), final)

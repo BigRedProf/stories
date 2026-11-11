@@ -141,19 +141,28 @@ def push_ledger(src, dst):
         dst.accept(RETENTION, head, entries)
 
 
-def restore(backup, fs, root, library_id, witness=None, fold=None):
+def restore(backup, fs, root, library_id, witness=None, accept_resurrection=None, fold=None):
     """Rebuild a library at `root` from the newest COMPLETE preservation in
     `backup`. The original environment is not consulted.
 
-    `witness` is any surviving copy of the retention ledger (an escrow, another
-    backup). With it, removals newer than the backup are applied and the restore
-    is attested. Without it the restore still succeeds, but it reports that sand
-    removed after the backup may have been resurrected, and the restored library
-    refuses writes until that is acknowledged.
+    A backup cannot know what was deleted after it was taken. So when the
+    edition holds sand, the caller must supply one of:
+      witness              any surviving copy of the retention ledger (an escrow,
+                           another backup). Removals newer than the backup are
+                           applied before any data is copied; the restore is attested.
+      accept_resurrection  the name of whoever accepts that sand deleted after
+                           this backup may come back. It is recorded.
+    With neither, the restore is refused and nothing is written.
     """
     rec = last_preserved(backup)
     if rec is None:
         raise Refused("the backup holds no complete preservation")
+    heads = {s: p for s, p, _ in rec["manifest"]}
+    sand = sum(1 for sid in heads for e in backup.read(sid, 0, heads[sid]) if e.cls == SAND and e.payload is not None) \
+        + sum(1 for c in backup.claims(heads[CONTENT]).values() if c["cls"] == SAND and not c["released"])
+    if sand and witness is None and not accept_resurrection:
+        raise Refused("this backup holds %d sand items and cannot know whether any were deleted later; "
+                      "supply a ledger witness or accept_resurrection" % sand)
     if fs.exists(root.rstrip("/") + "/LIBRARY"):
         target = Library.open(fs, root)
         resuming = target.records and target.records[-1]["kind"] == "restore-begin" \
@@ -168,24 +177,22 @@ def restore(backup, fs, root, library_id, witness=None, fold=None):
         if source is not None:
             push_ledger(source, target)
     problems, stats = _copy(backup, target, rec["manifest"], may_lead=(RETENTION,))
-    ledger_at_backup = rec_head = dict((s, p) for s, p, _ in rec["manifest"])[RETENTION]
+    ledger_at_backup = heads[RETENTION]
     ledger_now, _ = target.head(RETENTION)
     reclaimed = target.reclaim()
     report = target.verify(target.manifest(), fold)
-    sand_payloads = sum(1 for sid in target.story_ids() for e in target.read(sid) if e.cls == SAND and e.payload is not None)
-    sand_blobs = len({c["blob"] for c in target.claims().values() if not c["released"] and c["cls"] == SAND})
-    attested = witness is not None
+    attested = witness is not None or not sand
     ok = report["ok"] and not problems
     if ok:
         target._log({"kind": "restored", "edition": rec["edition"], "manifest": target.manifest(),
-                     "from": backup.library_id, "attested": attested})
+                     "from": backup.library_id, "attested": attested, "accepted_by": accept_resurrection})
     return target, {
         "status": "complete" if ok else "incomplete", "edition": rec["edition"],
         "problems": [t for _, t in problems], "stats": stats, "verify": report,
         "removal_evidence": {"at_backup": ledger_at_backup, "applied_through": ledger_now,
-                             "newer_evidence_applied": ledger_now - rec_head, "reclaimed": reclaimed},
-        "resurrection": {"attested": attested, "sand_payloads_present": sand_payloads, "sand_blobs_present": sand_blobs,
+                             "newer_evidence_applied": ledger_now - ledger_at_backup, "reclaimed": reclaimed},
+        "resurrection": {"attested": attested, "accepted_by": accept_resurrection, "sand_items_in_backup": sand,
                          "statement": "attested: removals through ledger position %d applied" % ledger_now if attested else
-                         "NOT attested: no ledger witness was supplied, so sand removed after this backup "
-                         "may be present again; writes are refused until acknowledged"},
+                         "NOT attested: sand deleted after this backup may be present again; accepted by %s"
+                         % accept_resurrection},
     }

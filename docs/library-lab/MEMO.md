@@ -2,7 +2,7 @@
 
 For Russell. Covers stories #25, #26, #27 and reopens #23.
 Draft of 2026-11-11. Evidence is the Python prototype in this directory:
-47 deterministic tests ([results/tests.txt](results/tests.txt)), a narrated run
+48 deterministic tests ([results/tests.txt](results/tests.txt)), a narrated run
 ([results/demo.txt](results/demo.txt)) and timings
 ([results/bench.txt](results/bench.txt)). Run instructions are in
 [README.md](README.md).
@@ -26,6 +26,10 @@ code, persisted format, package or deployment was touched.**
    payloads, and if removal is always a recorded act.** Then sand can vanish
    without changing a position, a chain or an edition, and a verifier can tell
    an authorized removal from a loss.
+
+A second, independent lab reached the same three headline answers in .NET
+(PR #28, by CJ). Where the two differ is set out under "Comparison with PR #28";
+the differences are more useful to you than the agreements.
 
 The three answers depend on one shared choice, so it comes first.
 
@@ -143,17 +147,21 @@ or *export* once the Library exists. This is decision D1.
 
 ### The four guarantees, kept separate
 
-| | Today (A) | Story batch (B) | Library commit (C) | Journal (D) | SQLite (S) |
-| --- | --- | --- | --- | --- | --- |
-| Operation | append things | append a batch to one story | commit to many stories | commit to many stories | commit to many stories |
-| **Atomic visibility** | No. A reader, or a crash, can see part of a batch | Yes, one story | Yes, all stories | **No.** Stories update one by one | Yes |
-| **Durability point** | fsync per thing; "acknowledged" means the last thing | The one fsync | The commit-log fsync | The journal fsync | COMMIT |
-| **Concurrency control** | None | Expected position → conflict | Expected positions or edition → conflict | Not prototyped | Row predicate |
-| **Consistent reads** | No | Within the story | Only via an edition-pinned read | No | Snapshot |
-| Unknown outcome | Retry duplicates | Retry with the same id is a no-op | Same | Not prototyped | Application key |
-| Recovery | Truncate torn tail | Truncate torn tail | Also truncate frames whose transaction is not in the commit log | Replay journal | Engine |
-| Detects loss of acknowledged tail | **No** | Only after an edition is recorded | Yes, the commit log is a witness | n/a | Engine |
-| Provider needs | append + fsync | same | same, plus one extra log | same, data written twice | a SQL engine |
+| | Today (A) | Story batch (B) | Library commit (C) | Journal (D) | Pointer (E) | SQLite (S) |
+| --- | --- | --- | --- | --- | --- | --- |
+| Operation | append things | append a batch to one story | commit to many stories | commit to many stories | commit to many stories | commit to many stories |
+| **Atomic visibility** | No. A reader, or a crash, can see part of a batch | Yes, one story | Yes, all stories | **No.** Stories update one by one | Yes for edition readers. **No for story-head readers** | Yes |
+| **Durability point** | fsync per thing; "acknowledged" means the last thing | The one fsync | The commit-log fsync | The journal fsync | The pointer swing | COMMIT |
+| **Concurrency control** | None | Expected position → conflict | Expected positions or edition → conflict | Not prototyped | Not prototyped here (PR #28 has it) | Row predicate |
+| **Consistent reads** | No | Within the story | Only via an edition-pinned read | No | Every edition read is a snapshot | Snapshot |
+| Unknown outcome | Retry duplicates | Retry with the same id is a no-op | Same | Not prototyped | Not prototyped here | Application key |
+| Recovery | Truncate torn tail | Truncate torn tail | Also truncate frames whose transaction is not in the commit log | Replay journal | Next writer overwrites the unpublished tail | Engine |
+| Detects loss of acknowledged tail | **No** | Only after an edition is recorded | Yes, the commit log is a witness | n/a | Yes, the manifest is a witness | Engine |
+| Format change to the story file | none | new frame | new frame | none | **none** | n/a |
+| Provider needs | append + fsync | same | same, plus one extra log | same, data written twice | same, plus atomic rename | a SQL engine |
+
+E is my model of the design PR #28 recommends: keep today's per-thing frames and
+publish by writing a full manifest and swinging a pointer.
 
 Evidence (`tests/test_atomic.py`):
 
@@ -169,6 +177,11 @@ Evidence (`tests/test_atomic.py`):
 - **A reader mid-commit sees none of it,** at every stage.
 - **D is durable but not atomically visible:** a live reader observed one story
   updated and two not.
+- **E is all-or-nothing for edition readers** across its crash matrix, with no
+  change to the story file. But a reader of the story head was told `a1, a2`,
+  the writer died before the pointer moved, and the next writer replaced them.
+  What that reader heard is not in history. `FileStoryteller` and Digihouse's
+  live listeners are head readers today.
 - **Atomic publication is not a snapshot.** Two ordinary reads straddling a
   commit saw a vase placed in a room that nobody had bought. The same two reads
   pinned to an edition agreed. This distinction has to be in the reader contract.
@@ -190,20 +203,24 @@ Evidence (`tests/test_atomic.py`):
 
 Same disk, real fsync, ratios only ([results/bench.txt](results/bench.txt)):
 
-| Workload | Today | B | C | SQLite |
-| --- | --- | --- | --- | --- |
-| Purchase (4 entries, 3 stories) | 676 µs, not atomic | n/a | 796 µs | 257 µs |
-| One movement | 135 µs | 125 µs | 339 µs if forced through the commit log | 141 µs |
-| Burst of 50 movements | 8,175 µs | 234 µs | | |
+| Workload | Today | B | C | E (pointer) | SQLite |
+| --- | --- | --- | --- | --- | --- |
+| Purchase (4 entries, 3 stories) | 610 µs, not atomic | n/a | 707 µs | 1,152 µs | 279 µs |
+| One movement | 131 µs | 169 µs | 390 µs if forced through the commit log | 463 µs with 10 stories in the library; 741 µs with 1,000; 4,027 µs with 10,000 | 173 µs |
+| Burst of 50 movements | 6,229 µs | 271 µs | | | |
 
-Reading these: B costs nothing and makes bursts about 35 times cheaper. C costs
-about what today's non-atomic writes cost for a purchase, and 2.7 times a plain
-append if single movements were forced through it, which is why they should
-not be.
+Run-to-run noise on this disk was about 20%, so read only the large ratios. B
+costs about one fsync, like today, and makes a burst about 23 times cheaper. C
+costs about what today's non-atomic writes cost for a purchase, and a bit over
+twice a plain append if single movements were forced through it, which is why
+they should not be. E's cost grows with the number of stories in the library,
+because each publish rewrites the manifest. That is my model's behaviour; PR
+#28's implementation also writes a full manifest per publish, but I have not
+timed theirs.
 
 ### Evidence against my own recommendation
 
-- **SQLite did the purchase three times faster than C, with snapshots for
+- **SQLite did the purchase about 2.5 times faster than C, with snapshots for
   free.** That is #23's position: when you need cross-story transactions, use a
   provider that has them. I think the answer is to define `commit` as the
   Library contract and let providers implement it, with the commit log as the
@@ -214,7 +231,7 @@ not be.
   is a rule every storyteller implementation must carry.
 - **The commit log is a single point of serialization** and grows without bound.
   It needs checkpointing, which I did not build. Reopening a library with 2,300
-  commits and 6,000 moves took 22 ms as a full scan.
+  commits and 6,000 moves took 30 ms as a full scan.
 - **Digihouse may not need C at all.** Its design already puts one authoritative
   fact in one story and deduplicates by event id. The cases that needed C in the
   scenario were the Library's own (catalog and content claims). If content
@@ -274,9 +291,9 @@ Evidence (`tests/test_retention.py`):
 - **A backup may keep sand longer** by policy; verification then reports 302
   items as retired but still held.
 - **Restore from a backup older than a deletion.**
-  Without newer evidence the restore completes, stone is exact, the deleted
-  photo is back, the report says the restore is not attested, and the restored
-  library refuses writes until someone acknowledges that.
+  Without newer evidence the restore is refused and nothing is written. If a
+  named person accepts the risk, it completes: stone is exact, the deleted photo
+  is back, and the record says the restore is not attested and who accepted.
   With the ledger from an escrow, the three newer removal records are applied
   and the restored state equals the state at the moment of loss, bit for bit.
   The mechanism is that evidence leaves the building before bytes are reclaimed.
@@ -285,7 +302,7 @@ Evidence (`tests/test_retention.py`):
 
 The honest limit: if the only surviving copy predates a deletion and no newer
 ledger survives anywhere, nothing can know the deletion happened. The prototype
-reports that and stops for acknowledgment. It cannot prevent it.
+refuses until someone accepts that. It cannot prevent it.
 
 ## Compatibility and migration
 
@@ -320,6 +337,9 @@ stand-ins. The real design should use pack rats and `Multihash`.
   comes from reading it and modelling it.
 - **The crash model is simplified:** rename, truncate and delete are treated as
   atomic and durable; directory fsync and reordered writes are not modelled.
+- **Retry ids do not survive anchor compaction.** A retried movement whose
+  frame was compacted away would be appended again. PR #28 handles this by
+  listing superseded keys on the compaction certificate; I have not.
 - **Not built:** commit-log checkpointing, multi-process writers, a backup role
   flag, per-edition pins (any pin defers all reclamation), ledger compaction,
   encryption, and retry-id expiry.
@@ -327,14 +347,49 @@ stand-ins. The real design should use pack rats and `Multihash`.
 - **SQL house behind or ahead of the Library** (#23's hardest case) is out of
   scope here; SQLite appears only as a timing baseline.
 
+## Comparison with PR #28
+
+PR #28 is a separate lab by CJ, written in .NET against the real packages and
+reviewed twice by Codex. I found it after finishing my first pass and have not
+changed its branch. The two labs were built without sight of each other, so
+agreement between them is worth something.
+
+**Agreement.** A Library is the backup and tapes are at most a carrier. A
+tape-style copy tears across stories and carries no blobs. Stone is never
+erased in v1. Removal is never inferred from absence. Verification returns
+separate verdicts. A pinned backup gets its exact edition; an unpinned one that
+loses the race publishes nothing. Compaction summaries belong to the
+application. Sand can be promoted. No SQL is needed for backup. A retry key
+rides on the append.
+
+**Where PR #28 is stronger.** It runs on .NET with the shipped `FileScribe`
+bytes adopted unchanged and compared against Data 0.11.0-rc.1. It kills real
+processes and tests a real cross-process lock, which shows that expected
+position alone does not decide a race between processes. It has had an
+independent review that found at least eight real defects. Mine has had none.
+
+**Where this lab adds evidence.** Simulated power loss at every durable step in
+three modes, which process kills cannot show. Timings. The header chain. The
+ledger escrow. Write-once media.
+
+**Disagreements.**
+
+| Topic | PR #28 | This lab | What would settle it |
+| --- | --- | --- | --- |
+| Batch frame | Not for v1. Publish through the edition pointer; keep today's frame | One frame per append | Whether v1 readers read story heads. Today they do. With a pointer, a head reader can hear entries that are later replaced (tested here), and making each movement visible costs a manifest rewrite that grows with the library (measured here). If every v1 reader is edition-pinned and movement is batched, PR #28's answer is cheaper and changes no format |
+| Identity after compaction | A new story generation. Old edition hashes no longer match the live file; an incremental backup re-copies the whole story | Chain over headers. Identity never changes; the incremental after compacting 300 moves copied 3 ledger records | Whether stable edition identity across retention is a requirement. I think it is, because stone facts will cite editions |
+| Multi-story commit | The pointer | A commit log, touched stories only | The same reader question, plus library size |
+| Unattested restore | Refuse unless `AcceptResurrection` | I first restored and then refused writes. PR #28's rule is better: mine still served reads of resurrected sand. **I adopted theirs**, and added the ledger witness as the way to restore without accepting |
+| Where removal evidence lives | Certificates inside a newer edition | A ledger story that can be escrowed on its own | Whether you want removals to survive loss of everything newer than the last full backup |
+
 ## Disagreements with Team Grok
 
-None recorded: they have not reviewed this yet. The places I expect challenge,
+None recorded: they have not reviewed either lab. The places I expect challenge,
 and would want it:
 
 1. Whether C belongs in v1 at all, given SQLite's numbers and #23's reasoning.
-2. Whether refusing writes after an unattested restore is the right default or
-   an availability hazard during a real disaster.
+2. Whether refusing an unattested restore by default is right, or an
+   availability hazard during a real disaster.
 3. Whether per-entry class is worth its cost against one class per story.
 4. Whether anchor compaction, which makes old editions unverifiable locally, is
    acceptable for anything a stone fact might later cite.

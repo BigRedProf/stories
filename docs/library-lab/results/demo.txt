@@ -29,11 +29,11 @@
    backup verification                            integrity=ok  completeness=ok  retention=ok  application=ok
 
 == 5a. Restore WITHOUT newer removal evidence
+   first attempt                                  REFUSED: this backup holds 358 sand items and cannot know whether a...
    status                                         complete; integrity=ok  completeness=ok  retention=ok  application=ok
    stone state equals state at loss               True
    lamp photo                                     present   <- resurrected
-   resurrection statement                         NOT attested: no ledger witness was supplied, so sand remove...
-   first write                                    REFUSED: restored without attestation that no later removals ...
+   resurrection statement                         NOT attested: sand deleted after this backup may be present again; accepted by russell
 
 == 5b. Restore WITH the escrowed retention ledger as witness
    status                                         complete; integrity=ok  completeness=ok  retention=ok  application=ok

@@ -78,16 +78,16 @@ def main():
     show("backup verification", verdicts(bak.verify(last_preserved(bak)["manifest"], apps.fold)))
 
     say("5a. Restore WITHOUT newer removal evidence")
-    a, ra = restore(bak, fs, "/restore-a", "digihouse-a", fold=apps.fold)
+    try:
+        restore(bak, fs, "/restore-a", "digihouse-a", fold=apps.fold)
+    except Refused as ex:
+        show("first attempt", "REFUSED: " + str(ex)[:58] + "...")
+    a, ra = restore(bak, fs, "/restore-a", "digihouse-a", accept_resurrection="russell", fold=apps.fold)
     sa = apps.fold(a)
     show("status", ra["status"] + "; " + verdicts(ra["verify"]))
     show("stone state equals state at loss", sa["owners"] == want["owners"] and sa["history"] == want["history"])
     show("lamp photo", sa["rooms"]["kitchen"]["media"]["lamp/lamp.jpg"] + "   <- resurrected")
-    show("resurrection statement", ra["resurrection"]["statement"][:60] + "...")
-    try:
-        apps.transfer(a, "rug", "carol", "dan", 1)
-    except Refused as ex:
-        show("first write", "REFUSED: " + str(ex)[:52] + "...")
+    show("resurrection statement", ra["resurrection"]["statement"])
 
     say("5b. Restore WITH the escrowed retention ledger as witness")
     b, rb = restore(bak, fs, "/restore-b", "digihouse-b", witness=Library.open(fs, "/escrow"), fold=apps.fold)

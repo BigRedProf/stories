@@ -63,15 +63,16 @@ weak, authorization needs signed evidence, which is a larger design.
 
 **Default in use.** Free-text authority and reason on every record.
 
-## D6. After a restore that cannot prove it is current, refuse writes?
+## D6. May a restore proceed when it cannot prove no sand was deleted later?
 
-**Recommendation.** Yes: refuse application writes until someone acknowledges
-the resurrection risk, and record who did.
+**Recommendation.** Only with a surviving copy of the retention ledger as
+witness, or with a named person accepting that deleted sand may come back.
+Otherwise refuse and write nothing. This is PR #28's rule, which I adopted.
 
 **Consequence.** During a real disaster this adds one deliberate step before
 service resumes. The alternative is serving possibly resurrected sand silently.
 
-**Default in use.** Refuse until `acknowledge_restore(authority)`.
+**Default in use.** Refused unless `witness` or `accept_resurrection` is given.
 
 ## D7. Must removal evidence reach a second library before bytes are reclaimed?
 
@@ -84,7 +85,23 @@ primary is lost.
 
 **Default in use.** Optional hook; the demo and tests turn it on.
 
-## D8. Which compaction mode for movement?
+## D8. Do v1 readers read story heads or editions?
+
+This is the question on which this lab and PR #28 give different answers to D2
+and D3.
+
+**Recommendation.** Assume head readers stay. `FileStoryteller`, `Watch-Story`
+and Digihouse's live listeners read heads today, and live rooms need each
+movement visible at once.
+
+**Consequence.** If head readers stay, a pointer-only design lets them hear
+entries that are later replaced, and a batch frame (D3) is needed. If you
+decide all v1 readers are edition-pinned, PR #28's design is cheaper, changes no
+format, and D3 can wait.
+
+**Default in use.** Head readers; one frame per append.
+
+## D9. Which compaction mode for movement?
 
 **Recommendation.** Anchor mode for pure-sand stories such as movement (86%
 smaller in the scenario; tombstones saved 5%). Tombstone mode only for mixed

@@ -35,7 +35,7 @@ class FullIncrementalRestore(unittest.TestCase):
         want_bits, want_state, want_manifest = src.fingerprint(), apps.fold(src), src.manifest()
         lose_source(fs)                                            # the original environment is gone
         bak = Library.open(fs, "/bak")
-        new, report = restore(bak, fs, "/new", "lib-new", fold=apps.fold)
+        new, report = restore(bak, fs, "/new", "lib-new", accept_resurrection="operator", fold=apps.fold)
         self.assertEqual(report["status"], "complete")
         self.assertEqual(new.fingerprint(), want_bits)             # every retained bit, position, class, id
         self.assertEqual(new.manifest(), want_manifest)            # identical edition identity
@@ -99,13 +99,13 @@ class FullIncrementalRestore(unittest.TestCase):
         src = source(fs)
         bak = Library.create(fs, "/bak", "lib-bak")
         with self.assertRaises(Refused):
-            restore(bak, fs, "/new", "lib-new")                    # nothing completed yet
+            restore(bak, fs, "/new", "lib-new", accept_resurrection="operator")                    # nothing completed yet
         preserve(src, bak)
         with self.assertRaises(Refused):
-            restore(bak, fs, "/src", "lib-x")                      # the live source is occupied
-        restore(bak, fs, "/new", "lib-new")
+            restore(bak, fs, "/src", "lib-x", accept_resurrection="operator")                      # the live source is occupied
+        restore(bak, fs, "/new", "lib-new", accept_resurrection="operator")
         with self.assertRaises(Refused):
-            restore(bak, fs, "/new", "lib-new")                    # so is a finished restore
+            restore(bak, fs, "/new", "lib-new", accept_resurrection="operator")                    # so is a finished restore
 
     def test_interrupted_restore_resumes(self):
         fs = SimFS()
@@ -113,9 +113,9 @@ class FullIncrementalRestore(unittest.TestCase):
         preserve(source(fs), bak)
         fs.crash_at = fs.steps + 14
         with self.assertRaises(Exception):
-            restore(bak, fs, "/new", "lib-new")
+            restore(bak, fs, "/new", "lib-new", accept_resurrection="operator")
         after = fs.after_crash("torn")
-        new, report = restore(Library.open(after, "/bak"), after, "/new", "lib-new", fold=apps.fold)
+        new, report = restore(Library.open(after, "/bak"), after, "/new", "lib-new", accept_resurrection="operator", fold=apps.fold)
         self.assertEqual(report["status"], "complete")
         self.assertEqual(new.fingerprint(), Library.open(after, "/src").fingerprint())
 
@@ -135,7 +135,7 @@ class DamageIsNeverCompleteness(unittest.TestCase):
     def test_flipped_payload_bit_fails_verification_and_restore(self):
         self.flip(self.bak._path(apps.OWNERSHIP), 80)
         with self.assertRaises((Corrupt, Damage)):
-            restore(Library.open(self.fs, "/bak"), self.fs, "/new", "lib-new")
+            restore(Library.open(self.fs, "/bak"), self.fs, "/new", "lib-new", accept_resurrection="operator")
 
     def test_truncation_on_a_clean_frame_boundary_is_not_a_clean_end(self):
         path = self.bak._path(apps.MOVES)
@@ -148,7 +148,7 @@ class DamageIsNeverCompleteness(unittest.TestCase):
         self.flip("/bak/blobs/" + blob, 3)
         bak = Library.open(self.fs, "/bak")
         self.assertFalse(bak.verify()["integrity"]["ok"])
-        _, report = restore(bak, self.fs, "/new", "lib-new")
+        _, report = restore(bak, self.fs, "/new", "lib-new", accept_resurrection="operator")
         self.assertEqual(report["status"], "incomplete")
         self.fs.remove("/bak/blobs/" + blob)
         self.assertFalse(Library.open(self.fs, "/bak").verify()["completeness"]["ok"])
@@ -192,7 +192,7 @@ class TapeLikeMedia(unittest.TestCase):
         bak = Library.create(media, "/bak", "lib-bak")
         self.assertEqual(preserve(src, bak, fold=apps.fold)["status"], "complete")
         self.assertEqual(media.deletes, 0)                           # append-only on the media: nothing rewritten
-        new, report = restore(Library.open(media, "/bak"), SimFS(), "/new", "lib-new", fold=apps.fold)
+        new, report = restore(Library.open(media, "/bak"), SimFS(), "/new", "lib-new", accept_resurrection="operator", fold=apps.fold)
         self.assertEqual(report["status"], "complete")
         self.assertEqual(new.fingerprint(), src.fingerprint())
 

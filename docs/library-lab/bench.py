@@ -10,7 +10,7 @@ import tempfile
 import time
 
 from lab import apps
-from lab.alt import JournalLibrary, LegacyStory, SqlHouse
+from lab.alt import JournalLibrary, LegacyStory, PointerLibrary, SqlHouse
 from lab.core import CONTENT, SAND, STONE, Library, RealFS, txn_id
 
 
@@ -51,6 +51,8 @@ def main(root):
     rows.append(("purchase  C  library commit",) + timed(N, lambda i: lib.commit(purchase(i), txn_id("p%d" % i))) + ("4 fsyncs, atomic + isolated",))
     j = JournalLibrary(fs, root + "/journal")
     rows.append(("purchase  D  journal then apply",) + timed(N, lambda i: j.commit(raw(purchase(i)))) + ("4 fsyncs, atomic durability only",))
+    ptr = PointerLibrary(fs, root + "/ptr")
+    rows.append(("purchase  E  per-thing frames + pointer",) + timed(N, lambda i: ptr.commit(raw(purchase(i)))) + ("4 fsyncs + pointer file; atomic for edition readers",))
     sql = SqlHouse(root + "/house.db")
     rows.append(("purchase  S  SQLite transaction",) + timed(N, lambda i: sql.commit(raw(purchase(i)))) + ("provider ACID baseline",))
 
@@ -59,6 +61,9 @@ def main(root):
     rows.append(("movement  A  today: per-thing append",) + timed(M, lambda i: mv.append([apps.move_code(i % 3, i % 1024, i % 1024).data])) + ("1 fsync",))
     rows.append(("movement  B  story append",) + timed(M, lambda i: lib.append(apps.MOVES, [(apps.move_code(i % 3, i % 1024, i % 1024), SAND)])) + ("1 fsync",))
     rows.append(("movement  C  forced through commit log",) + timed(M, lambda i: lib.commit({apps.MOVES: [(apps.move_code(i % 3, i % 1024, i % 1024), SAND)]}, txn_id("m%d" % i))) + ("2 fsyncs",))
+    for stories in (10, 1000, 10000):
+        pl = PointerLibrary(fs, "%s/ptr%d" % (root, stories), other_stories=stories)
+        rows.append(("movement  E  pointer, %5d stories in library" % stories,) + timed(M // 4, lambda i: pl.commit({"moves": [apps.move_code(i % 3, i % 1024, i % 1024).data]})) + ("manifest rewritten per publish",))
     rows.append(("movement  S  SQLite transaction",) + timed(M, lambda i: sql.commit({"moves": [apps.move_code(i % 3, i % 1024, i % 1024).data]})) + ("",))
 
     # --- a burst of 50 moves as one unit

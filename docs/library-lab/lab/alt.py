@@ -2,6 +2,10 @@
 
 LegacyStory     the behaviour of today's FileStoryLog: one frame and one fsync
                 per thing, no batch boundary, no expected position, no retry id.
+PointerLibrary  the shape recommended by the parallel lab in PR #28: keep today's
+                per-thing frames, then publish a full manifest by swinging a
+                pointer. Readers of the pointer see all or nothing; readers of
+                the story head see whatever has been flushed.
 JournalLibrary  a write-ahead journal: one journal record holds a whole
                 multi-story commit; stories are updated afterwards.
 SqlHouse        the '#23 baseline': a provider with real transactions (SQLite).
@@ -26,6 +30,43 @@ class LegacyStory:
 
     def read(self):
         return [body for _, _, body in read_frames(self.fs.read(self.path) or b"", self.path)]
+
+
+class PointerLibrary:
+    def __init__(self, fs, root, other_stories=0):
+        self.fs, self.root, self.hook = fs, root, None
+        raw = fs.read(root + "/pointer")
+        # story -> [count, byte length] as of the published edition
+        self.heads = json.loads(raw.decode()) if raw else {"filler-%d" % i: [0, 0] for i in range(other_stories)}
+
+    def _story(self, sid):
+        return "%s/%s.story" % (self.root, sid.replace("/", "_"))
+
+    def read_head(self, sid):
+        """What today's FileStoryteller or a live listener sees: every flushed frame."""
+        return [body for _, _, body in read_frames(self.fs.read(self._story(sid)) or b"", sid)]
+
+    def read(self, sid):
+        """An edition reader: only what the pointer has published."""
+        return self.read_head(sid)[:self.heads.get(sid, [0, 0])[0]]
+
+    def commit(self, writes):
+        new = dict(self.heads)
+        for sid in sorted(writes):
+            count, size = self.heads.get(sid, [0, 0])
+            path = self._story(sid)
+            if len(self.fs.read(path) or b"") > size:     # an unpublished prefix from a dead writer:
+                self.fs.truncate(path, size)              # the next writer replaces it
+            for p in writes[sid]:
+                f = frame(p)
+                self.fs.append(path, f)
+                self.fs.fsync(path)
+                size += len(f)
+            new[sid] = [count + len(writes[sid]), size]
+            if self.hook:
+                self.hook("flushed " + sid)
+        self.fs.replace(self.root + "/pointer", json.dumps(new, sort_keys=True).encode())   # <- publish
+        self.heads = new
 
 
 class JournalLibrary:

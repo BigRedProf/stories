@@ -13,6 +13,8 @@ Design D: all-or-nothing after a crash, yet a live reader sees half a commit. ..
 test_mixed_stone_and_sand_commit_together_and_retire_apart (tests.test_atomic.LibraryCommit.test_mixed_stone_and_sand_commit_together_and_retire_apart) ... ok
 test_multi_story_commit_is_all_or_nothing_across_every_crash_point (tests.test_atomic.LibraryCommit.test_multi_story_commit_is_all_or_nothing_across_every_crash_point) ... ok
 test_plain_story_appends_have_no_witness_until_an_edition_is_captured (tests.test_atomic.LibraryCommit.test_plain_story_appends_have_no_witness_until_an_edition_is_captured) ... ok
+test_pointer_design_is_atomic_for_edition_readers_but_head_readers_see_phantoms (tests.test_atomic.LibraryCommit.test_pointer_design_is_atomic_for_edition_readers_but_head_readers_see_phantoms)
+Design E (PR #28): no new frame format. Fair to it: edition readers get ... ok
 test_readers_never_see_part_of_a_commit_in_flight (tests.test_atomic.LibraryCommit.test_readers_never_see_part_of_a_commit_in_flight) ... ok
 test_story_creation_and_its_first_entries_commit_with_the_catalog_entry (tests.test_atomic.LibraryCommit.test_story_creation_and_its_first_entries_commit_with_the_catalog_entry) ... ok
 test_expected_position_lets_exactly_one_competing_writer_win (tests.test_atomic.StoryBatch.test_expected_position_lets_exactly_one_competing_writer_win) ... ok
@@ -46,10 +48,10 @@ test_stone_history_survives_content_deletion_and_movement_compaction (tests.test
 test_verification_tells_authorized_removal_from_loss (tests.test_retention.Lifecycle.test_verification_tells_authorized_removal_from_loss) ... ok
 test_a_ledger_only_push_to_the_backup_is_enough (tests.test_retention.StaleBackup.test_a_ledger_only_push_to_the_backup_is_enough) ... ok
 test_with_an_escrowed_ledger_the_deletion_is_honored (tests.test_retention.StaleBackup.test_with_an_escrowed_ledger_the_deletion_is_honored) ... ok
-test_without_newer_evidence_the_restore_reports_resurrection_and_refuses_writes (tests.test_retention.StaleBackup.test_without_newer_evidence_the_restore_reports_resurrection_and_refuses_writes) ... ok
+test_without_newer_evidence_the_restore_is_refused_until_someone_accepts_resurrection (tests.test_retention.StaleBackup.test_without_newer_evidence_the_restore_is_refused_until_someone_accepts_resurrection) ... ok
 test_keep_set_results_compaction_backup_and_restore (tests.test_second_app.Scoreboard.test_keep_set_results_compaction_backup_and_restore) ... ok
 
 ----------------------------------------------------------------------
-Ran 47 tests in 0.451s
+Ran 48 tests in 0.461s
 
 OK

@@ -186,6 +186,7 @@ class BackupRacingRetention(unittest.TestCase):
         self.assertEqual(len([e for e in src.read(apps.MOVES, 0, 300) if e.payload is not None]), 0)  # source reclaimed after unpin
         r2 = preserve(src, bak, fold=apps.fold)                          # next run carries the evidence across
         self.assertEqual(r2["status"], "complete")
+        self.assertEqual(r2["stats"]["entries"], 3)                      # three ledger records; no story is re-copied
         self.assertEqual(len([e for e in bak.read(apps.MOVES, 0, 300) if e.payload is not None]), 0)
         self.assertEqual(bak.fingerprint(), src.fingerprint())
 
@@ -228,20 +229,19 @@ class StaleBackup(unittest.TestCase):
             del fs.files[path]                                           # source lost
         return fs, Library.open(fs, "/bak"), Library.open(fs, "/escrow"), want
 
-    def test_without_newer_evidence_the_restore_reports_resurrection_and_refuses_writes(self):
+    def test_without_newer_evidence_the_restore_is_refused_until_someone_accepts_resurrection(self):
         fs, bak, esc, want = self.stale()
-        new, report = restore(bak, fs, "/new", "lib-new", fold=apps.fold)
+        with self.assertRaises(Refused):
+            restore(bak, fs, "/new", "lib-new", fold=apps.fold)
+        self.assertFalse(fs.exists("/new/LIBRARY"))                                          # refused means nothing written
+        new, report = restore(bak, fs, "/new", "lib-new", accept_resurrection="russell", fold=apps.fold)
         self.assertEqual(report["status"], "complete")
-        self.assertFalse(report["resurrection"]["attested"])
+        self.assertEqual((report["resurrection"]["attested"], report["resurrection"]["accepted_by"]), (False, "russell"))
         state = apps.fold(new)
         self.assertEqual(state["rooms"]["kitchen"]["media"]["lamp/lamp.jpg"], "present")     # the deleted photo is back
-        self.assertEqual(state["owners"], want["owners"])                                    # stone is exact either way
-        self.assertEqual(report["resurrection"]["sand_payloads_present"], 352)
-        with self.assertRaises(Refused):
-            apps.transfer(new, "rug", "carol", "dan", 1)
-        new.acknowledge_restore("russell")
-        apps.transfer(new, "rug", "carol", "dan", 1)
-        self.assertIsNone(Library.open(fs, "/new").frozen)                                   # the acknowledgment is durable
+        self.assertEqual((state["owners"], state["history"]), (want["owners"], want["history"]))   # stone is exact either way
+        accepted = [r for r in Library.open(fs, "/new").records if r["kind"] == "restored"][0]
+        self.assertEqual(accepted["accepted_by"], "russell")                                 # and who accepted is durable
 
     def test_with_an_escrowed_ledger_the_deletion_is_honored(self):
         fs, bak, esc, want = self.stale(escrow=True)
@@ -249,11 +249,10 @@ class StaleBackup(unittest.TestCase):
         self.assertTrue(report["resurrection"]["attested"])
         self.assertEqual(report["removal_evidence"]["newer_evidence_applied"], 3)
         self.assertEqual(apps.fold(new), want)                           # exactly the state at the moment of loss
-        self.assertIsNone(new.frozen)
 
     def test_a_ledger_only_push_to_the_backup_is_enough(self):
         fs, bak, esc, want = self.stale(ledger_to_backup=True)
-        new, report = restore(bak, fs, "/new", "lib-new", fold=apps.fold)
+        new, report = restore(bak, fs, "/new", "lib-new", accept_resurrection="russell", fold=apps.fold)
         self.assertEqual(apps.fold(new)["rooms"]["kitchen"]["media"]["lamp/lamp.jpg"], "removed")
         self.assertEqual(apps.fold(new), want)
         self.assertFalse(report["resurrection"]["attested"])             # still unattested: no independent witness

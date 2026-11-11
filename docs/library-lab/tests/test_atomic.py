@@ -3,7 +3,7 @@ import threading
 import unittest
 
 from lab import apps
-from lab.alt import JournalLibrary, LegacyStory
+from lab.alt import JournalLibrary, LegacyStory, PointerLibrary
 from lab.core import (CATALOG, CONTENT, SAND, STONE, Code, Conflict, Crash, Damage, Library, SimFS,
                       Story, edition_id, txn_id)
 from lab.harness import crash_matrix
@@ -180,6 +180,33 @@ class LibraryCommit(unittest.TestCase):
         j.hook = lambda step: partial.append([len(j.read(s)) for s in "abc"])
         j.commit(writes)
         self.assertIn([1, 0, 0], partial)             # the intermediate state was visible
+
+    def test_pointer_design_is_atomic_for_edition_readers_but_head_readers_see_phantoms(self):
+        """Design E (PR #28): no new frame format. Fair to it: edition readers get
+        all-or-nothing. Against it: a head reader, which is what FileStoryteller and
+        live listeners are today, can be told something that then never happened."""
+        writes = {"a": [b"a1", b"a2"], "b": [b"b1"]}
+
+        def check(fs, acked, step, mode):
+            p = PointerLibrary(fs, "/p")
+            counts = [len(p.read(s)) for s in "ab"]
+            self.assertIn(counts, ([0, 0], [2, 1]))
+            if acked:
+                self.assertEqual(counts, [2, 1])
+        crash_matrix(lambda fs: PointerLibrary(fs, "/p"), lambda p: p.commit(writes), check)
+
+        fs = SimFS()
+        p = PointerLibrary(fs, "/p")
+        fs.crash_at = fs.steps + 4                      # both of a's frames are flushed; the pointer is not
+        with self.assertRaises(Crash):
+            p.commit(writes)
+        after = fs.after_crash("lose")
+        p = PointerLibrary(after, "/p")
+        heard = p.read_head("a")                        # a listener on the story head hears a1 and a2
+        self.assertEqual((heard, p.read("a")), ([b"a1", b"a2"], []))
+        p.commit({"a": [b"something else"]})            # the next writer replaces the unpublished prefix
+        self.assertEqual(p.read_head("a"), [b"something else"])
+        self.assertNotIn(b"a1", p.read_head("a"))       # what the listener heard is not in history
 
     def test_atomic_publication_is_not_a_snapshot_read(self):
         """Two ordinary reads straddling a commit disagree; an edition-pinned read does not."""

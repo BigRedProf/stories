@@ -16,7 +16,7 @@ The state of the work is in [CHECKPOINT.md](CHECKPOINT.md).
 Needs Python 3.9 or later and nothing else. From this directory:
 
 ```sh
-python3 -m unittest discover -s tests -t .   # 47 tests, under a second
+python3 -m unittest discover -s tests -t .   # 48 tests, under a second
 python3 demo.py                              # the narrated Digihouse scenario
 python3 bench.py                             # timings with real fsync (a few seconds)
 ```

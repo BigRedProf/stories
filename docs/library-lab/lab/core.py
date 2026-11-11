@@ -394,7 +394,6 @@ class Library:
         self.hook = None             # test hook: called with a step name inside commit()
         self.escrow = None           # optional callable(library) run after evidence, before reclaim
         self.info = {}
-        self.frozen = None           # reason writes are refused, if any
 
     # ---- lifecycle
 
@@ -447,12 +446,7 @@ class Library:
         elif kind in ("edition", "preserved", "restored"):
             for sid, pos, chain in rec["manifest"]:
                 self.witness[sid] = (pos, chain)
-        if kind == "restored":
-            self.frozen = None if rec["attested"] else (
-                "restored without attestation that no later removals exist; acknowledge_restore() first")
-        elif kind == "restore-acknowledged":
-            self.frozen = None
-        elif kind == "pin":
+        if kind == "pin":
             self.pins.add(rec["edition"])
         elif kind == "unpin":
             self.pins.discard(rec["edition"])
@@ -502,8 +496,6 @@ class Library:
         no-op that returns the original positions.
         """
         with self.lock:
-            if self.frozen:
-                raise Refused(self.frozen)
             st = self._story(sid)
             if txn != NO_TXN and txn in st.txns:
                 return {sid: st.txns[txn]}
@@ -528,8 +520,6 @@ class Library:
         such frames. A retry with the same txn returns the original receipt.
         """
         with self.lock:
-            if self.frozen:
-                raise Refused(self.frozen)
             if txn in self.committed:
                 return self.committed[txn]["first"]
             for sid, pos in (expected or {}).items():
@@ -846,9 +836,6 @@ class Library:
                     self.fs.remove("%s/blobs/%s" % (self.root, c["blob"]))
                     blobs += 1
             return {"deferred": False, "payloads": payloads, "blobs": blobs}
-
-    def acknowledge_restore(self, authority):
-        self._log({"kind": "restore-acknowledged", "authority": authority})
 
     def is_empty(self):
         return all(pos == 0 for _, pos, _ in self.manifest())
