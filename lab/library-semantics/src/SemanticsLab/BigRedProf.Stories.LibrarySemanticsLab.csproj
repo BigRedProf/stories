@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IsPackable>false</IsPackable>
+		<RootNamespace>BigRedProf.Stories.LibrarySemanticsLab</RootNamespace>
+		<Description>Isolated prototype for library backup, atomic appends, and stone/sand. Not a shipped package.</Description>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="BigRedProf.Data.Core" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="BigRedProf.Stories.LibrarySemanticsLab.Tests" />
+	</ItemGroup>
+
+</Project>
