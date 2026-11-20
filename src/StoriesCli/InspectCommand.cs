@@ -16,7 +16,7 @@ namespace BigRedProf.Stories.StoriesCli
 			var codeRat = pied.GetPackRat<Code>(CoreSchema.Code);
 
 			using var stream = new FileStream(o.TapePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-			using var r = new CodeReader(stream);
+			using var r = new StreamBitReader(stream);
 			try
 			{
 				while (true)

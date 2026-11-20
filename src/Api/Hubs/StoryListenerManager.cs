@@ -168,7 +168,7 @@ namespace BigRedProf.Stories.Api.Hubs
 		{
 			MemoryStream memoryStream = new MemoryStream(storyThing.Thing.Length / 8 + 1 + 4);
 			PackRat<StoryThing> packRat = _piedPiper.GetPackRat<StoryThing>(StoriesSchemaId.StoryThing);
-			using (CodeWriter writer = new CodeWriter(memoryStream))
+			using (StreamBitWriter writer = new StreamBitWriter(memoryStream))
 			{
 				packRat.PackModel(writer, storyThing);
 			}

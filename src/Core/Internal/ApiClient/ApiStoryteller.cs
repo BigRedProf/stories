@@ -129,7 +129,7 @@ namespace BigRedProf.Stories.Internal.ApiClient
 
 			ListOfStoryThings listOfStoryThings = new ListOfStoryThings();
 			MemoryStream memoryStream = new MemoryStream(byteArray);
-			using (CodeReader reader = new CodeReader(memoryStream))
+			using (StreamBitReader reader = new StreamBitReader(memoryStream))
 			{
 				 listOfStoryThings = _listOfStoryThingsPackRat.UnpackModel(reader);
 			}

@@ -85,7 +85,7 @@ namespace BigRedProf.Stories.StoriesCli
 		)
 		{
 			RestorationWizard restorationWizard = RestorationWizard.OpenExistingTapeSeries(tapeLibrary, seriesId, 0);
-			CodeReader reader = restorationWizard.CodeReader;
+			BitStream reader = restorationWizard.Reader;
 			PackRat<Code> codePackRat = piedPiper.GetPackRat<Code>(CoreSchema.Code);
 			try
 			{
@@ -95,10 +95,9 @@ namespace BigRedProf.Stories.StoriesCli
 					scribe.RecordSomething(thing);
 				}
 			}
-			catch(InvalidOperationException)
+			catch (EndOfStreamException)
 			{
-				// TODO: Need a proper way of detecting end-of-tape-series, but CodeReader doesn't currently
-				// expose this.
+				// The reader throws EndOfStreamException when the tape series ends.
 			}
 			
 			logger.LogInformation("Restore complete. Series={SeriesId}", seriesId);

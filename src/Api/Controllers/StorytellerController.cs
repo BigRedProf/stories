@@ -95,7 +95,7 @@ public class StorytellerController : ControllerBase
 		}
 
 		Response.ContentType = "application/octet-stream";
-		using (CodeWriter writer = new CodeWriter(Response.Body))
+		using (StreamBitWriter writer = new StreamBitWriter(Response.Body))
 		{
 			ListOfStoryThings listOfStoryThings = new ListOfStoryThings()
 			{
